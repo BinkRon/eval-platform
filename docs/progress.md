@@ -64,7 +64,7 @@
 - [x] **E1：Agent 版本连接测试** ✅ — POST /test 接口 + 前端测试按钮 + 状态更新
 - [x] **E2：批测前置校验** ✅ — 校验 Agent 版本/用例/裁判配置/模型配置
 - [x] **E3：异常处理完善** ✅ — 分阶段错误处理 + 裁判重试 + 批测状态修复 + 前端失败展示
-- [ ] **E4：项目卡片摘要信息** — 聚合查询（版本数、批测摘要等）
+- [x] **E4：项目卡片摘要信息** ✅ — 聚合查询 + ROW_NUMBER 窗口函数 + 前端卡片摘要渲染
 - [ ] **E5：端到端验证** — 完整流程测试
 
 **Phase E 里程碑**：非技术人员能独立完成完整评测流程。
@@ -105,4 +105,10 @@
 3. **batch_scheduler.py**：将单个大 try/catch 拆分为对练/裁判两个阶段；裁判失败时保留对话记录；提取 `_save_failed_result` helper；成功路径合并为单事务；全部用例失败时批测状态标记为 "failed"
 4. **BatchTestDetail.tsx**：修复 React Hooks 规则违反；失败用例展示错误信息 + 对话记录（评判前）；失败用例 label 不再显示 "未通过" 误导语义；批测状态 Tag 支持中文标签
 
-下一步：E4 项目卡片摘要信息。
+完成 E4 项目卡片摘要信息：
+1. **project.py (schema)**：新增 LatestBatchSummary + 扩展 ProjectResponse（版本数/用例数/批测数/最近批测摘要）
+2. **projects.py (API)**：批量 count 子查询 + ROW_NUMBER 窗口函数取每项目最近 2 次批测 + 通过率环比计算
+3. **project.ts (types)**：扩展 Project 接口 + LatestBatchSummary 接口
+4. **ProjectList.tsx**：卡片显示版本数、最近批测摘要（时间+版本+通过率+变化箭头）、用例数、累计批测
+
+下一步：E5 端到端验证。
