@@ -1,6 +1,9 @@
+import ipaddress
 import json
 import logging
+import socket
 import uuid
+from urllib.parse import urlparse
 
 import httpx
 from jsonpath_ng import parse as jsonpath_parse
@@ -8,6 +11,30 @@ from jsonpath_ng import parse as jsonpath_parse
 from app.models.agent_version import AgentVersion
 
 logger = logging.getLogger(__name__)
+
+
+def _validate_url(url: str) -> None:
+    """Validate URL to prevent SSRF attacks."""
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(f"不支持的 URL 协议: {parsed.scheme}，仅允许 http/https")
+
+    hostname = parsed.hostname
+    if not hostname:
+        raise ValueError("URL 缺少主机名")
+
+    if hostname.lower() in ("localhost", "127.0.0.1", "::1"):
+        raise ValueError("不允许访问本地地址")
+
+    try:
+        addrinfos = socket.getaddrinfo(hostname, None)
+    except socket.gaierror:
+        raise ValueError(f"无法解析主机名: {hostname}")
+
+    for family, _, _, _, sockaddr in addrinfos:
+        ip = ipaddress.ip_address(sockaddr[0])
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+            raise ValueError("不允许访问内部网络地址")
 
 
 class AgentClient:
@@ -21,6 +48,7 @@ class AgentClient:
         Returns:
             tuple: (agent reply text, whether agent signaled end)
         """
+        _validate_url(self.agent.endpoint)
         if self.agent.response_format == "sse":
             return await self._send_message_sse(message)
         return await self._send_message_json(message)

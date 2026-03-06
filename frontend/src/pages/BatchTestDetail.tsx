@@ -1,9 +1,16 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Alert, Button, Card, Col, Collapse, Descriptions, Divider, Row, Space, Spin, Statistic, Tag, Typography } from 'antd'
 import { ArrowLeftOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
 import type { TestResult } from '../api/batchTests'
 import { useBatchTestDetail } from '../hooks/useBatchTests'
+
+const BATCH_STATUS_MAP: Record<string, { color: string; label: string }> = {
+  completed: { color: 'success', label: '已完成' },
+  running: { color: 'processing', label: '运行中' },
+  failed: { color: 'error', label: '失败' },
+  pending: { color: 'default', label: '待执行' },
+}
 
 const TERM_REASON_MAP: Record<string, string> = {
   agent_hangup: 'Agent 挂断',
@@ -29,28 +36,35 @@ export default function BatchTestDetail() {
 
   // Stats
   const completedResults = results.filter((r) => r.status === 'completed')
-  const passRate = completedResults.length > 0
-    ? Math.round((batch.passed_cases / completedResults.length) * 100)
+  const denominator = batch.status === 'completed' ? batch.total_cases : (batch.completed_cases || batch.total_cases)
+  const passRate = denominator > 0
+    ? Math.round((batch.passed_cases / denominator) * 100)
     : 0
 
   // Eval dimension averages
-  const dimScores: Record<string, number[]> = {}
-  for (const r of completedResults) {
-    for (const s of r.eval_scores || []) {
-      if (!dimScores[s.dimension]) dimScores[s.dimension] = []
-      dimScores[s.dimension].push(s.score)
+  const dimScores = useMemo(() => {
+    const scores: Record<string, number[]> = {}
+    for (const r of completedResults) {
+      for (const s of r.eval_scores || []) {
+        if (!scores[s.dimension]) scores[s.dimension] = []
+        scores[s.dimension].push(s.score)
+      }
     }
-  }
+    return scores
+  }, [completedResults])
 
   // Checklist pass rates
-  const checklistStats: Record<string, { total: number; passed: number }> = {}
-  for (const r of completedResults) {
-    for (const c of r.checklist_results || []) {
-      if (!checklistStats[c.content]) checklistStats[c.content] = { total: 0, passed: 0 }
-      checklistStats[c.content].total++
-      if (c.passed) checklistStats[c.content].passed++
+  const checklistStats = useMemo(() => {
+    const stats: Record<string, { total: number; passed: number }> = {}
+    for (const r of completedResults) {
+      for (const c of r.checklist_results || []) {
+        if (!stats[c.content]) stats[c.content] = { total: 0, passed: 0 }
+        stats[c.content].total++
+        if (c.passed) stats[c.content].passed++
+      }
     }
-  }
+    return stats
+  }, [completedResults])
 
   return (
     <>
@@ -59,8 +73,8 @@ export default function BatchTestDetail() {
           返回
         </Button>
         <Typography.Title level={4} style={{ margin: 0 }}>批测详情</Typography.Title>
-        <Tag color={batch.status === 'completed' ? 'success' : batch.status === 'running' ? 'processing' : batch.status === 'failed' ? 'error' : 'default'}>
-          {batch.status === 'completed' ? '已完成' : batch.status === 'running' ? '运行中' : batch.status === 'failed' ? '失败' : batch.status}
+        <Tag color={BATCH_STATUS_MAP[batch.status]?.color ?? 'default'}>
+          {BATCH_STATUS_MAP[batch.status]?.label ?? batch.status}
         </Tag>
       </Space>
 
@@ -73,7 +87,7 @@ export default function BatchTestDetail() {
           <Card><Statistic title="通过率" value={passRate} suffix="%" valueStyle={{ color: passRate >= 80 ? '#3f8600' : '#cf1322' }} /></Card>
         </Col>
         <Col span={6}>
-          <Card><Statistic title="通过/总数" value={`${batch.passed_cases}/${completedResults.length}`} /></Card>
+          <Card><Statistic title="通过/总数" value={`${batch.passed_cases}/${batch.total_cases}`} /></Card>
         </Col>
         <Col span={6}>
           <Card><Statistic title="完成时间" value={batch.completed_at ? new Date(batch.completed_at).toLocaleString() : '-'} /></Card>
@@ -158,25 +172,7 @@ function TestResultExpand({ result }: { result: TestResult }) {
           <>
             <Divider>对话记录（评判前）</Divider>
             <Card size="small">
-              <div style={{ maxHeight: 400, overflow: 'auto' }}>
-                {result.conversation.map((msg, i) => (
-                  <div key={i} style={{ marginBottom: 12, textAlign: msg.role === 'user' ? 'left' : 'right' }}>
-                    <Tag color={msg.role === 'user' ? 'blue' : 'green'}>
-                      {msg.role === 'user' ? '对练' : 'Agent'}
-                    </Tag>
-                    <div style={{
-                      display: 'inline-block',
-                      maxWidth: '70%',
-                      padding: '8px 12px',
-                      borderRadius: 8,
-                      background: msg.role === 'user' ? '#e6f4ff' : '#f6ffed',
-                      textAlign: 'left',
-                    }}>
-                      {msg.content}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <ConversationBubbles messages={result.conversation} />
             </Card>
           </>
         )}
@@ -221,25 +217,7 @@ function TestResultExpand({ result }: { result: TestResult }) {
       {/* Conversation */}
       {result.conversation && (
         <Card title="对话记录" size="small" style={{ marginBottom: 16 }}>
-          <div style={{ maxHeight: 400, overflow: 'auto' }}>
-            {result.conversation.map((msg, i) => (
-              <div key={i} style={{ marginBottom: 12, textAlign: msg.role === 'user' ? 'left' : 'right' }}>
-                <Tag color={msg.role === 'user' ? 'blue' : 'green'}>
-                  {msg.role === 'user' ? '对练' : 'Agent'}
-                </Tag>
-                <div style={{
-                  display: 'inline-block',
-                  maxWidth: '70%',
-                  padding: '8px 12px',
-                  borderRadius: 8,
-                  background: msg.role === 'user' ? '#e6f4ff' : '#f6ffed',
-                  textAlign: 'left',
-                }}>
-                  {msg.content}
-                </div>
-              </div>
-            ))}
-          </div>
+          <ConversationBubbles messages={result.conversation} />
         </Card>
       )}
 
@@ -250,5 +228,27 @@ function TestResultExpand({ result }: { result: TestResult }) {
         </Card>
       )}
     </>
+  )
+}
+
+function ConversationBubbles({ messages }: { messages: Array<{ role: string; content: string }> }) {
+  return (
+    <div style={{ maxHeight: 400, overflow: 'auto' }}>
+      {messages.map((msg, i) => (
+        <div key={i} style={{ marginBottom: 12, textAlign: msg.role === 'user' ? 'left' : 'right' }}>
+          <Tag color={msg.role === 'user' ? 'blue' : 'green'}>
+            {msg.role === 'user' ? '对练' : 'Agent'}
+          </Tag>
+          <div style={{
+            display: 'inline-block', maxWidth: '70%',
+            padding: '8px 12px', borderRadius: 8,
+            background: msg.role === 'user' ? '#e6f4ff' : '#f6ffed',
+            textAlign: 'left',
+          }}>
+            {msg.content}
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }

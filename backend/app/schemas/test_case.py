@@ -1,11 +1,11 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class TestCaseCreate(BaseModel):
-    name: str
+    name: str = Field(max_length=100)
     first_message: str
     persona_background: str | None = None
     persona_behavior: str | None = None
@@ -14,7 +14,7 @@ class TestCaseCreate(BaseModel):
 
 
 class TestCaseUpdate(BaseModel):
-    name: str | None = None
+    name: str | None = Field(default=None, max_length=100)
     first_message: str | None = None
     persona_background: str | None = None
     persona_behavior: str | None = None

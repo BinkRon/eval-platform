@@ -29,16 +29,11 @@ export function useBatchTestDetail(projectId: string, batchId: string) {
     queryKey: ['batch-test-detail', projectId, batchId],
     queryFn: () => batchTestApi.get(projectId, batchId),
     enabled: !!projectId && !!batchId,
-  })
-}
-
-export function useBatchTestProgress(projectId: string, batchId: string, enabled: boolean) {
-  return useQuery({
-    queryKey: ['batch-test-progress', projectId, batchId],
-    queryFn: () => batchTestApi.progress(projectId, batchId),
-    enabled: enabled && !!projectId && !!batchId,
-    refetchInterval: 3000,
+    refetchInterval: (query) => {
+      const data = query.state.data
+      const isActive = data?.status === 'running' || data?.status === 'pending'
+      return isActive ? 3000 : false
+    },
     refetchIntervalInBackground: false,
-    retry: 0,
   })
 }

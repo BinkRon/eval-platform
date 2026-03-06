@@ -10,10 +10,9 @@ import BatchTestTab from '../components/batch-test/BatchTestTab'
 export default function ProjectWorkbench() {
   const { id } = useParams<{ id: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { data: project, isLoading } = useProject(id ?? '')
 
   if (!id) return <Typography.Text type="danger">项目 ID 缺失</Typography.Text>
-
-  const { data: project, isLoading } = useProject(id)
 
   const activeTab = searchParams.get('tab') || 'agent-versions'
 

@@ -1,4 +1,5 @@
 import json
+import re
 
 from anthropic import AsyncAnthropic
 
@@ -46,10 +47,10 @@ class AnthropicAdapter(LLMAdapter):
 
         text = await self.chat(messages, prompt, temperature, max_tokens)
         text = text.strip()
-        if text.startswith("```"):
-            lines = text.split("\n")
-            # Remove first line (```json or ```) and last line (```)
-            text = "\n".join(lines[1:-1]).strip()
+        # Try to extract from markdown code block
+        code_block_match = re.search(r'```(?:json)?\s*\n(.*?)\n\s*```', text, re.DOTALL)
+        if code_block_match:
+            text = code_block_match.group(1).strip()
         try:
             return json.loads(text)
         except json.JSONDecodeError:

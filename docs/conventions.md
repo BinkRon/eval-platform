@@ -45,7 +45,7 @@ async def create_project(data: CreateProjectRequest, db: AsyncSession = Depends(
 ### 数据库操作
 
 - 使用 SQLAlchemy ORM，不手写原生 SQL
-- 写操作使用 `async with db.begin()` 确保事务
+- 写操作使用手动 `await db.commit()`（注：asyncpg 与 `async with db.begin()` 存在事务冲突问题）
 - 查询使用 `select()` + `where()` 组合
 - ID 使用 UUID，由数据库生成或 Python uuid4
 - 时间戳使用 `func.now()` 让数据库生成
@@ -125,3 +125,30 @@ export function useCreateProject() {
 | chore | 配置 | `chore: 配置 Docker Compose` |
 | db | 数据库 | `db: 新增 eval_dimensions 表` |
 | test | 测试 | `test: 补充裁判运行器单元测试` |
+
+## 安全编码规范
+
+### 外部 URL 校验
+- 所有用户提供的 URL（如 Agent endpoint）在请求前必须经过 SSRF 防护校验
+- 拒绝私有 IP 段（10.x、172.16-31.x、192.168.x、127.x、169.254.x）
+- 只允许 http/https scheme
+
+### 错误信息脱敏
+- 面向用户的错误信息不得包含内部 IP 地址、堆栈跟踪、数据库连接信息
+- 使用正则替换敏感信息为通用提示
+
+### 敏感数据处理
+- API 响应中不返回 auth_token 原文，仅返回 `auth_token_set: bool`
+- 密码、API Key 等敏感字段使用 `SecretStr` 或在 schema 中排除
+
+## 容器安全规范
+
+- Dockerfile 使用非 root 用户运行应用（`USER appuser`）
+- 不在镜像中存储敏感文件（.env、密钥文件）
+- 使用 `.dockerignore` 排除不必要文件
+
+## 环境配置规范
+
+- 项目根目录提供 `.env.example` 模板，列出所有必需环境变量
+- 敏感配置（API Key、数据库密码）通过环境变量注入，不硬编码
+- 环境变量命名：大写 + 下划线，如 `DATABASE_URL`、`ANTHROPIC_API_KEY`

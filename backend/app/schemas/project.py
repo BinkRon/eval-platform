@@ -1,16 +1,16 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ProjectCreate(BaseModel):
-    name: str
+    name: str = Field(max_length=100)
     description: str | None = None
 
 
 class ProjectUpdate(BaseModel):
-    name: str | None = None
+    name: str | None = Field(default=None, max_length=100)
     description: str | None = None
 
 

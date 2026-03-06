@@ -1,15 +1,14 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.agent_version import AgentVersion
 from app.models.project import Project
-from app.schemas.agent_version import AgentVersionCreate, AgentVersionResponse, AgentVersionUpdate
-from app.services.agent_client import AgentClient
+from app.schemas.agent_version import AgentTestResult, AgentVersionCreate, AgentVersionResponse, AgentVersionUpdate
+from app.services.agent_version_service import test_connection
 
 router = APIRouter(prefix="/api/projects/{project_id}/agent-versions", tags=["agent-versions"])
 
@@ -72,12 +71,6 @@ async def delete_agent_version(project_id: UUID, version_id: UUID, db: AsyncSess
     await db.commit()
 
 
-class AgentTestResult(BaseModel):
-    status: str
-    reply: str | None = None
-    error: str | None = None
-
-
 @router.post("/{version_id}/test", response_model=AgentTestResult)
 async def test_agent_connection(project_id: UUID, version_id: UUID, db: AsyncSession = Depends(get_db)):
     version = await db.get(AgentVersion, version_id)
@@ -87,13 +80,4 @@ async def test_agent_connection(project_id: UUID, version_id: UUID, db: AsyncSes
     if not version.endpoint:
         raise HTTPException(400, detail="Agent endpoint not configured")
 
-    try:
-        client = AgentClient(version)
-        reply, _ = await client.send_message("你好")
-        version.connection_status = "success"
-        await db.commit()
-        return AgentTestResult(status="success", reply=reply)
-    except Exception as e:
-        version.connection_status = "failed"
-        await db.commit()
-        return AgentTestResult(status="failed", error=str(e))
+    return await test_connection(db, version)

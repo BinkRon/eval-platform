@@ -1,19 +1,20 @@
 from decimal import Decimal
+from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ChecklistItemData(BaseModel):
     id: UUID | None = None
     content: str
-    level: str = "must"
+    level: Literal["must", "should"] = "must"
     sort_order: int = 0
 
 
 class EvalDimensionData(BaseModel):
     id: UUID | None = None
-    name: str
+    name: str = Field(max_length=100)
     description: str | None = None
     level_3_desc: str | None = None
     level_2_desc: str | None = None

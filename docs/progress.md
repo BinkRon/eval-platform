@@ -1,6 +1,6 @@
 # 评测平台 — 开发进度
 
-## v0.1 MVP（进行中）
+## v0.1 MVP（质量加固完成）
 
 > 从零搭建对话 Agent 评测平台 MVP。核心验证：自动化对练 + 裁判能可靠发现 Agent 的真实问题。
 
@@ -59,7 +59,7 @@
 
 ---
 
-### Phase E：补全 + 打磨（进行中）
+### Phase E：补全 + 打磨
 
 - [x] **E1：Agent 版本连接测试** ✅ — POST /test 接口 + 前端测试按钮 + 状态更新
 - [x] **E2：批测前置校验** ✅ — 校验 Agent 版本/用例/裁判配置/模型配置
@@ -68,6 +68,38 @@
 - [x] **E5：端到端验证** ✅ — 完整 API 链路验证 + 6 个 Bug 修复 + 代码审查
 
 **Phase E 里程碑**：✅ 完成 — 非技术人员能独立完成完整评测流程。
+
+---
+
+### Phase F：质量加固
+
+- [x] **F1：数据正确性修复** ✅
+  - F1.1: `updated_at` before_flush 事件监听器
+  - F1.2: 通过率分母改为 `batch.total_cases`
+  - F1.3: JSONB 字段类型标注 `dict` → `list`
+  - F1.4: `datetime.utcnow()` → `func.now()`
+- [x] **F2：安全加固** ✅
+  - F2.1: SSRF 防护（URL 校验 + DNS 解析 + 私有 IP 拒绝）
+  - F2.2: Schema 输入校验（max_length + Literal 约束）
+  - F2.3: Docker 非 root 用户
+  - F2.4: 错误信息脱敏（IP 正则替换）
+- [x] **F3：并发与前端稳定性** ✅
+  - F3.1: `asyncio.gather` 添加 `return_exceptions=True`
+  - F3.2: React hooks 调用顺序修复
+  - F3.3: Modal.confirm 异常捕获（4 处）
+  - F3.4: 批测详情页轮询 + 删除死代码
+- [x] **F4：架构对齐** ✅
+  - F4.1: 路由层业务逻辑提取（project_service + agent_version_service）
+  - F4.2: AgentTestResult schema 归位
+  - F4.3: 事务模式文档统一（手动 commit）
+  - F4.4: 前端代码整理（ConversationBubbles + useMemo + STATUS_MAP）
+- [x] **F5：工程实践** ✅
+  - F5.1: requirements.txt 精确版本锁定（pip-compile）
+  - F5.2: 迁移 squash 为单个正确初始迁移
+  - F5.3: conventions.md 补全（安全/容器/环境配置规范）
+  - F5.4: 引擎改进（裁判重试带错误上下文 + Anthropic 正则解析 + 裁判结果 key 匹配）
+
+**Phase F 里程碑**：✅ 完成 — 12 个严重问题 + 15 个改进建议全部修复。
 
 ---
 
@@ -143,3 +175,15 @@ Phase E 全部完成，v0.1 MVP 所有 Phase (A-E) 开发完毕。
    - `AgentClient` 新增 `_send_message_sse()` 方法：httpx 流式读取 `data:` 事件，逐事件用 `response_path` 提取文本并拼接，`data: [DONE]` 标记流结束
    - 前端 Agent 版本表单新增「响应格式」下拉选择器（JSON / SSE）
    - Schema 三端（Create/Update/Response）同步更新
+
+**Session #7 (2026-03-06)**：Phase F 质量加固，全部完成。
+
+经 5 个并行 code review agent 审查发现的 12 个严重问题 + 15 个改进建议，按 5 波次集中修复：
+
+1. **F1 数据正确性**：`updated_at` 添加 before_flush 事件监听器；通过率分母统一用 `batch.total_cases`；JSONB 字段类型标注 `dict→list`；`datetime.utcnow()` 替换为 `func.now()`
+2. **F2 安全加固**：SSRF 防护（URL 校验+DNS 解析+私有 IP 拒绝）；Schema 输入校验（max_length+Literal 约束 5 个文件）；Docker 非 root 用户；错误信息 IP 脱敏
+3. **F3 并发+前端稳定性**：`asyncio.gather` 添加 `return_exceptions=True`；React hooks 调用顺序修复；4 处 Modal.confirm 异常捕获；批测详情页轮询+死代码清理
+4. **F4 架构对齐**：提取 project_service.py 和 agent_version_service.py；AgentTestResult schema 归位；事务模式文档统一；前端 ConversationBubbles 提取+useMemo+STATUS_MAP
+5. **F5 工程实践**：pip-compile 锁版本；迁移 squash 为单个正确初始迁移；conventions.md 补全 3 个安全规范章节；裁判重试带错误上下文+Anthropic 正则解析+裁判结果 key 匹配
+
+v0.1 MVP Phase A-F 全部完成。

@@ -16,13 +16,6 @@ export interface BatchTestCreate {
   concurrency?: number
 }
 
-export interface BatchTestProgress {
-  status: string
-  total_cases: number
-  completed_cases: number
-  passed_cases: number
-}
-
 export interface TestResult {
   id: string
   batch_test_id: string

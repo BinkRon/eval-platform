@@ -1,37 +1,44 @@
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AgentVersionCreate(BaseModel):
-    name: str
+    name: str = Field(max_length=100)
     description: str | None = None
     endpoint: str | None = None
-    method: str = "POST"
-    auth_type: str | None = None
+    method: Literal["POST", "GET"] = "POST"
+    auth_type: Literal["bearer", "header"] | None = None
     auth_token: str | None = None
     request_template: str | None = None
     response_path: str | None = None
     has_end_signal: bool = False
     end_signal_path: str | None = None
     end_signal_value: str | None = None
-    response_format: str = "json"
+    response_format: Literal["json", "sse"] = "json"
 
 
 class AgentVersionUpdate(BaseModel):
-    name: str | None = None
+    name: str | None = Field(default=None, max_length=100)
     description: str | None = None
     endpoint: str | None = None
-    method: str | None = None
-    auth_type: str | None = None
+    method: Literal["POST", "GET"] | None = None
+    auth_type: Literal["bearer", "header"] | None = None
     auth_token: str | None = None
     request_template: str | None = None
     response_path: str | None = None
     has_end_signal: bool | None = None
     end_signal_path: str | None = None
     end_signal_value: str | None = None
-    response_format: str | None = None
+    response_format: Literal["json", "sse"] | None = None
+
+
+class AgentTestResult(BaseModel):
+    status: str
+    reply: str | None = None
+    error: str | None = None
 
 
 class AgentVersionResponse(BaseModel):

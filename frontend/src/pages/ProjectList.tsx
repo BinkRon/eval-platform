@@ -51,8 +51,12 @@ export default function ProjectList() {
       title: `确认删除项目「${project.name}」？`,
       content: '删除后所有关联数据将一并删除，不可恢复。',
       onOk: async () => {
-        await deleteMutation.mutateAsync(project.id)
-        message.success('已删除')
+        try {
+          await deleteMutation.mutateAsync(project.id)
+          message.success('已删除')
+        } catch {
+          // error handled by global interceptor
+        }
       },
     })
   }

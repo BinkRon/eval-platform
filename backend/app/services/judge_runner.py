@@ -48,8 +48,11 @@ class JudgeRunner:
         last_error = None
         for attempt in range(2):
             try:
+                messages_to_send = [{"role": "user", "content": prompt}]
+                if attempt == 1 and last_error:
+                    messages_to_send.append({"role": "user", "content": f"上次输出格式错误：{last_error}。请严格按照要求的 JSON 格式重新输出。"})
                 result = await self.llm.chat_json(
-                    messages=[{"role": "user", "content": prompt}],
+                    messages=messages_to_send,
                     system_prompt=self.system_prompt,
                     temperature=self.temperature if self.temperature is not None else 0.0,
                     max_tokens=self.max_tokens if self.max_tokens is not None else 4096,
@@ -109,8 +112,9 @@ class JudgeRunner:
         # Parse checklist results
         checklist_results = []
         raw_checklist = result.get("checklist", [])
-        for i, item in enumerate(self.checklist_items):
-            raw = raw_checklist[i] if i < len(raw_checklist) else {}
+        raw_by_index = {item.get("index"): item for item in raw_checklist}
+        for i, item in enumerate(self.checklist_items, 1):
+            raw = raw_by_index.get(i, raw_checklist[i - 1] if i - 1 < len(raw_checklist) else {})
             checklist_results.append({
                 "content": item.content,
                 "level": item.level,
@@ -121,8 +125,13 @@ class JudgeRunner:
         # Parse eval scores
         eval_scores = []
         raw_eval = result.get("evaluation", [])
-        for i, dim in enumerate(self.eval_dimensions):
-            raw = raw_eval[i] if i < len(raw_eval) else {}
+        raw_by_dim = {item.get("dimension"): item for item in raw_eval}
+        for dim in self.eval_dimensions:
+            raw = raw_by_dim.get(dim.name, {})
+            if not raw:
+                # Fallback to positional
+                idx = self.eval_dimensions.index(dim)
+                raw = raw_eval[idx] if idx < len(raw_eval) else {}
             eval_scores.append({
                 "dimension": dim.name,
                 "score": raw.get("score", 1),

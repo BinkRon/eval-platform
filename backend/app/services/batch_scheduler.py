@@ -1,11 +1,10 @@
 import asyncio
 import logging
 from dataclasses import dataclass
-from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -63,7 +62,7 @@ async def run_batch_test(batch_test_id: UUID):
             batch = await db.get(BatchTest, batch_test_id)
             if batch:
                 batch.status = "failed"
-                batch.completed_at = datetime.utcnow()
+                batch.completed_at = func.now()
                 await db.commit()
 
 
@@ -136,7 +135,7 @@ async def _execute_batch(batch_test_id: UUID):
 
         if not ctx:
             batch.status = "failed"
-            batch.completed_at = datetime.utcnow()
+            batch.completed_at = func.now()
             await db.commit()
             return
 
@@ -160,7 +159,7 @@ async def _execute_batch(batch_test_id: UUID):
         async with semaphore:
             await _run_single_test(batch_test_id, test_case, ctx, sparring_llm, judge_llm)
 
-    await asyncio.gather(*[run_single_case(tc) for tc in ctx.test_cases])
+    await asyncio.gather(*[run_single_case(tc) for tc in ctx.test_cases], return_exceptions=True)
 
     # Finalize
     async with async_session() as db:
@@ -176,7 +175,7 @@ async def _execute_batch(batch_test_id: UUID):
             batch.status = "failed"
         else:
             batch.status = "completed"
-        batch.completed_at = datetime.utcnow()
+        batch.completed_at = func.now()
         await db.commit()
 
 

@@ -77,8 +77,12 @@ export default function AgentVersionTab({ projectId }: { projectId: string }) {
     Modal.confirm({
       title: `确认删除「${record.name}」？`,
       onOk: async () => {
-        await deleteMutation.mutateAsync(record.id)
-        message.success('已删除')
+        try {
+          await deleteMutation.mutateAsync(record.id)
+          message.success('已删除')
+        } catch {
+          // error handled by global interceptor
+        }
       },
     })
   }
