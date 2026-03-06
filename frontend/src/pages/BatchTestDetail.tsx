@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Button, Card, Col, Collapse, Descriptions, Row, Space, Spin, Statistic, Tag, Typography } from 'antd'
+import { Alert, Button, Card, Col, Collapse, Descriptions, Divider, Row, Space, Spin, Statistic, Tag, Typography } from 'antd'
 import { ArrowLeftOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
 import type { TestResult } from '../api/batchTests'
 import { useBatchTestDetail } from '../hooks/useBatchTests'
@@ -14,11 +14,10 @@ const TERM_REASON_MAP: Record<string, string> = {
 export default function BatchTestDetail() {
   const { id: projectId, bid: batchId } = useParams<{ id: string; bid: string }>()
   const navigate = useNavigate()
+  const { data: batch, isLoading } = useBatchTestDetail(projectId ?? '', batchId ?? '')
+  const [sortBy, setSortBy] = useState<'default' | 'failed_first'>('default')
 
   if (!projectId || !batchId) return <Typography.Text type="danger">路由参数缺失</Typography.Text>
-
-  const { data: batch, isLoading } = useBatchTestDetail(projectId, batchId)
-  const [sortBy, setSortBy] = useState<'default' | 'failed_first'>('default')
 
   if (isLoading) return <Spin style={{ display: 'block', margin: '100px auto' }} />
   if (!batch) return <Typography.Text type="danger">批测不存在</Typography.Text>
@@ -60,8 +59,8 @@ export default function BatchTestDetail() {
           返回
         </Button>
         <Typography.Title level={4} style={{ margin: 0 }}>批测详情</Typography.Title>
-        <Tag color={batch.status === 'completed' ? 'success' : batch.status === 'running' ? 'processing' : 'default'}>
-          {batch.status}
+        <Tag color={batch.status === 'completed' ? 'success' : batch.status === 'running' ? 'processing' : batch.status === 'failed' ? 'error' : 'default'}>
+          {batch.status === 'completed' ? '已完成' : batch.status === 'running' ? '运行中' : batch.status === 'failed' ? '失败' : batch.status}
         </Tag>
       </Space>
 
@@ -126,12 +125,21 @@ export default function BatchTestDetail() {
           key: r.id,
           label: (
             <Space>
-              {r.passed ? <CheckCircleOutlined style={{ color: '#52c41a' }} /> : <CloseCircleOutlined style={{ color: '#ff4d4f' }} />}
+              {r.status === 'failed'
+                ? <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
+                : r.passed
+                  ? <CheckCircleOutlined style={{ color: '#52c41a' }} />
+                  : <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
+              }
               <span>用例 {r.test_case_id?.slice(0, 8)}</span>
-              <Tag color={r.passed ? 'green' : 'red'}>{r.passed ? '通过' : '未通过'}</Tag>
-              <span>{r.actual_rounds} 轮</span>
-              <Tag>{TERM_REASON_MAP[r.termination_reason || ''] || r.termination_reason}</Tag>
-              {r.status === 'failed' && <Tag color="error">执行失败</Tag>}
+              {r.status === 'failed'
+                ? <Tag color="error">执行失败</Tag>
+                : <Tag color={r.passed ? 'green' : 'red'}>{r.passed ? '通过' : '未通过'}</Tag>
+              }
+              {r.actual_rounds != null && <span>{r.actual_rounds} 轮</span>}
+              {r.termination_reason && (
+                <Tag>{TERM_REASON_MAP[r.termination_reason] || r.termination_reason}</Tag>
+              )}
             </Space>
           ),
           children: <TestResultExpand result={r} />,
@@ -143,7 +151,37 @@ export default function BatchTestDetail() {
 
 function TestResultExpand({ result }: { result: TestResult }) {
   if (result.status === 'failed') {
-    return <Typography.Text type="danger">错误：{result.error_message}</Typography.Text>
+    return (
+      <>
+        <Alert type="error" message={result.error_message || '执行失败'} style={{ marginBottom: 16 }} />
+        {result.conversation && result.conversation.length > 0 && (
+          <>
+            <Divider>对话记录（评判前）</Divider>
+            <Card size="small">
+              <div style={{ maxHeight: 400, overflow: 'auto' }}>
+                {result.conversation.map((msg, i) => (
+                  <div key={i} style={{ marginBottom: 12, textAlign: msg.role === 'user' ? 'left' : 'right' }}>
+                    <Tag color={msg.role === 'user' ? 'blue' : 'green'}>
+                      {msg.role === 'user' ? '对练' : 'Agent'}
+                    </Tag>
+                    <div style={{
+                      display: 'inline-block',
+                      maxWidth: '70%',
+                      padding: '8px 12px',
+                      borderRadius: 8,
+                      background: msg.role === 'user' ? '#e6f4ff' : '#f6ffed',
+                      textAlign: 'left',
+                    }}>
+                      {msg.content}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </>
+        )}
+      </>
+    )
   }
 
   return (

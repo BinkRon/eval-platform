@@ -1,8 +1,11 @@
 import json
+import logging
 from decimal import Decimal
 
 from app.llm.base import LLMAdapter
 from app.models.judge_config import ChecklistItem, EvalDimension
+
+logger = logging.getLogger(__name__)
 
 
 class JudgeResult:
@@ -41,15 +44,23 @@ class JudgeRunner:
     async def judge(self, conversation: list[dict]) -> JudgeResult:
         prompt = self._build_prompt(conversation)
 
-        # Call LLM with JSON mode
-        result = await self.llm.chat_json(
-            messages=[{"role": "user", "content": prompt}],
-            system_prompt=self.system_prompt,
-            temperature=self.temperature if self.temperature is not None else 0.0,
-            max_tokens=self.max_tokens if self.max_tokens is not None else 4096,
-        )
-
-        return self._parse_result(result)
+        # Call LLM with JSON mode, retry once on format error
+        last_error = None
+        for attempt in range(2):
+            try:
+                result = await self.llm.chat_json(
+                    messages=[{"role": "user", "content": prompt}],
+                    system_prompt=self.system_prompt,
+                    temperature=self.temperature if self.temperature is not None else 0.0,
+                    max_tokens=self.max_tokens if self.max_tokens is not None else 4096,
+                )
+                return self._parse_result(result)
+            except ValueError as e:
+                last_error = e
+                if attempt == 0:
+                    logger.warning(f"裁判 JSON 解析失败，重试: {e}")
+                    continue
+        raise ValueError(f"裁判输出格式错误（已重试）: {last_error}")
 
     def _build_prompt(self, conversation: list[dict]) -> str:
         parts = []

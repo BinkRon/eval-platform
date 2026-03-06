@@ -167,10 +167,46 @@ async def _execute_batch(batch_test_id: UUID):
         batch = await db.get(BatchTest, batch_test_id)
         result = await db.execute(select(TestResult).where(TestResult.batch_test_id == batch_test_id))
         results = list(result.scalars().all())
-        batch.completed_cases = len([r for r in results if r.status in ("completed", "failed")])
-        batch.passed_cases = len([r for r in results if r.passed is True])
-        batch.status = "completed"
+        completed_results = [r for r in results if r.status == "completed"]
+        failed_results = [r for r in results if r.status == "failed"]
+        batch.completed_cases = len(completed_results) + len(failed_results)
+        batch.passed_cases = len([r for r in completed_results if r.passed is True])
+        # All cases failed → batch status = "failed"
+        if len(completed_results) == 0 and len(failed_results) > 0:
+            batch.status = "failed"
+        else:
+            batch.status = "completed"
         batch.completed_at = datetime.now(UTC)
+        await db.commit()
+
+
+async def _save_failed_result(
+    batch_test_id: UUID,
+    test_case_id: UUID,
+    error_message: str,
+    conversation: list[dict] | None = None,
+    termination_reason: str | None = None,
+    actual_rounds: int | None = None,
+):
+    """Save a failed test result and increment the completed counter."""
+    async with async_session() as db:
+        result = await db.execute(
+            select(TestResult).where(
+                TestResult.batch_test_id == batch_test_id,
+                TestResult.test_case_id == test_case_id,
+            )
+        )
+        tr = result.scalar_one()
+        tr.status = "failed"
+        tr.error_message = error_message
+        tr.conversation = conversation
+        tr.termination_reason = termination_reason
+        tr.actual_rounds = actual_rounds
+        await db.execute(
+            update(BatchTest)
+            .where(BatchTest.id == batch_test_id)
+            .values(completed_cases=BatchTest.completed_cases + 1)
+        )
         await db.commit()
 
 
@@ -186,8 +222,8 @@ async def _run_single_test(batch_test_id, test_case, ctx: BatchContext, sparring
         test_result.status = "running"
         await db.commit()
 
+    # Phase 1: Sparring (对练)
     try:
-        # Phase 1: Sparring
         agent_client = AgentClient(ctx.agent_version)
         sparring_runner = SparringRunner(
             agent_client=agent_client,
@@ -198,13 +234,18 @@ async def _run_single_test(batch_test_id, test_case, ctx: BatchContext, sparring
             max_tokens=ctx.sparring_max_tokens,
         )
         conversation, termination_reason, actual_rounds = await sparring_runner.run()
+    except Exception as e:
+        logger.exception(f"Test case {test_case.id} sparring failed: {e}")
+        await _save_failed_result(batch_test_id, test_case.id, f"对练失败: {e}")
+        return
 
-        # Phase 2: Judge
-        passed = True
-        checklist_results = None
-        eval_scores = None
-        judge_summary = None
+    # Phase 2: Judge (裁判)
+    passed = True
+    checklist_results = None
+    eval_scores = None
+    judge_summary = None
 
+    try:
         if ctx.judge_config:
             judge_runner = JudgeRunner(
                 llm=judge_llm,
@@ -220,56 +261,39 @@ async def _run_single_test(batch_test_id, test_case, ctx: BatchContext, sparring
             eval_scores = judge_result.eval_scores
             judge_summary = judge_result.summary
             passed = judge_result.passed
-
-        # Save results
-        async with async_session() as db:
-            result = await db.execute(
-                select(TestResult).where(
-                    TestResult.batch_test_id == batch_test_id,
-                    TestResult.test_case_id == test_case.id,
-                )
-            )
-            tr = result.scalar_one()
-            tr.status = "completed"
-            tr.conversation = conversation
-            tr.termination_reason = termination_reason
-            tr.actual_rounds = actual_rounds
-            tr.checklist_results = checklist_results
-            tr.eval_scores = eval_scores
-            tr.judge_summary = judge_summary
-            tr.passed = passed
-            await db.commit()
-
-        # Update progress (atomic increment to avoid race condition)
-        async with async_session() as db:
-            await db.execute(
-                update(BatchTest)
-                .where(BatchTest.id == batch_test_id)
-                .values(completed_cases=BatchTest.completed_cases + 1)
-            )
-            if passed:
-                await db.execute(
-                    update(BatchTest)
-                    .where(BatchTest.id == batch_test_id)
-                    .values(passed_cases=BatchTest.passed_cases + 1)
-                )
-            await db.commit()
-
     except Exception as e:
-        logger.exception(f"Test case {test_case.id} failed: {e}")
-        async with async_session() as db:
-            result = await db.execute(
-                select(TestResult).where(
-                    TestResult.batch_test_id == batch_test_id,
-                    TestResult.test_case_id == test_case.id,
-                )
+        logger.exception(f"Test case {test_case.id} judge failed: {e}")
+        await _save_failed_result(
+            batch_test_id, test_case.id, f"评判失败: {e}",
+            conversation=conversation,
+            termination_reason=termination_reason,
+            actual_rounds=actual_rounds,
+        )
+        return
+
+    # Save successful results + update progress in one transaction
+    async with async_session() as db:
+        result = await db.execute(
+            select(TestResult).where(
+                TestResult.batch_test_id == batch_test_id,
+                TestResult.test_case_id == test_case.id,
             )
-            tr = result.scalar_one()
-            tr.status = "failed"
-            tr.error_message = str(e)
-            await db.execute(
-                update(BatchTest)
-                .where(BatchTest.id == batch_test_id)
-                .values(completed_cases=BatchTest.completed_cases + 1)
-            )
-            await db.commit()
+        )
+        tr = result.scalar_one()
+        tr.status = "completed"
+        tr.conversation = conversation
+        tr.termination_reason = termination_reason
+        tr.actual_rounds = actual_rounds
+        tr.checklist_results = checklist_results
+        tr.eval_scores = eval_scores
+        tr.judge_summary = judge_summary
+        tr.passed = passed
+        progress_values = {"completed_cases": BatchTest.completed_cases + 1}
+        if passed:
+            progress_values["passed_cases"] = BatchTest.passed_cases + 1
+        await db.execute(
+            update(BatchTest)
+            .where(BatchTest.id == batch_test_id)
+            .values(**progress_values)
+        )
+        await db.commit()

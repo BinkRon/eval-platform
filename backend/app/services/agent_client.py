@@ -30,16 +30,28 @@ class AgentClient:
                 key, val = self.agent.auth_token.split(":", 1)
                 headers[key.strip()] = val.strip()
 
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.request(
-                method=self.agent.method or "POST",
-                url=self.agent.endpoint,
-                json=body,
-                headers=headers,
-            )
-            response.raise_for_status()
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.request(
+                    method=self.agent.method or "POST",
+                    url=self.agent.endpoint,
+                    json=body,
+                    headers=headers,
+                )
+                response.raise_for_status()
+        except httpx.TimeoutException:
+            raise RuntimeError("Agent API 调用超时")
+        except httpx.ConnectError:
+            raise RuntimeError(f"Agent API 连接失败: {self.agent.endpoint}")
+        except httpx.HTTPStatusError as e:
+            raise RuntimeError(f"Agent API 返回错误状态码 {e.response.status_code}")
+        except httpx.HTTPError as e:
+            raise RuntimeError(f"Agent API 网络错误: {e}")
 
-        data = response.json()
+        try:
+            data = response.json()
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            raise RuntimeError("Agent API 返回非 JSON 响应")
 
         # Extract reply using JSONPath
         reply = self._extract_value(data, self.agent.response_path) if self.agent.response_path else str(data)
