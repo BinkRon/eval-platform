@@ -1,0 +1,98 @@
+# 评测平台 — 开发进度
+
+## v0.1 MVP（进行中）
+
+> 从零搭建对话 Agent 评测平台 MVP。核心验证：自动化对练 + 裁判能可靠发现 Agent 的真实问题。
+
+### Phase A：项目脚手架 + 基础设施
+
+- [x] **A1：初始化后端项目** ✅
+- [x] **A2：初始化前端项目** ✅
+- [x] **A3：Docker Compose** ✅
+- [x] **A4：数据库模型 + 迁移** ✅
+- [x] **A5：LLM 适配层** ✅
+- [x] **A6：全局模型管理 API** ✅
+- [x] **A7：全局模型管理前端页面** ✅
+
+**Phase A 里程碑**：✅ 完成
+
+---
+
+### Phase B：数据管理
+
+- [x] **B1：项目 CRUD API** ✅
+- [x] **B2：P1 项目列表页** ✅
+- [x] **B3：Agent 版本 CRUD API** ✅
+- [x] **B4：P2-T1 Agent 版本管理页** ✅
+- [x] **B5：测试用例 CRUD API** ✅
+- [x] **B6：P2-T2 用例子 Tab** ✅
+- [x] **B7：裁判配置 API** ✅
+- [x] **B8：P2-T2 裁判子 Tab** ✅
+- [x] **B9：模型配置 API** ✅
+- [x] **B10：P2-T3 模型配置页** ✅
+
+**Phase B 里程碑**：✅ 完成
+
+---
+
+### Phase C：核心引擎
+
+- [x] **C1：Agent Client** ✅ — HTTP 调用、模板替换、JSONPath 解析
+- [x] **C2：Sparring Runner** ✅ — 对练循环、三种终止条件、[END] 标记
+- [x] **C3：Judge Runner** ✅ — Prompt 组装、JSON 输出、通过判定
+- [x] **C4：Batch Scheduler** ✅ — asyncio.Semaphore 并发、进度追踪
+- [x] **C5：批测 API** ✅ — 创建/列表/详情/进度、后台任务启动
+
+**Phase C 里程碑**：✅ 完成
+
+---
+
+### Phase D：批测界面
+
+- [x] **D1：P2-T4 批测中心** ✅ — 列表 + 发起批测弹窗
+- [x] **D2：进度轮询** ✅ — TanStack Query refetchInterval 3s
+- [x] **D3：P3 统计摘要** ✅ — Checklist 通过率 + Evaluation 维度均分
+- [x] **D4：P3 用例结果列表** ✅ — Collapse 折叠/展开 + 排序切换
+- [x] **D5：P3 用例展开区** ✅ — Checklist + Evaluation + 对话气泡 + 裁判总结
+
+**Phase D 里程碑**：✅ 完成
+
+---
+
+### Phase E：补全 + 打磨（进行中）
+
+- [x] **E1：Agent 版本连接测试** ✅ — POST /test 接口 + 前端测试按钮 + 状态更新
+- [x] **E2：批测前置校验** ✅ — 校验 Agent 版本/用例/裁判配置/模型配置
+- [ ] **E3：异常处理完善** — Agent API 失败、LLM 失败等
+- [ ] **E4：项目卡片摘要信息** — 聚合查询（版本数、批测摘要等）
+- [ ] **E5：端到端验证** — 完整流程测试
+
+**Phase E 里程碑**：非技术人员能独立完成完整评测流程。
+
+---
+
+## 交接备注
+
+**Session #1 (2026-03-06)**：项目启动。完成产品需求分析（三份文档）、技术架构设计、文档体系搭建。确认技术选型。
+
+**Session #2 (2026-03-06)**：完成 Phase A 全部 7 个任务 + Phase B 全部 10 个任务 + Phase C 全部 5 个任务 + Phase D 全部 5 个任务。
+
+后端完成：FastAPI 骨架、10 张表 SQLAlchemy 模型 + Alembic 迁移、LLM 适配层（Anthropic/OpenAI + 工厂）、全部 CRUD API（providers/projects/agent-versions/test-cases/judge-config/model-config/batch-tests）、核心引擎（AgentClient/SparringRunner/JudgeRunner/BatchScheduler）。
+
+前端完成：Vite + React + TS + Ant Design + TanStack Query + React Router、全局模型管理页、项目列表页（卡片 + CRUD 弹窗）、项目工作台（5 个 Tab：Agent 版本/测试用例/裁判配置/模型配置/批测中心）、批测详情页（统计摘要 + Checklist 通过率 + Evaluation 均分 + 用例折叠列表 + 对话气泡 + 裁判总结）。
+
+基础设施：Docker Compose + Dockerfile、本地 PostgreSQL 14 连接。
+
+下一步：Phase E 补全打磨。
+
+**Session #3 (2026-03-06)**：代码质量审查 + 7 步修复。
+
+审查发现 20 个问题（安全漏洞、数据正确性、架构违规、前端缺陷等），按优先级分 7 步完成修复：
+
+1. **P0 安全与数据正确性**：模板注入修复（agent_client.py 改为先解析 JSON 再递归替换占位符）、并发计数竞态修复（batch_scheduler.py 改用 SQL 原子递增）、后台任务 GC 回收（batch_tests.py 持有 task 引用）
+2. **P0 类型 + P1 功能**：JSONB 类型对齐（provider_config.py dict→list）、temperature/max_tokens 透传（BatchContext→SparringRunner/JudgeRunner→LLM）、Anthropic 代码块解析修复
+3. **P2 架构违规**：提取 batch_test_service.py 和 judge_config_service.py、agent_versions.py 消除裸字典返回、移除冗余 db.refresh() 调用
+4. **前端轮询**：useBatchTests 改为条件轮询（refetchInterval 函数式）、消除 N+1 轮询、client.ts 422 错误格式化
+5. **前端防御性编程**：useParams 判空、handleSubmit/handleDelete try/catch
+6. **配置与健壮性**：debug 默认 False、CORS 配置化、LLM 适配层增加 timeout/max_retries
+7. **前端类型目录重构**：新建 src/types/ 目录，7 个模块类型文件 + barrel index.ts，API 文件改为从 types/ 导入并 re-export
