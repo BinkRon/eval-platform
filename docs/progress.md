@@ -63,7 +63,7 @@
 
 - [x] **E1：Agent 版本连接测试** ✅ — POST /test 接口 + 前端测试按钮 + 状态更新
 - [x] **E2：批测前置校验** ✅ — 校验 Agent 版本/用例/裁判配置/模型配置
-- [ ] **E3：异常处理完善** — Agent API 失败、LLM 失败等
+- [x] **E3：异常处理完善** ✅ — 分阶段错误处理 + 裁判重试 + 批测状态修复 + 前端失败展示
 - [ ] **E4：项目卡片摘要信息** — 聚合查询（版本数、批测摘要等）
 - [ ] **E5：端到端验证** — 完整流程测试
 
@@ -96,3 +96,13 @@
 5. **前端防御性编程**：useParams 判空、handleSubmit/handleDelete try/catch
 6. **配置与健壮性**：debug 默认 False、CORS 配置化、LLM 适配层增加 timeout/max_retries
 7. **前端类型目录重构**：新建 src/types/ 目录，7 个模块类型文件 + barrel index.ts，API 文件改为从 types/ 导入并 re-export
+
+**Session #4 (2026-03-06)**：完成 E3 异常处理完善。
+
+修改 4 个文件：
+1. **agent_client.py**：捕获 httpx 异常（超时/连接/HTTP 状态码/网络错误），JSON 解析异常包装为明确的 RuntimeError
+2. **judge_runner.py**：裁判 JSON 格式错误时重试 1 次（符合 MVP 需求 10.3 节要求）
+3. **batch_scheduler.py**：将单个大 try/catch 拆分为对练/裁判两个阶段；裁判失败时保留对话记录；提取 `_save_failed_result` helper；成功路径合并为单事务；全部用例失败时批测状态标记为 "failed"
+4. **BatchTestDetail.tsx**：修复 React Hooks 规则违反；失败用例展示错误信息 + 对话记录（评判前）；失败用例 label 不再显示 "未通过" 误导语义；批测状态 Tag 支持中文标签
+
+下一步：E4 项目卡片摘要信息。
