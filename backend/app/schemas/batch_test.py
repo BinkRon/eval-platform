@@ -1,12 +1,12 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class BatchTestCreate(BaseModel):
     agent_version_id: UUID
-    concurrency: int = 3
+    concurrency: int = Field(default=3, ge=1, le=20)
 
 
 class BatchTestResponse(BaseModel):

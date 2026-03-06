@@ -25,4 +25,4 @@ class ModelConfig(UUIDPrimaryKey, TimestampMixin, Base):
     judge_max_tokens: Mapped[int | None] = mapped_column(Integer)
     judge_system_prompt: Mapped[str | None] = mapped_column(Text)
 
-    project = relationship("Project", back_populates="model_config_")
+    project = relationship("Project", back_populates="model_config_", lazy="raise")

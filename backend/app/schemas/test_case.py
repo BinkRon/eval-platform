@@ -9,7 +9,7 @@ class TestCaseCreate(BaseModel):
     first_message: str
     persona_background: str | None = None
     persona_behavior: str | None = None
-    max_rounds: int = 20
+    max_rounds: int = Field(default=20, ge=1, le=50)
     sort_order: int = 0
 
 
@@ -18,7 +18,7 @@ class TestCaseUpdate(BaseModel):
     first_message: str | None = None
     persona_background: str | None = None
     persona_behavior: str | None = None
-    max_rounds: int | None = None
+    max_rounds: int | None = Field(default=None, ge=1, le=50)
     sort_order: int | None = None
 
 

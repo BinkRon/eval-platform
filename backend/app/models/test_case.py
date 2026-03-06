@@ -18,4 +18,4 @@ class TestCase(UUIDPrimaryKey, TimestampMixin, Base):
     max_rounds: Mapped[int] = mapped_column(Integer, default=20)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
 
-    project = relationship("Project", back_populates="test_cases")
+    project = relationship("Project", back_populates="test_cases", lazy="raise")

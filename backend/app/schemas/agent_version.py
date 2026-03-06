@@ -11,7 +11,7 @@ class AgentVersionCreate(BaseModel):
     endpoint: str | None = None
     method: Literal["POST", "GET"] = "POST"
     auth_type: Literal["bearer", "header"] | None = None
-    auth_token: str | None = None
+    auth_token: str | None = Field(default=None, max_length=500)
     request_template: str | None = None
     response_path: str | None = None
     has_end_signal: bool = False
@@ -26,7 +26,7 @@ class AgentVersionUpdate(BaseModel):
     endpoint: str | None = None
     method: Literal["POST", "GET"] | None = None
     auth_type: Literal["bearer", "header"] | None = None
-    auth_token: str | None = None
+    auth_token: str | None = Field(default=None, max_length=500)
     request_template: str | None = None
     response_path: str | None = None
     has_end_signal: bool | None = None

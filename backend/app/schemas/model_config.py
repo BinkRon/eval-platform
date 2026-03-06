@@ -8,12 +8,12 @@ class ModelConfigUpdate(BaseModel):
     sparring_provider: str | None = Field(default=None, max_length=50)
     sparring_model: str | None = Field(default=None, max_length=100)
     sparring_temperature: Decimal | None = None
-    sparring_max_tokens: int | None = None
+    sparring_max_tokens: int | None = Field(default=None, ge=1, le=32768)
     sparring_system_prompt: str | None = None
     judge_provider: str | None = Field(default=None, max_length=50)
     judge_model: str | None = Field(default=None, max_length=100)
     judge_temperature: Decimal | None = None
-    judge_max_tokens: int | None = None
+    judge_max_tokens: int | None = Field(default=None, ge=1, le=32768)
     judge_system_prompt: str | None = None
 
 

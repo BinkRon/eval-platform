@@ -20,9 +20,9 @@ class BatchTest(UUIDPrimaryKey, TimestampMixin, Base):
     completed_cases: Mapped[int] = mapped_column(Integer, default=0)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime)
 
-    project = relationship("Project", back_populates="batch_tests")
-    agent_version = relationship("AgentVersion")
-    test_results = relationship("TestResult", back_populates="batch_test", cascade="all, delete-orphan")
+    project = relationship("Project", back_populates="batch_tests", lazy="raise")
+    agent_version = relationship("AgentVersion", lazy="raise")
+    test_results = relationship("TestResult", back_populates="batch_test", cascade="all, delete-orphan", lazy="raise")
 
 
 class TestResult(UUIDPrimaryKey, TimestampMixin, Base):
@@ -44,4 +44,4 @@ class TestResult(UUIDPrimaryKey, TimestampMixin, Base):
     passed: Mapped[bool | None] = mapped_column(Boolean)
     error_message: Mapped[str | None] = mapped_column(Text)
 
-    batch_test = relationship("BatchTest", back_populates="test_results")
+    batch_test = relationship("BatchTest", back_populates="test_results", lazy="raise")

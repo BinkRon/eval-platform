@@ -25,4 +25,4 @@ class AgentVersion(UUIDPrimaryKey, TimestampMixin, Base):
     response_format: Mapped[str] = mapped_column(String(20), default="json")
     connection_status: Mapped[str] = mapped_column(String(20), default="untested")
 
-    project = relationship("Project", back_populates="agent_versions")
+    project = relationship("Project", back_populates="agent_versions", lazy="raise")
