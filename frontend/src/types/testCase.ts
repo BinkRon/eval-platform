@@ -9,6 +9,7 @@ export interface TestCase {
   sort_order: number
   created_at: string
   updated_at: string
+  last_result: string | null
 }
 
 export interface TestCaseCreate {

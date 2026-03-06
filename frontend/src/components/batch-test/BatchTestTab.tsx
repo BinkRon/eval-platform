@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Form, InputNumber, Modal, Progress, Select, Space, Table, Tag, message } from 'antd'
+import { Button, Descriptions, Form, InputNumber, Modal, Progress, Select, Table, Tag, message } from 'antd'
 import { PlayCircleOutlined, EyeOutlined } from '@ant-design/icons'
 import type { BatchTest } from '../../api/batchTests'
 import { useAgentVersions } from '../../hooks/useAgentVersions'
 import { useBatchTests, useCreateBatchTest } from '../../hooks/useBatchTests'
+import { useTestCases } from '../../hooks/useTestCases'
+import { useJudgeConfig } from '../../hooks/useJudgeConfig'
+import { useModelConfig } from '../../hooks/useModelConfig'
 
 const STATUS_MAP: Record<string, { color: string; label: string }> = {
   pending: { color: 'default', label: '等待中' },
@@ -23,13 +26,13 @@ function BatchProgress({ batch }: { batch: BatchTest }) {
   return <Progress percent={percent} size="small" format={() => `${batch.completed_cases}/${batch.total_cases}`} />
 }
 
-export default function BatchTestTab({ projectId }: { projectId: string }) {
-  const navigate = useNavigate()
-  const { data: batches, isLoading } = useBatchTests(projectId)
+function CreateBatchModal({ projectId, open, onClose }: { projectId: string; open: boolean; onClose: () => void }) {
   const { data: versions } = useAgentVersions(projectId)
   const createMutation = useCreateBatchTest(projectId)
+  const { data: testCases } = useTestCases(projectId)
+  const { data: judgeConfig } = useJudgeConfig(projectId)
+  const { data: modelConfig } = useModelConfig(projectId)
 
-  const [modalOpen, setModalOpen] = useState(false)
   const [form] = Form.useForm()
 
   const handleCreate = async () => {
@@ -37,11 +40,46 @@ export default function BatchTestTab({ projectId }: { projectId: string }) {
       const values = await form.validateFields()
       await createMutation.mutateAsync(values)
       message.success('批测已发起')
-      setModalOpen(false)
+      onClose()
     } catch {
       // Global interceptor handles API errors
     }
   }
+
+  return (
+    <Modal title="发起批测" open={open} onOk={handleCreate} onCancel={onClose} confirmLoading={createMutation.isPending}>
+      <Form form={form} layout="vertical" initialValues={{ concurrency: 3 }}>
+        <Form.Item name="agent_version_id" label="选择 Agent 版本" rules={[{ required: true, message: '请选择版本' }]}>
+          <Select
+            placeholder="选择要测试的 Agent 版本"
+            options={(versions || []).map((v) => ({ value: v.id, label: v.name }))}
+          />
+        </Form.Item>
+        <Form.Item name="concurrency" label="并发数">
+          <InputNumber min={1} max={20} />
+        </Form.Item>
+      </Form>
+      <Descriptions column={1} size="small" style={{ marginTop: 16 }} bordered>
+        <Descriptions.Item label="测试用例">{testCases?.length ?? 0} 条（全量）</Descriptions.Item>
+        <Descriptions.Item label="裁判配置">
+          Checklist {judgeConfig?.checklist_items?.length ?? 0} 条 + Evaluation {judgeConfig?.eval_dimensions?.length ?? 0} 维度
+        </Descriptions.Item>
+        <Descriptions.Item label="对练模型">
+          {modelConfig?.sparring_provider ?? '-'} / {modelConfig?.sparring_model ?? '-'}
+        </Descriptions.Item>
+        <Descriptions.Item label="裁判模型">
+          {modelConfig?.judge_provider ?? '-'} / {modelConfig?.judge_model ?? '-'}
+        </Descriptions.Item>
+      </Descriptions>
+    </Modal>
+  )
+}
+
+export default function BatchTestTab({ projectId }: { projectId: string }) {
+  const navigate = useNavigate()
+  const { data: batches, isLoading } = useBatchTests(projectId)
+
+  const [modalOpen, setModalOpen] = useState(false)
 
   const columns = [
     {
@@ -52,6 +90,18 @@ export default function BatchTestTab({ projectId }: { projectId: string }) {
         const s = STATUS_MAP[r.status] || STATUS_MAP.pending
         return <Tag color={s.color}>{s.label}</Tag>
       },
+    },
+    {
+      title: 'Agent 版本',
+      dataIndex: 'agent_version_name',
+      key: 'agent_version_name',
+      render: (v: string | null) => v || '-',
+    },
+    {
+      title: '用例数',
+      dataIndex: 'total_cases',
+      key: 'total_cases',
+      width: 80,
     },
     {
       title: '进度',
@@ -86,25 +136,13 @@ export default function BatchTestTab({ projectId }: { projectId: string }) {
   return (
     <>
       <div style={{ marginBottom: 16 }}>
-        <Button type="primary" icon={<PlayCircleOutlined />} onClick={() => { form.resetFields(); setModalOpen(true) }}>
+        <Button type="primary" icon={<PlayCircleOutlined />} onClick={() => setModalOpen(true)}>
           发起批测
         </Button>
       </div>
       <Table columns={columns} dataSource={batches} rowKey="id" loading={isLoading} pagination={false} />
 
-      <Modal title="发起批测" open={modalOpen} onOk={handleCreate} onCancel={() => setModalOpen(false)} confirmLoading={createMutation.isPending}>
-        <Form form={form} layout="vertical" initialValues={{ concurrency: 3 }}>
-          <Form.Item name="agent_version_id" label="选择 Agent 版本" rules={[{ required: true, message: '请选择版本' }]}>
-            <Select
-              placeholder="选择要测试的 Agent 版本"
-              options={(versions || []).map((v) => ({ value: v.id, label: v.name }))}
-            />
-          </Form.Item>
-          <Form.Item name="concurrency" label="并发数">
-            <InputNumber min={1} max={10} />
-          </Form.Item>
-        </Form>
-      </Modal>
+      {modalOpen && <CreateBatchModal projectId={projectId} open={modalOpen} onClose={() => setModalOpen(false)} />}
     </>
   )
 }

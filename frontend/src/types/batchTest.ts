@@ -2,6 +2,7 @@ export interface BatchTest {
   id: string
   project_id: string
   agent_version_id: string | null
+  agent_version_name: string | null
   status: string
   concurrency: number
   total_cases: number
@@ -20,6 +21,7 @@ export interface TestResult {
   id: string
   batch_test_id: string
   test_case_id: string | null
+  test_case_name: string | null
   status: string
   conversation: { role: string; content: string }[] | null
   termination_reason: string | null

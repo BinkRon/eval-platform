@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Form, Input, InputNumber, Modal, Space, Table, message } from 'antd'
+import { Button, Form, Input, InputNumber, Modal, Space, Table, Tag, message } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import type { TestCase } from '../../api/testCases'
 import { useTestCases, useCreateTestCase, useUpdateTestCase, useDeleteTestCase } from '../../hooks/useTestCases'
@@ -68,6 +68,15 @@ export default function TestCaseTab({ projectId }: { projectId: string }) {
     { title: '首条消息', dataIndex: 'first_message', key: 'first_message', ellipsis: true },
     { title: '最大轮数', dataIndex: 'max_rounds', key: 'max_rounds', width: 100 },
     {
+      title: '上次结果',
+      key: 'last_result',
+      width: 100,
+      render: (_: unknown, r: TestCase) =>
+        r.last_result === 'passed' ? <Tag color="green">通过</Tag>
+        : r.last_result === 'failed' ? <Tag color="red">未通过</Tag>
+        : '—',
+    },
+    {
       title: '操作',
       key: 'actions',
       width: 150,
@@ -109,7 +118,7 @@ export default function TestCaseTab({ projectId }: { projectId: string }) {
             <Input.TextArea rows={2} placeholder="模拟用户的行为偏好" />
           </Form.Item>
           <Form.Item name="max_rounds" label="最大对话轮数">
-            <InputNumber min={1} max={50} />
+            <InputNumber min={3} max={50} />
           </Form.Item>
           <Form.Item name="sort_order" label="排序">
             <InputNumber min={0} />

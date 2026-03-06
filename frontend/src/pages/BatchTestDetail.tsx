@@ -22,7 +22,7 @@ export default function BatchTestDetail() {
   const { id: projectId, bid: batchId } = useParams<{ id: string; bid: string }>()
   const navigate = useNavigate()
   const { data: batch, isLoading } = useBatchTestDetail(projectId ?? '', batchId ?? '')
-  const [sortBy, setSortBy] = useState<'default' | 'failed_first'>('default')
+  const [sortBy, setSortBy] = useState<'default' | 'failed_first' | 'by_rounds'>('default')
 
   // Hooks must be called before any conditional returns
   const { dimScores, checklistStats } = useMemo(() => {
@@ -53,6 +53,9 @@ export default function BatchTestDetail() {
   const results = [...(batch.test_results || [])]
   if (sortBy === 'failed_first') {
     results.sort((a, b) => (a.passed === b.passed ? 0 : a.passed ? 1 : -1))
+  }
+  if (sortBy === 'by_rounds') {
+    results.sort((a, b) => (b.actual_rounds ?? 0) - (a.actual_rounds ?? 0))
   }
 
   // Stats
@@ -125,6 +128,7 @@ export default function BatchTestDetail() {
           <span>排序：</span>
           <Button size="small" type={sortBy === 'default' ? 'primary' : 'default'} onClick={() => setSortBy('default')}>默认</Button>
           <Button size="small" type={sortBy === 'failed_first' ? 'primary' : 'default'} onClick={() => setSortBy('failed_first')}>未通过优先</Button>
+          <Button size="small" type={sortBy === 'by_rounds' ? 'primary' : 'default'} onClick={() => setSortBy('by_rounds')}>按轮次</Button>
         </Space>
       </div>
 
@@ -140,7 +144,7 @@ export default function BatchTestDetail() {
                   ? <CheckCircleOutlined style={{ color: '#52c41a' }} />
                   : <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
               }
-              <span>用例 {r.test_case_id?.slice(0, 8)}</span>
+              <span>{r.test_case_name ? `「${r.test_case_name}」` : `用例 ${r.test_case_id?.slice(0, 8)}`}</span>
               {r.status === 'failed'
                 ? <Tag color="error">执行失败</Tag>
                 : <Tag color={r.passed ? 'green' : 'red'}>{r.passed ? '通过' : '未通过'}</Tag>
