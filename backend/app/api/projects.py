@@ -20,7 +20,7 @@ from app.schemas.project import (
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
 
-@router.get("/", response_model=list[ProjectResponse])
+@router.get("", response_model=list[ProjectResponse])
 async def list_projects(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Project).order_by(Project.created_at.desc()))
     projects = list(result.scalars().all())
@@ -31,21 +31,24 @@ async def list_projects(db: AsyncSession = Depends(get_db)):
     project_ids = [p.id for p in projects]
 
     # Batch count queries
-    av_counts = dict(await db.execute(
+    av_result = await db.execute(
         select(AgentVersion.project_id, func.count())
         .where(AgentVersion.project_id.in_(project_ids))
         .group_by(AgentVersion.project_id)
-    ))
-    tc_counts = dict(await db.execute(
+    )
+    av_counts = dict(av_result.all())
+    tc_result = await db.execute(
         select(TestCase.project_id, func.count())
         .where(TestCase.project_id.in_(project_ids))
         .group_by(TestCase.project_id)
-    ))
-    bt_counts = dict(await db.execute(
+    )
+    tc_counts = dict(tc_result.all())
+    bt_result = await db.execute(
         select(BatchTest.project_id, func.count())
         .where(BatchTest.project_id.in_(project_ids))
         .group_by(BatchTest.project_id)
-    ))
+    )
+    bt_counts = dict(bt_result.all())
 
     # Latest 2 completed batches per project (for pass_rate + change)
     # Use ROW_NUMBER() window function to limit to 2 per project in DB
@@ -114,11 +117,12 @@ async def list_projects(db: AsyncSession = Depends(get_db)):
     return responses
 
 
-@router.post("/", response_model=ProjectResponse, status_code=201)
+@router.post("", response_model=ProjectResponse, status_code=201)
 async def create_project(data: ProjectCreate, db: AsyncSession = Depends(get_db)):
     project = Project(name=data.name, description=data.description)
     db.add(project)
     await db.commit()
+    await db.refresh(project)
     return ProjectResponse(
         id=project.id,
         name=project.name,
@@ -153,6 +157,7 @@ async def update_project(project_id: UUID, data: ProjectUpdate, db: AsyncSession
         setattr(project, key, value)
 
     await db.commit()
+    await db.refresh(project)
     return ProjectResponse(
         id=project.id,
         name=project.name,

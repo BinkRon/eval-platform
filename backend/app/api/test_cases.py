@@ -19,7 +19,7 @@ async def _get_project(project_id: UUID, db: AsyncSession) -> Project:
     return project
 
 
-@router.get("/", response_model=list[TestCaseResponse])
+@router.get("", response_model=list[TestCaseResponse])
 async def list_test_cases(project_id: UUID, db: AsyncSession = Depends(get_db)):
     await _get_project(project_id, db)
     result = await db.execute(
@@ -28,12 +28,13 @@ async def list_test_cases(project_id: UUID, db: AsyncSession = Depends(get_db)):
     return result.scalars().all()
 
 
-@router.post("/", response_model=TestCaseResponse, status_code=201)
+@router.post("", response_model=TestCaseResponse, status_code=201)
 async def create_test_case(project_id: UUID, data: TestCaseCreate, db: AsyncSession = Depends(get_db)):
     await _get_project(project_id, db)
     tc = TestCase(project_id=project_id, **data.model_dump())
     db.add(tc)
     await db.commit()
+    await db.refresh(tc)
     return tc
 
 
@@ -47,6 +48,7 @@ async def update_test_case(project_id: UUID, case_id: UUID, data: TestCaseUpdate
         setattr(tc, key, value)
 
     await db.commit()
+    await db.refresh(tc)
     return tc
 
 

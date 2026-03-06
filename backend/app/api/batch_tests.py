@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api/projects/{project_id}/batch-tests", tags=["batch
 _background_tasks: set[asyncio.Task] = set()
 
 
-@router.get("/", response_model=list[BatchTestResponse])
+@router.get("", response_model=list[BatchTestResponse])
 async def list_batch_tests(project_id: UUID, db: AsyncSession = Depends(get_db)):
     project = await db.get(Project, project_id)
     if not project:
@@ -30,15 +30,14 @@ async def list_batch_tests(project_id: UUID, db: AsyncSession = Depends(get_db))
     return result.scalars().all()
 
 
-@router.post("/", response_model=BatchTestResponse, status_code=201)
+@router.post("", response_model=BatchTestResponse, status_code=201)
 async def create_batch_test(project_id: UUID, data: BatchTestCreate, db: AsyncSession = Depends(get_db)):
     project = await db.get(Project, project_id)
     if not project:
         raise HTTPException(404, detail="Project not found")
 
-    async with db.begin():
-        batch = await batch_test_service.validate_and_create(db, project_id, data)
-
+    batch = await batch_test_service.validate_and_create(db, project_id, data)
+    await db.commit()
     await db.refresh(batch)
 
     # Start batch test in background (hold reference to prevent GC)

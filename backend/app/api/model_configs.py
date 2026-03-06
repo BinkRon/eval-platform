@@ -12,7 +12,7 @@ from app.schemas.model_config import ModelConfigResponse, ModelConfigUpdate
 router = APIRouter(prefix="/api/projects/{project_id}/model-config", tags=["model-config"])
 
 
-@router.get("/", response_model=ModelConfigResponse | None)
+@router.get("", response_model=ModelConfigResponse | None)
 async def get_model_config(project_id: UUID, db: AsyncSession = Depends(get_db)):
     project = await db.get(Project, project_id)
     if not project:
@@ -22,7 +22,7 @@ async def get_model_config(project_id: UUID, db: AsyncSession = Depends(get_db))
     return result.scalar_one_or_none()
 
 
-@router.put("/", response_model=ModelConfigResponse)
+@router.put("", response_model=ModelConfigResponse)
 async def update_model_config(project_id: UUID, data: ModelConfigUpdate, db: AsyncSession = Depends(get_db)):
     project = await db.get(Project, project_id)
     if not project:
@@ -39,4 +39,5 @@ async def update_model_config(project_id: UUID, data: ModelConfigUpdate, db: Asy
             setattr(config, key, value)
 
     await db.commit()
+    await db.refresh(config)
     return config

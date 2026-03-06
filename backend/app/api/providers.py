@@ -22,7 +22,7 @@ def _to_response(p: ProviderConfig) -> ProviderResponse:
     )
 
 
-@router.get("/", response_model=list[ProviderResponse])
+@router.get("", response_model=list[ProviderResponse])
 async def list_providers(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(ProviderConfig).order_by(ProviderConfig.created_at))
     return [_to_response(p) for p in result.scalars().all()]
@@ -41,7 +41,7 @@ async def list_available_models(db: AsyncSession = Depends(get_db)):
     return models
 
 
-@router.post("/", response_model=ProviderResponse, status_code=201)
+@router.post("", response_model=ProviderResponse, status_code=201)
 async def create_provider(data: ProviderCreate, db: AsyncSession = Depends(get_db)):
     existing = await db.execute(
         select(ProviderConfig).where(ProviderConfig.provider_name == data.provider_name)
@@ -58,6 +58,7 @@ async def create_provider(data: ProviderCreate, db: AsyncSession = Depends(get_d
     )
     db.add(provider)
     await db.commit()
+    await db.refresh(provider)
     return _to_response(provider)
 
 

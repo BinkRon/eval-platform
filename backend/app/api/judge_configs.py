@@ -14,7 +14,7 @@ from app.services import judge_config_service
 router = APIRouter(prefix="/api/projects/{project_id}/judge-config", tags=["judge-config"])
 
 
-@router.get("/", response_model=JudgeConfigResponse | None)
+@router.get("", response_model=JudgeConfigResponse | None)
 async def get_judge_config(project_id: UUID, db: AsyncSession = Depends(get_db)):
     project = await db.get(Project, project_id)
     if not project:
@@ -28,14 +28,14 @@ async def get_judge_config(project_id: UUID, db: AsyncSession = Depends(get_db))
     return result.scalar_one_or_none()
 
 
-@router.put("/", response_model=JudgeConfigResponse)
+@router.put("", response_model=JudgeConfigResponse)
 async def update_judge_config(project_id: UUID, data: JudgeConfigUpdate, db: AsyncSession = Depends(get_db)):
     project = await db.get(Project, project_id)
     if not project:
         raise HTTPException(404, detail="Project not found")
 
-    async with db.begin():
-        config = await judge_config_service.save_judge_config(db, project_id, data)
+    config = await judge_config_service.save_judge_config(db, project_id, data)
+    await db.commit()
 
     # Reload with relationships
     result = await db.execute(

@@ -27,7 +27,7 @@ async def _get_project(project_id: UUID, db: AsyncSession) -> Project:
     return project
 
 
-@router.get("/", response_model=list[AgentVersionResponse])
+@router.get("", response_model=list[AgentVersionResponse])
 async def list_agent_versions(project_id: UUID, db: AsyncSession = Depends(get_db)):
     await _get_project(project_id, db)
     result = await db.execute(
@@ -36,12 +36,13 @@ async def list_agent_versions(project_id: UUID, db: AsyncSession = Depends(get_d
     return [_to_response(v) for v in result.scalars().all()]
 
 
-@router.post("/", response_model=AgentVersionResponse, status_code=201)
+@router.post("", response_model=AgentVersionResponse, status_code=201)
 async def create_agent_version(project_id: UUID, data: AgentVersionCreate, db: AsyncSession = Depends(get_db)):
     await _get_project(project_id, db)
     version = AgentVersion(project_id=project_id, **data.model_dump())
     db.add(version)
     await db.commit()
+    await db.refresh(version)
     return _to_response(version)
 
 
@@ -57,6 +58,7 @@ async def update_agent_version(
         setattr(version, key, value)
 
     await db.commit()
+    await db.refresh(version)
     return _to_response(version)
 
 

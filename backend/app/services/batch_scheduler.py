@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
@@ -63,7 +63,7 @@ async def run_batch_test(batch_test_id: UUID):
             batch = await db.get(BatchTest, batch_test_id)
             if batch:
                 batch.status = "failed"
-                batch.completed_at = datetime.now(UTC)
+                batch.completed_at = datetime.utcnow()
                 await db.commit()
 
 
@@ -136,7 +136,7 @@ async def _execute_batch(batch_test_id: UUID):
 
         if not ctx:
             batch.status = "failed"
-            batch.completed_at = datetime.now(UTC)
+            batch.completed_at = datetime.utcnow()
             await db.commit()
             return
 
@@ -176,7 +176,7 @@ async def _execute_batch(batch_test_id: UUID):
             batch.status = "failed"
         else:
             batch.status = "completed"
-        batch.completed_at = datetime.now(UTC)
+        batch.completed_at = datetime.utcnow()
         await db.commit()
 
 
