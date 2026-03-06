@@ -80,6 +80,22 @@ export default function ProjectList() {
                 title={p.name}
                 description={p.description || '暂无描述'}
               />
+              <div style={{ marginTop: 12, fontSize: 13, color: '#666', lineHeight: 1.8 }}>
+                <div>Agent 版本数：{p.agent_version_count}</div>
+                {p.latest_batch ? (
+                  <div>
+                    最近批测：{new Date(p.latest_batch.created_at).toLocaleDateString()} · {p.latest_batch.agent_version_name} · 通过率 {Math.round(p.latest_batch.pass_rate * 100)}%
+                    {p.latest_batch.pass_rate_change != null && p.latest_batch.pass_rate_change !== 0 && (
+                      <span style={{ color: p.latest_batch.pass_rate_change > 0 ? '#52c41a' : '#ff4d4f', marginLeft: 4 }}>
+                        {p.latest_batch.pass_rate_change > 0 ? '↑' : '↓'}{Math.abs(p.latest_batch.pass_rate_change)}%
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div>最近批测：—（未测）</div>
+                )}
+                <div>用例数：{p.test_case_count}　累计批测：{p.batch_test_count} 次</div>
+              </div>
             </Card>
           </Col>
         ))}
