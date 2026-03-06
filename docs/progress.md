@@ -187,3 +187,21 @@ Phase E 全部完成，v0.1 MVP 所有 Phase (A-E) 开发完毕。
 5. **F5 工程实践**：pip-compile 锁版本；迁移 squash 为单个正确初始迁移；conventions.md 补全 3 个安全规范章节；裁判重试带错误上下文+Anthropic 正则解析+裁判结果 key 匹配
 
 v0.1 MVP Phase A-F 全部完成。
+
+**Session #8 (2026-03-06)**：MVP 需求对齐修复（9 项偏差修正）。
+
+对比 `eval-platform-mvp-spec.md` 与实现，发现并修复 9 项需求偏差：
+
+后端修复 4 项：
+1. `test_case.py` schema：`max_rounds` 最小值从 1 改为 3（§6.1.3）
+2. `batch_test_service.py`：批测前置校验增加 `connection_status == "success"` 检查（§10.1）
+3. `batch_test.py` schema + service：`BatchTestResponse` 增加 `agent_version_name`，`TestResultResponse` 增加 `test_case_name`，数据拼装逻辑从路由层移至 service 层
+4. 新建 `test_case_service.py`：`list_with_last_result()` 查询最近批测结果填充用例上次通过状态
+
+前端修复 8 项：
+1. `ProjectWorkbench.tsx`：添加「← 返回项目列表」按钮（§4.1）
+2. 新建 `ExperimentTab.tsx`：测试用例和裁判配置合并为「实验设计」子 Tab（§6）
+3. `TestCaseTab.tsx`：`max_rounds` 前端校验 `min=3`；增加「上次结果」列（§6.1.1）
+4. `BatchTestTab.tsx`：批测列表增加 Agent 版本名 + 用例数列（§8.1）；发起弹窗增加配置摘要（§8.2）；提取 `CreateBatchModal` 组件实现 hooks 懒加载；并发数上限对齐后端 `max=20`
+5. `BatchTestDetail.tsx`：增加「按轮次」排序选项（§9.4）；用例名称显示从 UUID 改为 `「用例名」`（§9.4）
+6. `batchTest.ts`/`testCase.ts` 类型定义同步更新
