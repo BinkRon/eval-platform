@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { projectApi, ProjectCreate, ProjectUpdate } from '../api/projects'
+import { projectApi } from '../api/projects'
+import type { ProjectCreate, ProjectUpdate } from '../types/project'
 
 export function useProjects() {
   return useQuery({ queryKey: ['projects'], queryFn: projectApi.list })

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { modelConfigApi, ModelConfigUpdate, modelOptionsApi } from '../api/modelConfig'
+import { modelConfigApi, modelOptionsApi } from '../api/modelConfig'
+import type { ModelConfigUpdate } from '../types/modelConfig'
 
 export function useModelConfig(projectId: string) {
   return useQuery({

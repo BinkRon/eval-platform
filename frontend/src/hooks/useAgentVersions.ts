@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { agentVersionApi, AgentVersionCreate, AgentVersionUpdate } from '../api/agentVersions'
+import { agentVersionApi } from '../api/agentVersions'
+import type { AgentVersionCreate, AgentVersionUpdate } from '../types/agentVersion'
 
 export function useAgentVersions(projectId: string) {
   return useQuery({

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { judgeConfigApi, JudgeConfigUpdate } from '../api/judgeConfig'
+import { judgeConfigApi } from '../api/judgeConfig'
+import type { JudgeConfigUpdate } from '../types/judgeConfig'
 
 export function useJudgeConfig(projectId: string) {
   return useQuery({

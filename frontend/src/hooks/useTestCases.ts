@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { testCaseApi, TestCaseCreate, TestCaseUpdate } from '../api/testCases'
+import { testCaseApi } from '../api/testCases'
+import type { TestCaseCreate, TestCaseUpdate } from '../types/testCase'
 
 export function useTestCases(projectId: string) {
   return useQuery({

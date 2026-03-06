@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { batchTestApi, BatchTestCreate } from '../api/batchTests'
+import { batchTestApi } from '../api/batchTests'
+import type { BatchTestCreate } from '../types/batchTest'
 
 export function useBatchTests(projectId: string) {
   return useQuery({

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { providerApi, ProviderCreate, ProviderUpdate } from '../api/providers'
+import { providerApi } from '../api/providers'
+import type { ProviderCreate, ProviderUpdate } from '../types/provider'
 
 export function useProviders() {
   return useQuery({ queryKey: ['providers'], queryFn: providerApi.list })
