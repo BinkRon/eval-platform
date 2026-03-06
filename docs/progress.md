@@ -134,3 +134,12 @@
 - `projects.py` 的 `list_projects` 路由函数包含过多业务逻辑（应提取到 service 层）
 
 Phase E 全部完成，v0.1 MVP 所有 Phase (A-E) 开发完毕。
+
+**Session #6 (2026-03-06)**：SSE 流式响应支持 + 前端白屏修复。
+
+1. **前端白屏修复**：`api/*.ts` 用 `export type` re-export 类型，Vite 7 esbuild 编译时被擦除，导致 hooks 中 `import { Type }` 找不到导出。7 个 hooks 文件改为 `import type` 直接从 `types/` 导入
+2. **SSE 流式响应支持**：Agent 返回 SSE (Server-Sent Events) 流式数据时，系统无法解析
+   - `agent_version` 模型新增 `response_format` 字段（json/sse），迁移 `b823ab70572f`
+   - `AgentClient` 新增 `_send_message_sse()` 方法：httpx 流式读取 `data:` 事件，逐事件用 `response_path` 提取文本并拼接，`data: [DONE]` 标记流结束
+   - 前端 Agent 版本表单新增「响应格式」下拉选择器（JSON / SSE）
+   - Schema 三端（Create/Update/Response）同步更新
