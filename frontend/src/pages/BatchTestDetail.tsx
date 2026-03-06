@@ -24,24 +24,9 @@ export default function BatchTestDetail() {
   const { data: batch, isLoading } = useBatchTestDetail(projectId ?? '', batchId ?? '')
   const [sortBy, setSortBy] = useState<'default' | 'failed_first'>('default')
 
-  if (!projectId || !batchId) return <Typography.Text type="danger">路由参数缺失</Typography.Text>
-
-  if (isLoading) return <Spin style={{ display: 'block', margin: '100px auto' }} />
-  if (!batch) return <Typography.Text type="danger">批测不存在</Typography.Text>
-
-  const results = [...(batch.test_results || [])]
-  if (sortBy === 'failed_first') {
-    results.sort((a, b) => (a.passed === b.passed ? 0 : a.passed ? 1 : -1))
-  }
-
-  // Stats
-  const denominator = batch.status === 'completed' ? batch.total_cases : (batch.completed_cases || batch.total_cases)
-  const passRate = denominator > 0
-    ? Math.round((batch.passed_cases / denominator) * 100)
-    : 0
-
-  // Eval dimension averages + Checklist pass rates (single useMemo to avoid stale deps)
+  // Hooks must be called before any conditional returns
   const { dimScores, checklistStats } = useMemo(() => {
+    if (!batch) return { dimScores: {}, checklistStats: {} }
     const completed = (batch.test_results || []).filter((r) => r.status === 'completed')
     const scores: Record<string, number[]> = {}
     for (const r of completed) {
@@ -59,7 +44,22 @@ export default function BatchTestDetail() {
       }
     }
     return { dimScores: scores, checklistStats: stats }
-  }, [batch.test_results])
+  }, [batch])
+
+  if (!projectId || !batchId) return <Typography.Text type="danger">路由参数缺失</Typography.Text>
+  if (isLoading) return <Spin style={{ display: 'block', margin: '100px auto' }} />
+  if (!batch) return <Typography.Text type="danger">批测不存在</Typography.Text>
+
+  const results = [...(batch.test_results || [])]
+  if (sortBy === 'failed_first') {
+    results.sort((a, b) => (a.passed === b.passed ? 0 : a.passed ? 1 : -1))
+  }
+
+  // Stats
+  const denominator = batch.status === 'completed' ? batch.total_cases : (batch.completed_cases || batch.total_cases)
+  const passRate = denominator > 0
+    ? Math.round((batch.passed_cases / denominator) * 100)
+    : 0
 
   return (
     <>

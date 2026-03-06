@@ -15,9 +15,13 @@ export default function ModelConfigTab({ projectId }: { projectId: string }) {
   }, [config, form])
 
   const handleSave = async () => {
-    const values = await form.validateFields()
-    await updateMutation.mutateAsync(values)
-    message.success('保存成功')
+    try {
+      const values = await form.validateFields()
+      await updateMutation.mutateAsync(values)
+      message.success('保存成功')
+    } catch {
+      // validation or API error handled by global interceptor
+    }
   }
 
   // Group models by provider

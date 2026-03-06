@@ -19,18 +19,21 @@ export default function JudgeConfigTab({ projectId }: { projectId: string }) {
   }, [config, form])
 
   const handleSave = async () => {
-    const values = await form.validateFields()
-    // Add sort_order
-    values.checklist_items = (values.checklist_items || []).map((item: Record<string, unknown>, i: number) => ({
-      ...item,
-      sort_order: i,
-    }))
-    values.eval_dimensions = (values.eval_dimensions || []).map((dim: Record<string, unknown>, i: number) => ({
-      ...dim,
-      sort_order: i,
-    }))
-    await updateMutation.mutateAsync(values)
-    message.success('保存成功')
+    try {
+      const values = await form.validateFields()
+      values.checklist_items = (values.checklist_items || []).map((item: Record<string, unknown>, i: number) => ({
+        ...item,
+        sort_order: i,
+      }))
+      values.eval_dimensions = (values.eval_dimensions || []).map((dim: Record<string, unknown>, i: number) => ({
+        ...dim,
+        sort_order: i,
+      }))
+      await updateMutation.mutateAsync(values)
+      message.success('保存成功')
+    } catch {
+      // validation or API error handled by global interceptor
+    }
   }
 
   if (isLoading) return <Card loading />

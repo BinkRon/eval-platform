@@ -36,7 +36,20 @@ export default function AgentVersionTab({ projectId }: { projectId: string }) {
 
   const openEdit = (record: AgentVersion) => {
     setEditing(record)
-    form.setFieldsValue(record)
+    form.setFieldsValue({
+      name: record.name,
+      description: record.description,
+      endpoint: record.endpoint,
+      method: record.method,
+      response_format: record.response_format,
+      auth_type: record.auth_type,
+      auth_token: record.auth_token,
+      request_template: record.request_template,
+      response_path: record.response_path,
+      has_end_signal: record.has_end_signal,
+      end_signal_path: record.end_signal_path,
+      end_signal_value: record.end_signal_value,
+    })
     setModalOpen(true)
   }
 

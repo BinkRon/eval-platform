@@ -20,7 +20,10 @@ export function useCreateBatchTest(projectId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (data: BatchTestCreate) => batchTestApi.create(projectId, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['batch-tests', projectId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['batch-tests', projectId] })
+      qc.invalidateQueries({ queryKey: ['projects'] })
+    },
   })
 }
 

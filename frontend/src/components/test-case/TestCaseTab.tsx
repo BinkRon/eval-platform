@@ -22,7 +22,14 @@ export default function TestCaseTab({ projectId }: { projectId: string }) {
 
   const openEdit = (record: TestCase) => {
     setEditing(record)
-    form.setFieldsValue(record)
+    form.setFieldsValue({
+      name: record.name,
+      first_message: record.first_message,
+      persona_background: record.persona_background,
+      persona_behavior: record.persona_behavior,
+      max_rounds: record.max_rounds,
+      sort_order: record.sort_order,
+    })
     setModalOpen(true)
   }
 
