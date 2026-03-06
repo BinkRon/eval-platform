@@ -41,7 +41,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     if isinstance(exc, HTTPException):
         raise exc
     logging.error(f"Unhandled exception: {exc}\n{traceback.format_exc()}")
-    return JSONResponse(status_code=500, content={"detail": str(exc)})
+    return JSONResponse(status_code=500, content={"detail": "服务器内部错误"})
 
 
 @app.get("/api/health")

@@ -32,6 +32,8 @@ class AnthropicAdapter(LLMAdapter):
             kwargs["system"] = system_prompt
 
         response = await self.client.messages.create(**kwargs)
+        if not response.content:
+            raise ValueError("LLM 返回空内容")
         return response.content[0].text
 
     async def chat_json(

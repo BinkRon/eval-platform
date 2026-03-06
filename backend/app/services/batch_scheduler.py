@@ -1,10 +1,12 @@
 import asyncio
 import logging
+import re
 from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import func, select, update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -30,12 +32,12 @@ class BatchContext:
     judge_config: JudgeConfig | None
     sparring_provider_name: str
     sparring_api_key: str
-    sparring_model: str
+    sparring_model: str | None
     sparring_base_url: str | None
     sparring_system_prompt: str
     judge_provider_name: str
     judge_api_key: str
-    judge_model: str
+    judge_model: str | None
     judge_base_url: str | None
     judge_system_prompt: str
     pass_threshold: Decimal
@@ -56,14 +58,17 @@ async def run_batch_test(batch_test_id: UUID):
 
     try:
         await _execute_batch(batch_test_id)
-    except Exception as e:
+    except (Exception, asyncio.CancelledError) as e:
+        is_cancelled = isinstance(e, asyncio.CancelledError)
         logger.exception(f"Batch test {batch_test_id} failed: {e}")
         async with async_session() as db:
             batch = await db.get(BatchTest, batch_test_id)
             if batch:
                 batch.status = "failed"
-                batch.completed_at = func.now()
+                batch.completed_at = datetime.utcnow()
                 await db.commit()
+        if is_cancelled:
+            raise
 
 
 async def _load_context(db: AsyncSession, batch: BatchTest) -> BatchContext | None:
@@ -86,6 +91,10 @@ async def _load_context(db: AsyncSession, batch: BatchTest) -> BatchContext | No
     result = await db.execute(select(ModelConfig).where(ModelConfig.project_id == batch.project_id))
     model_config = result.scalar_one_or_none()
     if not model_config:
+        return None
+
+    if not model_config.sparring_model or not model_config.judge_model:
+        logger.error("Sparring or judge model not configured")
         return None
 
     providers: dict[str, ProviderConfig] = {}
@@ -135,7 +144,7 @@ async def _execute_batch(batch_test_id: UUID):
 
         if not ctx:
             batch.status = "failed"
-            batch.completed_at = func.now()
+            batch.completed_at = datetime.utcnow()
             await db.commit()
             return
 
@@ -165,21 +174,31 @@ async def _execute_batch(batch_test_id: UUID):
             logger.error(f"Unexpected exception in run_single_case: {r}")
 
     # Finalize
-    async with async_session() as db:
-        batch = await db.get(BatchTest, batch_test_id)
-        result = await db.execute(select(TestResult).where(TestResult.batch_test_id == batch_test_id))
-        results = list(result.scalars().all())
-        completed_results = [r for r in results if r.status == "completed"]
-        failed_results = [r for r in results if r.status == "failed"]
-        batch.completed_cases = len(completed_results) + len(failed_results)
-        batch.passed_cases = len([r for r in completed_results if r.passed is True])
-        # All cases failed → batch status = "failed"
-        if len(completed_results) == 0 and len(failed_results) > 0:
-            batch.status = "failed"
-        else:
-            batch.status = "completed"
-        batch.completed_at = func.now()
-        await db.commit()
+    try:
+        async with async_session() as db:
+            batch = await db.get(BatchTest, batch_test_id)
+            result = await db.execute(select(TestResult).where(TestResult.batch_test_id == batch_test_id))
+            results = list(result.scalars().all())
+            completed_results = [r for r in results if r.status == "completed"]
+            failed_results = [r for r in results if r.status == "failed"]
+            batch.completed_cases = len(completed_results) + len(failed_results)
+            batch.passed_cases = len([r for r in completed_results if r.passed is True])
+            if len(completed_results) == 0 and len(failed_results) > 0:
+                batch.status = "failed"
+            else:
+                batch.status = "completed"
+            batch.completed_at = datetime.utcnow()
+            await db.commit()
+    except Exception as e:
+        logger.exception(f"Failed to finalize batch test {batch_test_id}: {e}")
+
+
+def _sanitize_error(msg: str) -> str:
+    """Remove URLs, IPs, and file paths from error messages."""
+    msg = re.sub(r'https?://\S+', '[URL]', msg)
+    msg = re.sub(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?', '[IP]', msg)
+    msg = re.sub(r'/[\w./\\-]+', '[path]', msg)
+    return msg[:500]
 
 
 async def _save_failed_result(
@@ -238,7 +257,7 @@ async def _run_single_test(batch_test_id, test_case, ctx: BatchContext, sparring
         conversation, termination_reason, actual_rounds = await sparring_runner.run()
     except Exception as e:
         logger.exception(f"Test case {test_case.id} sparring failed: {e}")
-        await _save_failed_result(batch_test_id, test_case.id, f"对练失败: {e}")
+        await _save_failed_result(batch_test_id, test_case.id, _sanitize_error(f"对练失败: {e}"))
         return
 
     # Phase 2: Judge (裁判)
@@ -266,7 +285,7 @@ async def _run_single_test(batch_test_id, test_case, ctx: BatchContext, sparring
     except Exception as e:
         logger.exception(f"Test case {test_case.id} judge failed: {e}")
         await _save_failed_result(
-            batch_test_id, test_case.id, f"评判失败: {e}",
+            batch_test_id, test_case.id, _sanitize_error(f"评判失败: {e}"),
             conversation=conversation,
             termination_reason=termination_reason,
             actual_rounds=actual_rounds,

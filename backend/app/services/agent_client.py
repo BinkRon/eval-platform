@@ -1,3 +1,4 @@
+import asyncio
 import ipaddress
 import json
 import logging
@@ -13,7 +14,7 @@ from app.models.agent_version import AgentVersion
 logger = logging.getLogger(__name__)
 
 
-def _validate_url(url: str) -> None:
+async def _validate_url(url: str) -> None:
     """Validate URL to prevent SSRF attacks.
 
     Note: DNS rebinding is not fully mitigated — the IP check and actual
@@ -31,7 +32,8 @@ def _validate_url(url: str) -> None:
         raise ValueError("不允许访问本地地址")
 
     try:
-        addrinfos = socket.getaddrinfo(hostname, None)
+        loop = asyncio.get_running_loop()
+        addrinfos = await loop.run_in_executor(None, socket.getaddrinfo, hostname, None)
     except socket.gaierror:
         raise ValueError(f"无法解析主机名: {hostname}")
 
@@ -52,7 +54,7 @@ class AgentClient:
         Returns:
             tuple: (agent reply text, whether agent signaled end)
         """
-        _validate_url(self.agent.endpoint)
+        await _validate_url(self.agent.endpoint)
         if self.agent.response_format == "sse":
             return await self._send_message_sse(message)
         return await self._send_message_json(message)
@@ -73,11 +75,11 @@ class AgentClient:
         except httpx.TimeoutException:
             raise RuntimeError("Agent API 调用超时")
         except httpx.ConnectError:
-            raise RuntimeError(f"Agent API 连接失败: {self.agent.endpoint}")
+            raise RuntimeError("Agent API 连接失败")
         except httpx.HTTPStatusError as e:
             raise RuntimeError(f"Agent API 返回错误状态码 {e.response.status_code}")
-        except httpx.HTTPError as e:
-            raise RuntimeError(f"Agent API 网络错误: {e}")
+        except httpx.HTTPError:
+            raise RuntimeError("Agent API 网络错误")
 
         try:
             data = response.json()
@@ -104,47 +106,50 @@ class AgentClient:
         last_event_data: dict | None = None
 
         try:
-            async with httpx.AsyncClient(timeout=timeout) as client:
-                async with client.stream(
-                    method=self.agent.method or "POST",
-                    url=self.agent.endpoint,
-                    json=body,
-                    headers=headers,
-                ) as response:
-                    response.raise_for_status()
-                    async for line in response.aiter_lines():
-                        line = line.strip()
-                        if not line or not line.startswith("data:"):
-                            continue
+            async with asyncio.timeout(300):
+                async with httpx.AsyncClient(timeout=timeout) as client:
+                    async with client.stream(
+                        method=self.agent.method or "POST",
+                        url=self.agent.endpoint,
+                        json=body,
+                        headers=headers,
+                    ) as response:
+                        response.raise_for_status()
+                        async for line in response.aiter_lines():
+                            line = line.strip()
+                            if not line or not line.startswith("data:"):
+                                continue
 
-                        payload = line[len("data:"):].strip()
-                        if payload == "[DONE]":
-                            break
+                            payload = line[len("data:"):].strip()
+                            if payload == "[DONE]":
+                                break
 
-                        try:
-                            event_data = json.loads(payload)
-                        except json.JSONDecodeError:
-                            logger.warning(f"SSE 事件 JSON 解析失败: {payload[:100]}")
-                            continue
-
-                        last_event_data = event_data
-
-                        # Extract text chunk using response_path
-                        if self.agent.response_path:
                             try:
-                                chunk_text = self._extract_value(event_data, self.agent.response_path)
-                                if chunk_text:
-                                    chunks.append(str(chunk_text))
-                            except ValueError:
-                                pass  # Path not found in this event, skip
+                                event_data = json.loads(payload)
+                            except json.JSONDecodeError:
+                                logger.warning(f"SSE 事件 JSON 解析失败: {payload[:100]}")
+                                continue
+
+                            last_event_data = event_data
+
+                            # Extract text chunk using response_path
+                            if self.agent.response_path:
+                                try:
+                                    chunk_text = self._extract_value(event_data, self.agent.response_path)
+                                    if chunk_text:
+                                        chunks.append(str(chunk_text))
+                                except ValueError:
+                                    pass  # Path not found in this event, skip
+        except TimeoutError:
+            raise RuntimeError("Agent API SSE 流式响应总超时")
         except httpx.TimeoutException:
             raise RuntimeError("Agent API 调用超时（SSE 流式）")
         except httpx.ConnectError:
-            raise RuntimeError(f"Agent API 连接失败: {self.agent.endpoint}")
+            raise RuntimeError("Agent API 连接失败")
         except httpx.HTTPStatusError as e:
             raise RuntimeError(f"Agent API 返回错误状态码 {e.response.status_code}")
-        except httpx.HTTPError as e:
-            raise RuntimeError(f"Agent API 网络错误: {e}")
+        except httpx.HTTPError:
+            raise RuntimeError("Agent API 网络错误")
 
         if not chunks:
             raise RuntimeError("Agent API SSE 流未返回有效数据")
