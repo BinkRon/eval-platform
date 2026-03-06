@@ -65,9 +65,9 @@
 - [x] **E2：批测前置校验** ✅ — 校验 Agent 版本/用例/裁判配置/模型配置
 - [x] **E3：异常处理完善** ✅ — 分阶段错误处理 + 裁判重试 + 批测状态修复 + 前端失败展示
 - [x] **E4：项目卡片摘要信息** ✅ — 聚合查询 + ROW_NUMBER 窗口函数 + 前端卡片摘要渲染
-- [ ] **E5：端到端验证** — 完整流程测试
+- [x] **E5：端到端验证** ✅ — 完整 API 链路验证 + 6 个 Bug 修复 + 代码审查
 
-**Phase E 里程碑**：非技术人员能独立完成完整评测流程。
+**Phase E 里程碑**：✅ 完成 — 非技术人员能独立完成完整评测流程。
 
 ---
 
@@ -112,3 +112,25 @@
 4. **ProjectList.tsx**：卡片显示版本数、最近批测摘要（时间+版本+通过率+变化箭头）、用例数、累计批测
 
 下一步：E5 端到端验证。
+
+**Session #5 (2026-03-06)**：完成 E5 端到端验证。
+
+完整 API 链路走通：创建 Provider → 创建项目 → 创建 Agent 版本 → 创建用例 → 配置裁判 → 配置模型 → 创建批测 → 轮询进度 → 查看详情。
+
+发现并修复 6 个 Bug：
+1. **db.refresh 缺失**：`server_default=func.now()` 的时间戳在 commit 后为 None，导致 Pydantic 序列化 500。所有 create/update 端点添加 `await db.refresh(obj)`
+2. **时间戳列类型错误**：Alembic 自动生成的迁移将 TimestampMixin 字段映射为 `sa.String()` 而非 `sa.DateTime()`。新建迁移 `bb85f71f2b8a` 将 8 张表的 created_at/updated_at ALTER 为 TIMESTAMP
+3. **事务冲突**：`async with db.begin()` 与 asyncpg 自动开始的事务冲突。judge_configs.py、batch_tests.py 改为直接调用 + `await db.commit()`
+4. **时区感知 datetime 写入失败**：`datetime.now(UTC)` 返回 timezone-aware datetime，asyncpg 拒绝写入 `timestamp without time zone` 列，导致批测状态卡在 "running"。batch_scheduler.py 改用 `datetime.utcnow()`
+5. **dict 转换错误**：`dict(await db.execute(...))` 对 ChunkedIteratorResult 不可用。改为 `dict(result.all())`
+6. **307 重定向**：前端不带尾部斜杠，FastAPI 路由用 `"/"` 导致 307 重定向。设置 `redirect_slashes=False` + 所有集合路由改为 `""`
+
+代码审查修复：
+- `logging.basicConfig` 移到业务 import 之前
+- 全局异常处理器排除 HTTPException，避免覆盖 FastAPI 内置 404/400 处理
+
+架构审查发现 2 个待优化项（记录但不阻塞 MVP）：
+- `batch_test_service.py` 的 service 层直接使用 HTTPException（应抛业务异常）
+- `projects.py` 的 `list_projects` 路由函数包含过多业务逻辑（应提取到 service 层）
+
+Phase E 全部完成，v0.1 MVP 所有 Phase (A-E) 开发完毕。

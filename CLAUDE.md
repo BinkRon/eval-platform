@@ -9,7 +9,7 @@
 ## 当前状态
 
 版本：v0.1 MVP
-进度：Phase A 未开始
+进度：Phase A-E 全部完成
 详见：`docs/progress.md`
 
 ## 文档索引
