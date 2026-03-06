@@ -12,6 +12,7 @@ export interface AgentVersion {
   has_end_signal: boolean
   end_signal_path: string | null
   end_signal_value: string | null
+  response_format: string
   connection_status: string
   created_at: string
   updated_at: string
@@ -29,6 +30,7 @@ export interface AgentVersionCreate {
   has_end_signal?: boolean
   end_signal_path?: string
   end_signal_value?: string
+  response_format?: string
 }
 
 export type AgentVersionUpdate = Partial<AgentVersionCreate>

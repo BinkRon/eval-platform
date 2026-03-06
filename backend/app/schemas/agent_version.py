@@ -16,6 +16,7 @@ class AgentVersionCreate(BaseModel):
     has_end_signal: bool = False
     end_signal_path: str | None = None
     end_signal_value: str | None = None
+    response_format: str = "json"
 
 
 class AgentVersionUpdate(BaseModel):
@@ -30,6 +31,7 @@ class AgentVersionUpdate(BaseModel):
     has_end_signal: bool | None = None
     end_signal_path: str | None = None
     end_signal_value: str | None = None
+    response_format: str | None = None
 
 
 class AgentVersionResponse(BaseModel):
@@ -46,6 +48,7 @@ class AgentVersionResponse(BaseModel):
     has_end_signal: bool
     end_signal_path: str | None
     end_signal_value: str | None
+    response_format: str
     connection_status: str
     created_at: datetime
     updated_at: datetime

@@ -125,7 +125,7 @@ export default function AgentVersionTab({ projectId }: { projectId: string }) {
         width={640}
         confirmLoading={createMutation.isPending || updateMutation.isPending}
       >
-        <Form form={form} layout="vertical" initialValues={{ method: 'POST', has_end_signal: false }}>
+        <Form form={form} layout="vertical" initialValues={{ method: 'POST', response_format: 'json', has_end_signal: false }}>
           <Form.Item name="name" label="版本名称" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
@@ -137,6 +137,9 @@ export default function AgentVersionTab({ projectId }: { projectId: string }) {
           </Form.Item>
           <Form.Item name="method" label="请求方法">
             <Select options={[{ value: 'POST' }, { value: 'GET' }]} />
+          </Form.Item>
+          <Form.Item name="response_format" label="响应格式">
+            <Select options={[{ value: 'json', label: 'JSON' }, { value: 'sse', label: 'SSE (Server-Sent Events)' }]} />
           </Form.Item>
           <Form.Item name="auth_type" label="认证方式">
             <Select allowClear options={[{ value: 'bearer', label: 'Bearer Token' }, { value: 'header', label: '自定义 Header' }]} />
