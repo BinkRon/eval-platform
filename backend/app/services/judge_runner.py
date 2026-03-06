@@ -48,9 +48,15 @@ class JudgeRunner:
         last_error = None
         for attempt in range(2):
             try:
-                messages_to_send = [{"role": "user", "content": prompt}]
                 if attempt == 1 and last_error:
-                    messages_to_send.append({"role": "user", "content": f"上次输出格式错误：{last_error}。请严格按照要求的 JSON 格式重新输出。"})
+                    # Retry with error context: insert assistant placeholder to maintain role alternation
+                    messages_to_send = [
+                        {"role": "user", "content": prompt},
+                        {"role": "assistant", "content": str(last_error)},
+                        {"role": "user", "content": "上次输出格式错误。请严格按照要求的 JSON 格式重新输出，不要包含任何非 JSON 文本。"},
+                    ]
+                else:
+                    messages_to_send = [{"role": "user", "content": prompt}]
                 result = await self.llm.chat_json(
                     messages=messages_to_send,
                     system_prompt=self.system_prompt,

@@ -159,7 +159,10 @@ async def _execute_batch(batch_test_id: UUID):
         async with semaphore:
             await _run_single_test(batch_test_id, test_case, ctx, sparring_llm, judge_llm)
 
-    await asyncio.gather(*[run_single_case(tc) for tc in ctx.test_cases], return_exceptions=True)
+    results = await asyncio.gather(*[run_single_case(tc) for tc in ctx.test_cases], return_exceptions=True)
+    for r in results:
+        if isinstance(r, BaseException):
+            logger.error(f"Unexpected exception in run_single_case: {r}")
 
     # Finalize
     async with async_session() as db:

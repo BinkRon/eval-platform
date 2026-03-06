@@ -14,7 +14,11 @@ logger = logging.getLogger(__name__)
 
 
 def _validate_url(url: str) -> None:
-    """Validate URL to prevent SSRF attacks."""
+    """Validate URL to prevent SSRF attacks.
+
+    Note: DNS rebinding is not fully mitigated — the IP check and actual
+    HTTP request are not atomic. Acceptable for MVP.
+    """
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
         raise ValueError(f"不支持的 URL 协议: {parsed.scheme}，仅允许 http/https")

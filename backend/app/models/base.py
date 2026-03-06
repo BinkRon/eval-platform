@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import DateTime, event, func
 from sqlalchemy.dialects.postgresql import UUID
@@ -23,4 +23,5 @@ class UUIDPrimaryKey:
 def _set_updated_at(session: Session, flush_context, instances):
     for obj in session.dirty:
         if hasattr(obj, "updated_at"):
-            obj.updated_at = func.now()
+            # Use naive UTC datetime (asyncpg rejects timezone-aware for 'timestamp without time zone')
+            obj.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)

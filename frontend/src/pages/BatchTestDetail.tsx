@@ -35,36 +35,31 @@ export default function BatchTestDetail() {
   }
 
   // Stats
-  const completedResults = results.filter((r) => r.status === 'completed')
   const denominator = batch.status === 'completed' ? batch.total_cases : (batch.completed_cases || batch.total_cases)
   const passRate = denominator > 0
     ? Math.round((batch.passed_cases / denominator) * 100)
     : 0
 
-  // Eval dimension averages
-  const dimScores = useMemo(() => {
+  // Eval dimension averages + Checklist pass rates (single useMemo to avoid stale deps)
+  const { dimScores, checklistStats } = useMemo(() => {
+    const completed = (batch.test_results || []).filter((r) => r.status === 'completed')
     const scores: Record<string, number[]> = {}
-    for (const r of completedResults) {
+    for (const r of completed) {
       for (const s of r.eval_scores || []) {
         if (!scores[s.dimension]) scores[s.dimension] = []
         scores[s.dimension].push(s.score)
       }
     }
-    return scores
-  }, [completedResults])
-
-  // Checklist pass rates
-  const checklistStats = useMemo(() => {
     const stats: Record<string, { total: number; passed: number }> = {}
-    for (const r of completedResults) {
+    for (const r of completed) {
       for (const c of r.checklist_results || []) {
         if (!stats[c.content]) stats[c.content] = { total: 0, passed: 0 }
         stats[c.content].total++
         if (c.passed) stats[c.content].passed++
       }
     }
-    return stats
-  }, [completedResults])
+    return { dimScores: scores, checklistStats: stats }
+  }, [batch.test_results])
 
   return (
     <>
