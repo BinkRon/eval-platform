@@ -2,9 +2,7 @@ import asyncio
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models.batch_test import BatchTest
@@ -23,11 +21,7 @@ async def list_batch_tests(project_id: UUID, db: AsyncSession = Depends(get_db))
     project = await db.get(Project, project_id)
     if not project:
         raise HTTPException(404, detail="Project not found")
-
-    result = await db.execute(
-        select(BatchTest).where(BatchTest.project_id == project_id).order_by(BatchTest.created_at.desc())
-    )
-    return result.scalars().all()
+    return await batch_test_service.list_batch_tests(db, project_id)
 
 
 @router.post("", response_model=BatchTestResponse, status_code=201)
@@ -50,15 +44,10 @@ async def create_batch_test(project_id: UUID, data: BatchTestCreate, db: AsyncSe
 
 @router.get("/{batch_id}", response_model=BatchTestDetail)
 async def get_batch_test(project_id: UUID, batch_id: UUID, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
-        select(BatchTest)
-        .where(BatchTest.id == batch_id, BatchTest.project_id == project_id)
-        .options(selectinload(BatchTest.test_results))
-    )
-    batch = result.scalar_one_or_none()
-    if not batch:
+    detail = await batch_test_service.get_batch_test_detail(db, project_id, batch_id)
+    if not detail:
         raise HTTPException(404, detail="Batch test not found")
-    return batch
+    return detail
 
 
 @router.get("/{batch_id}/progress", response_model=BatchTestProgress)

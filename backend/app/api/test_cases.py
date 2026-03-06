@@ -1,13 +1,13 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.project import Project
 from app.models.test_case import TestCase
 from app.schemas.test_case import TestCaseCreate, TestCaseResponse, TestCaseUpdate
+from app.services import test_case_service
 
 router = APIRouter(prefix="/api/projects/{project_id}/test-cases", tags=["test-cases"])
 
@@ -22,10 +22,7 @@ async def _get_project(project_id: UUID, db: AsyncSession) -> Project:
 @router.get("", response_model=list[TestCaseResponse])
 async def list_test_cases(project_id: UUID, db: AsyncSession = Depends(get_db)):
     await _get_project(project_id, db)
-    result = await db.execute(
-        select(TestCase).where(TestCase.project_id == project_id).order_by(TestCase.sort_order)
-    )
-    return result.scalars().all()
+    return await test_case_service.list_with_last_result(db, project_id)
 
 
 @router.post("", response_model=TestCaseResponse, status_code=201)

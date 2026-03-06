@@ -13,6 +13,7 @@ class BatchTestResponse(BaseModel):
     id: UUID
     project_id: UUID
     agent_version_id: UUID | None
+    agent_version_name: str | None = None
     status: str
     concurrency: int
     total_cases: int
@@ -35,6 +36,7 @@ class TestResultResponse(BaseModel):
     id: UUID
     batch_test_id: UUID
     test_case_id: UUID | None
+    test_case_name: str | None = None
     status: str
     conversation: list[dict] | None
     termination_reason: str | None

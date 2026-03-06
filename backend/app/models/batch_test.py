@@ -45,3 +45,4 @@ class TestResult(UUIDPrimaryKey, TimestampMixin, Base):
     error_message: Mapped[str | None] = mapped_column(Text)
 
     batch_test = relationship("BatchTest", back_populates="test_results", lazy="raise")
+    test_case = relationship("TestCase", lazy="raise")
