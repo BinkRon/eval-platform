@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import re
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
@@ -21,6 +20,7 @@ from app.models.test_case import TestCase
 from app.services.agent_client import AgentClient
 from app.services.judge_runner import JudgeRunner
 from app.services.sparring_runner import SparringRunner
+from app.utils.error_sanitizer import sanitize_error
 
 logger = logging.getLogger(__name__)
 
@@ -134,34 +134,46 @@ async def _load_context(db: AsyncSession, batch: BatchTest) -> BatchContext | No
     )
 
 
-async def _execute_batch(batch_test_id: UUID):
+async def _load_batch_context(batch_test_id: UUID) -> BatchContext | None:
+    """Load a batch test and its context from DB. Returns None if not found or misconfigured."""
     async with async_session() as db:
         batch = await db.get(BatchTest, batch_test_id)
         if not batch:
             logger.error(f"BatchTest {batch_test_id} not found")
-            return
+            return None
         ctx = await _load_context(db, batch)
-
         if not ctx:
             batch.status = "failed"
             batch.completed_at = datetime.utcnow()
             await db.commit()
-            return
+            return None
+    return ctx
 
-        # Create test results
+
+async def _create_result_placeholders(batch_test_id: UUID, ctx: BatchContext):
+    """Create pending TestResult rows for each test case."""
+    async with async_session() as db:
+        batch = await db.get(BatchTest, batch_test_id)
         for tc in ctx.test_cases:
             tr = TestResult(batch_test_id=batch.id, test_case_id=tc.id, status="pending")
             db.add(tr)
         batch.total_cases = len(ctx.test_cases)
         await db.commit()
 
+
+def _setup_llm_clients(ctx: BatchContext) -> tuple:
+    """Create sparring and judge LLM adapters from context."""
     sparring_llm = create_llm_adapter(
         ctx.sparring_provider_name, ctx.sparring_api_key, ctx.sparring_model, ctx.sparring_base_url
     )
     judge_llm = create_llm_adapter(
         ctx.judge_provider_name, ctx.judge_api_key, ctx.judge_model, ctx.judge_base_url
     )
+    return sparring_llm, judge_llm
 
+
+async def _run_all_cases(batch_test_id: UUID, ctx: BatchContext, sparring_llm, judge_llm):
+    """Run all test cases concurrently with a semaphore limit."""
     semaphore = asyncio.Semaphore(ctx.concurrency)
 
     async def run_single_case(test_case: TestCase):
@@ -173,7 +185,9 @@ async def _execute_batch(batch_test_id: UUID):
         if isinstance(r, BaseException):
             logger.error(f"Unexpected exception in run_single_case: {r}")
 
-    # Finalize
+
+async def _finalize_batch(batch_test_id: UUID):
+    """Compute final stats and mark batch as completed or failed."""
     try:
         async with async_session() as db:
             batch = await db.get(BatchTest, batch_test_id)
@@ -193,12 +207,15 @@ async def _execute_batch(batch_test_id: UUID):
         logger.exception(f"Failed to finalize batch test {batch_test_id}: {e}")
 
 
-def _sanitize_error(msg: str) -> str:
-    """Remove URLs, IPs, and file paths from error messages."""
-    msg = re.sub(r'https?://\S+', '[URL]', msg)
-    msg = re.sub(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?', '[IP]', msg)
-    msg = re.sub(r'/[\w./\\-]+', '[path]', msg)
-    return msg[:500]
+async def _execute_batch(batch_test_id: UUID):
+    """Orchestrate a complete batch test execution."""
+    ctx = await _load_batch_context(batch_test_id)
+    if not ctx:
+        return
+    await _create_result_placeholders(batch_test_id, ctx)
+    sparring_llm, judge_llm = _setup_llm_clients(ctx)
+    await _run_all_cases(batch_test_id, ctx, sparring_llm, judge_llm)
+    await _finalize_batch(batch_test_id)
 
 
 async def _save_failed_result(
@@ -257,7 +274,7 @@ async def _run_single_test(batch_test_id, test_case, ctx: BatchContext, sparring
         conversation, termination_reason, actual_rounds = await sparring_runner.run()
     except Exception as e:
         logger.exception(f"Test case {test_case.id} sparring failed: {e}")
-        await _save_failed_result(batch_test_id, test_case.id, _sanitize_error(f"对练失败: {e}"))
+        await _save_failed_result(batch_test_id, test_case.id, sanitize_error(f"对练失败: {e}"))
         return
 
     # Phase 2: Judge (裁判)
@@ -285,7 +302,7 @@ async def _run_single_test(batch_test_id, test_case, ctx: BatchContext, sparring
     except Exception as e:
         logger.exception(f"Test case {test_case.id} judge failed: {e}")
         await _save_failed_result(
-            batch_test_id, test_case.id, _sanitize_error(f"评判失败: {e}"),
+            batch_test_id, test_case.id, sanitize_error(f"评判失败: {e}"),
             conversation=conversation,
             termination_reason=termination_reason,
             actual_rounds=actual_rounds,
