@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import settings
+from app.exceptions import NotFoundError, ValidationError, ConflictError
 from app.api.agent_versions import router as agent_versions_router
 from app.api.batch_tests import router as batch_tests_router
 from app.api.judge_configs import router as judge_configs_router
@@ -42,6 +43,21 @@ async def global_exception_handler(request: Request, exc: Exception):
         raise exc
     logging.error(f"Unhandled exception: {exc}\n{traceback.format_exc()}")
     return JSONResponse(status_code=500, content={"detail": "服务器内部错误"})
+
+
+@app.exception_handler(NotFoundError)
+async def not_found_handler(request: Request, exc: NotFoundError):
+    return JSONResponse(status_code=404, content={"detail": exc.message})
+
+
+@app.exception_handler(ValidationError)
+async def validation_error_handler(request: Request, exc: ValidationError):
+    return JSONResponse(status_code=400, content={"detail": exc.message})
+
+
+@app.exception_handler(ConflictError)
+async def conflict_error_handler(request: Request, exc: ConflictError):
+    return JSONResponse(status_code=409, content={"detail": exc.message})
 
 
 @app.get("/api/health")

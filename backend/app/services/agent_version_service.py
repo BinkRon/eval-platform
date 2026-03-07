@@ -1,10 +1,9 @@
-import re
 from uuid import UUID
 
-from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.exceptions import NotFoundError, ValidationError
 from app.models.agent_version import AgentVersion
 from app.models.project import Project
 from app.schemas.agent_version import (
@@ -14,12 +13,7 @@ from app.schemas.agent_version import (
     AgentVersionUpdate,
 )
 from app.services.agent_client import AgentClient
-
-_IP_PATTERN = re.compile(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
-
-
-def _sanitize_error(msg: str) -> str:
-    return _IP_PATTERN.sub("[内部地址]", msg)
+from app.utils.error_sanitizer import sanitize_error
 
 
 def _to_response(v: AgentVersion) -> AgentVersionResponse:
@@ -31,7 +25,7 @@ def _to_response(v: AgentVersion) -> AgentVersionResponse:
 async def _get_project(db: AsyncSession, project_id: UUID) -> Project:
     project = await db.get(Project, project_id)
     if not project:
-        raise HTTPException(404, detail="Project not found")
+        raise NotFoundError("Project not found")
     return project
 
 
@@ -57,7 +51,7 @@ async def update_version(
 ) -> AgentVersionResponse:
     version = await db.get(AgentVersion, version_id)
     if not version or version.project_id != project_id:
-        raise HTTPException(404, detail="Agent version not found")
+        raise NotFoundError("Agent version not found")
 
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(version, key, value)
@@ -70,7 +64,7 @@ async def update_version(
 async def delete_version(db: AsyncSession, project_id: UUID, version_id: UUID) -> None:
     version = await db.get(AgentVersion, version_id)
     if not version or version.project_id != project_id:
-        raise HTTPException(404, detail="Agent version not found")
+        raise NotFoundError("Agent version not found")
 
     await db.delete(version)
     await db.commit()
@@ -79,10 +73,10 @@ async def delete_version(db: AsyncSession, project_id: UUID, version_id: UUID) -
 async def test_connection(db: AsyncSession, project_id: UUID, version_id: UUID) -> AgentTestResult:
     version = await db.get(AgentVersion, version_id)
     if not version or version.project_id != project_id:
-        raise HTTPException(404, detail="Agent version not found")
+        raise NotFoundError("Agent version not found")
 
     if not version.endpoint:
-        raise HTTPException(400, detail="Agent endpoint not configured")
+        raise ValidationError("Agent endpoint not configured")
 
     try:
         client = AgentClient(version)
@@ -93,4 +87,4 @@ async def test_connection(db: AsyncSession, project_id: UUID, version_id: UUID) 
     except Exception as e:
         version.connection_status = "failed"
         await db.commit()
-        return AgentTestResult(status="failed", error=_sanitize_error(str(e)))
+        return AgentTestResult(status="failed", error=sanitize_error(str(e)))

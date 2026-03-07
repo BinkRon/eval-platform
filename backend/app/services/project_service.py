@@ -1,10 +1,10 @@
 from uuid import UUID
 
-from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.exceptions import NotFoundError
 from app.models.agent_version import AgentVersion
 from app.models.batch_test import BatchTest
 from app.models.project import Project
@@ -129,7 +129,7 @@ async def create_project(db: AsyncSession, data: ProjectCreate) -> ProjectRespon
 async def get_project(db: AsyncSession, project_id: UUID) -> ProjectResponse:
     project = await db.get(Project, project_id)
     if not project:
-        raise HTTPException(404, detail="Project not found")
+        raise NotFoundError("Project not found")
     return ProjectResponse(
         id=project.id,
         name=project.name,
@@ -142,7 +142,7 @@ async def get_project(db: AsyncSession, project_id: UUID) -> ProjectResponse:
 async def update_project(db: AsyncSession, project_id: UUID, data: ProjectUpdate) -> ProjectResponse:
     project = await db.get(Project, project_id)
     if not project:
-        raise HTTPException(404, detail="Project not found")
+        raise NotFoundError("Project not found")
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -162,7 +162,7 @@ async def update_project(db: AsyncSession, project_id: UUID, data: ProjectUpdate
 async def delete_project(db: AsyncSession, project_id: UUID) -> None:
     project = await db.get(Project, project_id)
     if not project:
-        raise HTTPException(404, detail="Project not found")
+        raise NotFoundError("Project not found")
 
     await db.delete(project)
     await db.commit()
