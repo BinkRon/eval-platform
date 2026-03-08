@@ -1,3 +1,5 @@
+from collections.abc import AsyncGenerator
+
 from app.llm.base import LLMAdapter
 from app.models.test_case import TestCase
 from app.services.agent_client import AgentClient
@@ -35,11 +37,13 @@ class SparringRunner:
         prompt += f"\n当对话可以自然结束时，请在回复末尾加上 {END_MARKER} 标记。"
         return prompt
 
-    async def run(self) -> tuple[list[dict], str, int]:
-        """Run the sparring conversation loop.
+    async def run_iter(self) -> AsyncGenerator[tuple[list[dict], str | None, int], None]:
+        """Run the sparring conversation loop, yielding after each round.
 
-        Returns:
+        Yields:
             tuple: (conversation, termination_reason, actual_rounds)
+            - termination_reason is None while the conversation is ongoing
+            - termination_reason is set on the final yield
         """
         user_message = self.test_case.first_message
         max_rounds = self.test_case.max_rounds or 20
@@ -59,22 +63,39 @@ class SparringRunner:
 
             # Check: agent end signal
             if agent_ended:
-                return self.conversation, "agent_hangup", actual_rounds
+                yield self.conversation, "agent_hangup", actual_rounds
+                return
 
             # Check: max rounds reached
             if round_num >= max_rounds:
-                return self.conversation, "max_rounds", actual_rounds
+                yield self.conversation, "max_rounds", actual_rounds
+                return
 
             # Generate next user message via sparring LLM
             next_message = await self._generate_next_message()
 
             # Check: sparring model signals end
             if END_MARKER in next_message:
-                return self.conversation, "sparring_end", actual_rounds
+                yield self.conversation, "sparring_end", actual_rounds
+                return
+
+            # Yield intermediate state (conversation ongoing)
+            yield self.conversation, None, actual_rounds
 
             user_message = next_message
 
-        return self.conversation, "max_rounds", actual_rounds
+        yield self.conversation, "max_rounds", actual_rounds
+
+    async def run(self) -> tuple[list[dict], str, int]:
+        """Run the sparring conversation loop (compatibility wrapper).
+
+        Returns:
+            tuple: (conversation, termination_reason, actual_rounds)
+        """
+        conversation, termination_reason, actual_rounds = None, "max_rounds", 0
+        async for conversation, termination_reason, actual_rounds in self.run_iter():
+            pass
+        return conversation or [], termination_reason or "max_rounds", actual_rounds
 
     async def _generate_next_message(self) -> str:
         kwargs: dict = {

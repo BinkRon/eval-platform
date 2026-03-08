@@ -260,7 +260,7 @@ async def _run_single_test(batch_test_id, test_case, ctx: BatchContext, sparring
         test_result.status = "running"
         await db.commit()
 
-    # Phase 1: Sparring (对练)
+    # Phase 1: Sparring (对练) — 逐轮写入 conversation 以支持实时观测
     try:
         agent_client = AgentClient(ctx.agent_version)
         sparring_runner = SparringRunner(
@@ -271,7 +271,28 @@ async def _run_single_test(batch_test_id, test_case, ctx: BatchContext, sparring
             temperature=ctx.sparring_temperature,
             max_tokens=ctx.sparring_max_tokens,
         )
-        conversation, termination_reason, actual_rounds = await sparring_runner.run()
+        conversation, termination_reason, actual_rounds = [], None, 0
+        async for conversation, termination_reason, actual_rounds in sparring_runner.run_iter():
+            # Persist conversation snapshot after each round for real-time observation
+            try:
+                values: dict = {
+                    "conversation": list(conversation),
+                    "actual_rounds": actual_rounds,
+                }
+                if termination_reason is not None:
+                    values["termination_reason"] = termination_reason
+                async with async_session() as round_db:
+                    await round_db.execute(
+                        update(TestResult)
+                        .where(
+                            TestResult.batch_test_id == batch_test_id,
+                            TestResult.test_case_id == test_case.id,
+                        )
+                        .values(**values)
+                    )
+                    await round_db.commit()
+            except Exception as round_err:
+                logger.warning(f"Failed to persist round {actual_rounds} for test case {test_case.id}: {round_err}")
         sparring_prompt_snapshot = sparring_runner.persona_prompt
     except Exception as e:
         logger.exception(f"Test case {test_case.id} sparring failed: {e}")
