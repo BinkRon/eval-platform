@@ -69,15 +69,29 @@ Phase 2 (就绪 API) ───┘         ├──> Phase 4 (P4 改造)
 
 ---
 
-### Phase 5：P5 对话剧场
+### Phase 5：P5 对话剧场 + 实时对话写入
 
-- [ ] **5.1：新建 DialogTheater 页面** — `pages/DialogTheater.tsx`
-- [ ] **5.2：顶部用例切换栏** — 水平标签，按状态着色，点击切换 URL
-- [ ] **5.3：左侧对话区 (60%)** — ConversationBubbles + 终止原因标注 + 幕后信息折叠（角色卡 + 对练 Prompt）
-- [ ] **5.4：右侧评判区 (40%)** — Checklist 结果 + Evaluation 评分 + 裁判总结 + 裁判 Prompt 折叠
-- [ ] **5.5：运行中状态** — 轮询刷新，对话进行中/裁判评判中状态展示
+**设计决策**：后端改为逐轮写入对话数据，前端轮询即可实现实时观测，无需 WebSocket/SSE。
 
-**验证**：P4 进入剧场 → P5 双栏正确 → 用例切换正常 → 幕后信息有内容 → 实时更新 → 返回正常
+**后端改动（~40 行）：**
+- `SparringRunner.run()` → 改为 async generator `run_iter()`，每轮 yield `(conversation, termination_reason, actual_rounds)`
+- `_run_single_test` 中每轮迭代后更新 DB 的 `test_result.conversation` 字段
+- 保留原 `run()` 方法作为兼容封装（调用 `run_iter` 消费到底）
+
+**前端改动：**
+- `useBatchTestDetail` 已有 3 秒轮询，自动获取最新 conversation 数据
+- `ConversationBubbles` 渲染数组，不区分回放/实时，零改动
+
+**任务清单：**
+
+- [x] **5.1：后端逐轮写入** — `SparringRunner` 改为 async generator `run_iter()` + `_run_single_test` 每轮更新 conversation
+- [x] **5.2：DialogTheater 页面主体** — 左右双栏布局（60/40），复用 `useBatchTestDetail` 获取数据
+- [x] **5.3：顶部用例切换栏** — 水平标签，按状态着色（✅/❌/⚠️），点击切换 URL，未通过排前
+- [x] **5.4：左侧对话区** — ConversationBubbles + 终止原因标注 + 幕后信息折叠（角色卡 + 对练 Prompt）
+- [x] **5.5：右侧评判区** — Checklist 结果 + Evaluation 评分 + 裁判总结 + 裁判 Prompt 折叠
+- [x] **5.6：运行中状态** — 轮询刷新，对话实时追加，评判区状态文案（⏳ 对话进行中 / 🔄 裁判评判中）
+
+**验证**：P4 进入剧场 → P5 双栏正确 → 用例切换正常 → 幕后信息有内容 → 运行中实时追加对话 → 返回正常
 
 ---
 
@@ -93,6 +107,18 @@ Phase 2 (就绪 API) ───┘         ├──> Phase 4 (P4 改造)
 ---
 
 ## 交接备注
+
+**Session #14 (2026-03-08)**：Phase 5 完成。
+
+- 6 个任务全部完成：后端逐轮写入 + DialogTheater 完整实现（双栏布局、用例切换、对话区、评判区、运行中状态）
+- 后端：SparringRunner 新增 `run_iter()` async generator，每轮 yield；`_run_single_test` 每轮写入 conversation 到 DB（带 try/except 容错）
+- 前端：DialogTheater 页面 — 左 60% 对话区（ConversationBubbles + 终止原因 + 幕后信息折叠）、右 40% 评判区（Checklist + Evaluation + 裁判总结 + 裁判 Prompt 折叠）
+- 顶部用例切换栏：按状态着色，未通过排前，点击切换 URL
+- 运行中状态：已有 3 秒轮询自动获取最新数据，对话实时追加 + auto-scroll，评判区显示阶段文案
+- 代码审查修复：删除未使用变量、⭐ repeat 边界保护、逐轮写入 try/except 容错
+- 24 个后端测试通过，TypeScript 无报错
+
+下一步：端到端验收。所有 Phase (1-5) 已完成。
 
 **Session #13 (2026-03-08)**：Phase 4 完成。
 
