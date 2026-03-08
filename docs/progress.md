@@ -19,14 +19,14 @@ Phase 2 (就绪 API) ───┘         ├──> Phase 4 (P4 改造)
 
 ### Phase 1：数据库 + Prompt 快照
 
-- [ ] **1.1：Alembic 迁移 — 新增 3 个字段**
+- [x] **1.1：Alembic 迁移 — 新增 3 个字段**
   - `batch_tests` + `config_snapshot` (JSONB)
   - `test_results` + `sparring_prompt_snapshot` (Text) + `judge_prompt_snapshot` (Text)
-- [ ] **1.2：更新 SQLAlchemy 模型** — `models/batch_test.py`
-- [ ] **1.3：更新 Pydantic Schema** — `schemas/batch_test.py`
-- [ ] **1.4：批测创建时冻结 config_snapshot** — `services/batch_test_service.py`
-- [ ] **1.5：暴露 Prompt 文本** — `sparring_runner.py` 存 `self.persona_prompt`、`judge_runner.py` 存 `self.last_prompt`
-- [ ] **1.6：Batch Scheduler 保存快照** — `batch_scheduler.py` 写入两个 prompt 快照
+- [x] **1.2：更新 SQLAlchemy 模型** — `models/batch_test.py`
+- [x] **1.3：更新 Pydantic Schema** — `schemas/batch_test.py`
+- [x] **1.4：批测创建时冻结 config_snapshot** — `services/batch_test_service.py`
+- [x] **1.5：暴露 Prompt 文本** — `sparring_runner.py` 存 `self.persona_prompt`、`judge_runner.py` 存 `self.last_prompt`
+- [x] **1.6：Batch Scheduler 保存快照** — `batch_scheduler.py` 写入两个 prompt 快照
 
 **验证**：迁移成功 → 创建批测有 config_snapshot → 完成后有 prompt 快照 → 现有测试不回归
 
@@ -34,11 +34,11 @@ Phase 2 (就绪 API) ───┘         ├──> Phase 4 (P4 改造)
 
 ### Phase 2：就绪状态 API
 
-- [ ] **2.1：后端就绪接口**
+- [x] **2.1：后端就绪接口**
   - `schemas/project.py` 新增 `ConfigReadiness` schema
   - `services/project_service.py` 新增 `get_config_readiness()`
   - `api/projects.py` 新增 `GET /api/projects/{id}/readiness`
-- [ ] **2.2：前端对接** — `types/project.ts` + `api/projects.ts` + `hooks/useProjects.ts`
+- [x] **2.2：前端对接** — `types/project.ts` + `api/projects.ts` + `hooks/useProjects.ts`
 
 **验证**：各配置状态下 `/readiness` 返回正确就绪值
 
@@ -94,15 +94,28 @@ Phase 2 (就绪 API) ───┘         ├──> Phase 4 (P4 改造)
 
 ## 交接备注
 
+**Session #11 (2026-03-08)**：Phase 2 完成。
+
+- 2 个任务全部完成：后端就绪接口 + 前端对接
+- 后端：`ConfigReadiness` schema、`get_config_readiness()` service（4 项检查：Agent 版本连接、测试用例、裁判配置、模型配置）、`GET /readiness` API
+- 前端：`ConfigReadiness` 类型、`getReadiness` API 方法、`useProjectReadiness` hook
+- 24 个测试通过，TypeScript 无报错，代码审查通过
+
+下一步：Phase 3（前端路由重构 + P2 + P3）。
+
+**Session #10 (2026-03-08)**：Phase 1 完成。
+
+- 6 个任务全部完成：Alembic 迁移、模型/Schema 更新、config_snapshot 冻结、prompt 暴露、快照持久化
+- 代码审查修复：将 persona_prompt 构建提取为 `_build_persona_prompt()`，在 `__init__` 中调用，避免第一轮即结束时快照为 None
+- 24 个测试全部通过，迁移已应用到数据库
+
+下一步：Phase 2（就绪状态 API）。
+
 **Session #9 (2026-03-08)**：v2 迭代规划。
 
 对比 `eval-platform-mvp-spec-v2.md` 与现有实现，完成完整评估：
-- 架构层面：核心引擎不变，前端页面结构从 Tab 改为页面下钻，DB 增 3 个快照字段
 - 拆分为 5 个 Phase、20 个任务，按依赖关系排序
 - 工作量分布：~70% 前端、~20% 后端、~10% 数据库
-- 最大工作量：Phase 5 P5 对话剧场（全新双栏页面）
-
-下一步：从 Phase 1 开始执行。
 
 ---
 ---

@@ -173,6 +173,7 @@ POST   /api/projects
 GET    /api/projects/:id
 PUT    /api/projects/:id
 DELETE /api/projects/:id
+GET    /api/projects/:id/readiness      # 配置就绪状态检查
 
 # Agent 版本
 GET    /api/projects/:id/agent-versions

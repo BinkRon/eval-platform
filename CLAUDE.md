@@ -10,7 +10,7 @@
 
 版本：v0.2 架构重构（进行中）
 基线：v0.1 MVP 已完成（Phase A-F）
-当前：Phase 1 待执行
+当前：Phase 2 已完成，Phase 3 待执行
 详见：`docs/progress.md`
 
 ## 文档索引
@@ -33,8 +33,8 @@
 2. 读取 `docs/progress.md` → 了解进度和上次交接点
 3. 按需读取 `docs/architecture.md` 或 `docs/conventions.md`
 4. 判断当前任务性质，选择工作模式：
-   - **progress.md 有"进行中"的任务** → 直接执行
-   - **需要规划新阶段** → 使用 EnterPlanMode，确认方向后再动手
+   - **progress.md 有"进行中"或"待开始"的步骤或阶段** → 可以不需要进入 plan 模式，自己先思考一下该如何 plan 然后直接执行即可
+   - **需要规划新版本的整体步骤/阶段**（用户明确提出，或所有步骤已完成） → 使用 EnterPlanMode，等用户确认方向后再动手
 
 ### 开发中（每个任务的标准流程）
 1. **编码**：按 `progress.md` 中的任务描述实现
@@ -45,7 +45,7 @@
 6. **更新进度**：立即在 `docs/progress.md` 中勾选已完成任务
 
 ### Session 粒度
-- 一个 session 执行一个完整的 Phase（非单个小任务）
+- 一个 session 执行一个完整的 Phase（非单个小任务），执行完后让用户确认是否继续
 - Phase 内的任务按顺序执行，每个任务走完上述标准流程
 - 如果 Phase 过大无法在一个 session 完成，在交接备注中标明断点
 
