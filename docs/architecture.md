@@ -240,12 +240,13 @@ class LLMAdapter(ABC):
 ### 路由
 
 ```
-/                                → 重定向到 /projects
-/projects                        → P1 项目列表页
-/projects/:id                    → P2 项目工作台（Tab 容器）
-/projects/:id?tab=...            → 各 Tab 内容
-/projects/:id/batch-tests/:bid   → P3 批测详情页
-/settings/providers              → 全局模型管理
+/                                           → 重定向到 /projects
+/projects                                   → P1 项目列表页
+/projects/:id                               → P2 项目工作台（配置摘要 + 批测列表）
+/projects/:id/config                        → P3 项目配置页（锚点定位）
+/projects/:id/batch-tests/:bid              → P4 用例概览（表格化）
+/projects/:id/batch-tests/:bid/theater/:rid → P5 对话剧场
+/settings/providers                         → 全局模型管理
 ```
 
 ### 状态管理

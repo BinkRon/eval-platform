@@ -59,8 +59,8 @@ Phase 2 (就绪 API) ───┘         ├──> Phase 4 (P4 改造)
 
 ### Phase 4：P4 用例概览改造
 
-- [ ] **4.1：提取 ConversationBubbles** — 从 `BatchTestDetail.tsx` 提取为 `components/shared/ConversationBubbles.tsx`
-- [ ] **4.2：改写 BatchTestDetail → 表格化** — `Table` 替代 `Collapse`，列：用例名/结果/轮次/终止原因/操作
+- [x] **4.1：提取 ConversationBubbles** — 从 `BatchTestDetail.tsx` 提取为 `components/shared/ConversationBubbles.tsx`
+- [x] **4.2：改写 BatchTestDetail → 表格化** — `Table` 替代 `Collapse`，列：用例名/结果/轮次/终止原因/操作
   - 排序：未通过优先(默认) / 按用例序号 / 按轮次
   - `[进入剧场]` 按钮 → P5
   - 运行中状态：进行中 `⏳`，等待中 `⏸`
@@ -93,6 +93,19 @@ Phase 2 (就绪 API) ───┘         ├──> Phase 4 (P4 改造)
 ---
 
 ## 交接备注
+
+**Session #13 (2026-03-08)**：Phase 4 完成。
+
+- 2 个任务全部完成：ConversationBubbles 提取 + BatchTestDetail 表格化改造
+- P4 改造：Collapse 展开式 → Table 表格化，列：用例名/结果/轮次/终止原因/操作
+- 排序：未通过优先（默认）/ 按用例序号 / 按轮次
+- 运行中状态：⏳ 进行中 / ⏸ 等待中
+- [进入剧场] 按钮预连 P5 路由（DialogTheater 占位页）
+- 代码审查修复：DialogTheater 路由守卫、通过率分母语义修正、key 优化、BatchTestDetail lazy 加载
+- 文档同步：architecture.md 路由表更新、conventions.md 补充 shared/ 目录说明
+- 24 个后端测试通过，TypeScript 无报错
+
+下一步：Phase 5（P5 对话剧场）。
 
 **Session #12 (2026-03-08)**：Phase 3 完成。
 

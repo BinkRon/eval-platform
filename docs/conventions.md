@@ -27,6 +27,7 @@
 
 - `src/pages/` — 页面组件，对应路由
 - `src/components/` — 按模块分子目录（agent-version/, experiment/, batch-test/ 等）
+- `src/components/shared/` — 跨模块复用的纯 UI 组件（无业务逻辑依赖）
 - `src/api/` — API 调用封装（每个资源一个文件）
 - `src/hooks/` — 自定义 hooks（TanStack Query 封装）
 - `src/types/` — TypeScript 类型定义
