@@ -5,9 +5,10 @@ import MainLayout from './layouts/MainLayout'
 import ProjectList from './pages/ProjectList'
 import ProjectWorkbench from './pages/ProjectWorkbench'
 import ProviderSettings from './pages/ProviderSettings'
-import BatchTestDetail from './pages/BatchTestDetail'
+const BatchTestDetail = lazy(() => import('./pages/BatchTestDetail'))
 
 const ProjectConfig = lazy(() => import('./pages/ProjectConfig'))
+const DialogTheater = lazy(() => import('./pages/DialogTheater'))
 
 const PageLoading = () => <Spin style={{ display: 'block', margin: '100px auto' }} />
 
@@ -19,7 +20,8 @@ function App() {
         <Route path="/projects" element={<ProjectList />} />
         <Route path="/projects/:id" element={<ProjectWorkbench />} />
         <Route path="/projects/:id/config" element={<Suspense fallback={<PageLoading />}><ProjectConfig /></Suspense>} />
-        <Route path="/projects/:id/batch-tests/:bid" element={<BatchTestDetail />} />
+        <Route path="/projects/:id/batch-tests/:bid" element={<Suspense fallback={<PageLoading />}><BatchTestDetail /></Suspense>} />
+        <Route path="/projects/:id/batch-tests/:bid/theater/:rid" element={<Suspense fallback={<PageLoading />}><DialogTheater /></Suspense>} />
         <Route path="/settings/providers" element={<ProviderSettings />} />
       </Route>
     </Routes>

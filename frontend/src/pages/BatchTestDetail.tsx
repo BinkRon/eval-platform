@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Alert, Button, Card, Col, Collapse, Descriptions, Divider, Row, Space, Spin, Statistic, Tag, Typography } from 'antd'
-import { ArrowLeftOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
+import { Button, Card, Col, Row, Space, Spin, Statistic, Table, Tag, Typography } from 'antd'
+import { ArrowLeftOutlined } from '@ant-design/icons'
+import type { ColumnsType } from 'antd/es/table'
 import type { TestResult } from '../api/batchTests'
 import { useBatchTestDetail } from '../hooks/useBatchTests'
 
@@ -18,15 +19,16 @@ const TERM_REASON_MAP: Record<string, string> = {
   max_rounds: '达到上限',
 }
 
+type SortMode = 'failed_first' | 'by_index' | 'by_rounds'
+
 export default function BatchTestDetail() {
   const { id: projectId, bid: batchId } = useParams<{ id: string; bid: string }>()
   const navigate = useNavigate()
   const { data: batch, isLoading } = useBatchTestDetail(projectId ?? '', batchId ?? '')
-  const [sortBy, setSortBy] = useState<'default' | 'failed_first' | 'by_rounds'>('default')
+  const [sortBy, setSortBy] = useState<SortMode>('failed_first')
 
-  // Hooks must be called before any conditional returns
   const { dimScores, checklistStats } = useMemo(() => {
-    if (!batch) return { dimScores: {}, checklistStats: {} }
+    if (!batch) return { dimScores: {} as Record<string, number[]>, checklistStats: {} as Record<string, { total: number; passed: number; level: string }> }
     const completed = (batch.test_results || []).filter((r) => r.status === 'completed')
     const scores: Record<string, number[]> = {}
     for (const r of completed) {
@@ -35,10 +37,10 @@ export default function BatchTestDetail() {
         scores[s.dimension].push(s.score)
       }
     }
-    const stats: Record<string, { total: number; passed: number }> = {}
+    const stats: Record<string, { total: number; passed: number; level: string }> = {}
     for (const r of completed) {
       for (const c of r.checklist_results || []) {
-        if (!stats[c.content]) stats[c.content] = { total: 0, passed: 0 }
+        if (!stats[c.content]) stats[c.content] = { total: 0, passed: 0, level: c.level }
         stats[c.content].total++
         if (c.passed) stats[c.content].passed++
       }
@@ -46,208 +48,195 @@ export default function BatchTestDetail() {
     return { dimScores: scores, checklistStats: stats }
   }, [batch])
 
+  const sortedResults = useMemo(() => {
+    if (!batch) return []
+    const results = [...(batch.test_results || [])]
+    if (sortBy === 'failed_first') {
+      results.sort((a, b) => {
+        const order = (r: TestResult) => {
+          if (r.status === 'failed') return 0
+          if (r.status === 'completed' && !r.passed) return 1
+          if (r.status === 'completed' && r.passed) return 2
+          if (r.status === 'running') return 3
+          return 4 // pending
+        }
+        return order(a) - order(b)
+      })
+    } else if (sortBy === 'by_rounds') {
+      results.sort((a, b) => (b.actual_rounds ?? 0) - (a.actual_rounds ?? 0))
+    }
+    // by_index: keep original order
+    return results
+  }, [batch, sortBy])
+
   if (!projectId || !batchId) return <Typography.Text type="danger">路由参数缺失</Typography.Text>
   if (isLoading) return <Spin style={{ display: 'block', margin: '100px auto' }} />
   if (!batch) return <Typography.Text type="danger">批测不存在</Typography.Text>
 
-  const results = [...(batch.test_results || [])]
-  if (sortBy === 'failed_first') {
-    results.sort((a, b) => (a.passed === b.passed ? 0 : a.passed ? 1 : -1))
-  }
-  if (sortBy === 'by_rounds') {
-    results.sort((a, b) => (b.actual_rounds ?? 0) - (a.actual_rounds ?? 0))
-  }
+  const denominator = batch.status === 'completed' ? batch.total_cases : batch.completed_cases
+  const passRate = denominator > 0 ? Math.round((batch.passed_cases / denominator) * 100) : 0
 
-  // Stats
-  const denominator = batch.status === 'completed' ? batch.total_cases : (batch.completed_cases || batch.total_cases)
-  const passRate = denominator > 0
-    ? Math.round((batch.passed_cases / denominator) * 100)
-    : 0
+  const columns: ColumnsType<TestResult> = [
+    {
+      title: '用例名称',
+      dataIndex: 'test_case_name',
+      key: 'name',
+      render: (name: string | null, r: TestResult) =>
+        name ? `「${name}」` : r.test_case_id ? `用例 ${r.test_case_id.slice(0, 8)}` : '-',
+    },
+    {
+      title: '结果',
+      key: 'result',
+      width: 100,
+      render: (_: unknown, r: TestResult) => {
+        if (r.status === 'running') return <Tag color="processing">⏳ 进行中</Tag>
+        if (r.status === 'pending') return <Tag>⏸ 等待中</Tag>
+        if (r.status === 'failed') return <Tag color="error">⚠️ 执行失败</Tag>
+        return r.passed
+          ? <Tag color="success">✅ 通过</Tag>
+          : <Tag color="error">❌ 未通过</Tag>
+      },
+    },
+    {
+      title: '轮次',
+      dataIndex: 'actual_rounds',
+      key: 'rounds',
+      width: 80,
+      render: (rounds: number | null) => rounds ?? '-',
+    },
+    {
+      title: '终止原因',
+      dataIndex: 'termination_reason',
+      key: 'termination',
+      width: 120,
+      render: (reason: string | null) =>
+        reason ? (TERM_REASON_MAP[reason] || reason) : '-',
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 100,
+      render: (_: unknown, r: TestResult) => {
+        const canEnter = r.status === 'completed' || r.status === 'running'
+        return (
+          <Button
+            type="link"
+            size="small"
+            disabled={!canEnter}
+            onClick={() => navigate(`/projects/${projectId}/batch-tests/${batchId}/theater/${r.id}`)}
+          >
+            进入剧场
+          </Button>
+        )
+      },
+    },
+  ]
 
   return (
     <>
+      {/* Header */}
       <Space style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/projects/${projectId}?tab=batch-tests`)}>
-          返回
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/projects/${projectId}`)}>
+          返回项目工作台
         </Button>
-        <Typography.Title level={4} style={{ margin: 0 }}>批测详情</Typography.Title>
+        <Typography.Title level={4} style={{ margin: 0 }}>
+          批测详情{batch.agent_version_name ? ` · ${batch.agent_version_name}` : ''}
+        </Typography.Title>
         <Tag color={BATCH_STATUS_MAP[batch.status]?.color ?? 'default'}>
           {BATCH_STATUS_MAP[batch.status]?.label ?? batch.status}
         </Tag>
+        <Typography.Text type="secondary">
+          通过率：{batch.passed_cases}/{batch.total_cases} ({passRate}%)
+        </Typography.Text>
       </Space>
 
       {/* Summary Stats */}
       <Row gutter={16} style={{ marginBottom: 24 }}>
         <Col span={6}>
-          <Card><Statistic title="总用例数" value={batch.total_cases} /></Card>
+          <Card size="small"><Statistic title="总用例数" value={batch.total_cases} /></Card>
         </Col>
         <Col span={6}>
-          <Card><Statistic title="通过率" value={passRate} suffix="%" valueStyle={{ color: passRate >= 80 ? '#3f8600' : '#cf1322' }} /></Card>
+          <Card size="small">
+            <Statistic
+              title="通过率"
+              value={passRate}
+              suffix="%"
+              valueStyle={{ color: passRate >= 80 ? '#3f8600' : '#cf1322' }}
+            />
+          </Card>
         </Col>
         <Col span={6}>
-          <Card><Statistic title="通过/总数" value={`${batch.passed_cases}/${batch.total_cases}`} /></Card>
+          <Card size="small"><Statistic title="通过/总数" value={`${batch.passed_cases}/${batch.total_cases}`} /></Card>
         </Col>
         <Col span={6}>
-          <Card><Statistic title="完成时间" value={batch.completed_at ? new Date(batch.completed_at).toLocaleString() : '-'} /></Card>
+          <Card size="small">
+            <Statistic
+              title="完成时间"
+              value={batch.completed_at ? new Date(batch.completed_at).toLocaleString() : '-'}
+            />
+          </Card>
         </Col>
       </Row>
 
-      {/* Checklist Summary */}
-      {Object.keys(checklistStats).length > 0 && (
-        <Card title="Checklist 通过率" size="small" style={{ marginBottom: 16 }}>
-          {Object.entries(checklistStats).map(([content, stat]) => (
-            <div key={content} style={{ marginBottom: 4 }}>
-              <Tag color={stat.passed === stat.total ? 'green' : 'red'}>
-                {stat.passed}/{stat.total}
-              </Tag>
-              {content}
-            </div>
-          ))}
-        </Card>
-      )}
+      {/* Checklist + Eval Summary */}
+      <Row gutter={16} style={{ marginBottom: 24 }}>
+        {Object.keys(checklistStats).length > 0 && (
+          <Col span={12}>
+            <Card title="Checklist 通过率" size="small">
+              {Object.entries(checklistStats).map(([content, stat]) => {
+                const pct = Math.round((stat.passed / stat.total) * 100)
+                const isMust = stat.level === 'must'
+                const isFullPass = stat.passed === stat.total
+                return (
+                  <div key={content} style={{ marginBottom: 4 }}>
+                    <Tag color={isMust ? 'red' : 'orange'}>{isMust ? '必过' : '重要'}</Tag>
+                    <Tag color={isFullPass ? 'green' : 'red'}>
+                      {stat.passed}/{stat.total} {pct}%
+                    </Tag>
+                    <span style={{ color: isMust && !isFullPass ? '#ff4d4f' : undefined, fontWeight: isMust && !isFullPass ? 'bold' : undefined }}>
+                      {content}
+                    </span>
+                  </div>
+                )
+              })}
+            </Card>
+          </Col>
+        )}
+        {Object.keys(dimScores).length > 0 && (
+          <Col span={12}>
+            <Card title="Evaluation 维度均分" size="small">
+              <Row gutter={16}>
+                {Object.entries(dimScores).map(([dim, scores]) => {
+                  const avg = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)
+                  return (
+                    <Col key={dim} span={8}>
+                      <Statistic title={dim} value={avg} suffix="/ 3" />
+                    </Col>
+                  )
+                })}
+              </Row>
+            </Card>
+          </Col>
+        )}
+      </Row>
 
-      {/* Eval Dimension Averages */}
-      {Object.keys(dimScores).length > 0 && (
-        <Card title="Evaluation 维度均分" size="small" style={{ marginBottom: 16 }}>
-          <Row gutter={16}>
-            {Object.entries(dimScores).map(([dim, scores]) => {
-              const avg = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)
-              return (
-                <Col key={dim} span={8}>
-                  <Statistic title={dim} value={avg} suffix="/ 3" />
-                </Col>
-              )
-            })}
-          </Row>
-        </Card>
-      )}
-
-      {/* Sort Toggle */}
+      {/* Sort Toggle + Table */}
       <div style={{ marginBottom: 8 }}>
         <Space>
           <span>排序：</span>
-          <Button size="small" type={sortBy === 'default' ? 'primary' : 'default'} onClick={() => setSortBy('default')}>默认</Button>
           <Button size="small" type={sortBy === 'failed_first' ? 'primary' : 'default'} onClick={() => setSortBy('failed_first')}>未通过优先</Button>
+          <Button size="small" type={sortBy === 'by_index' ? 'primary' : 'default'} onClick={() => setSortBy('by_index')}>按用例序号</Button>
           <Button size="small" type={sortBy === 'by_rounds' ? 'primary' : 'default'} onClick={() => setSortBy('by_rounds')}>按轮次</Button>
         </Space>
       </div>
 
-      {/* Test Results */}
-      <Collapse
-        items={results.map((r) => ({
-          key: r.id,
-          label: (
-            <Space>
-              {r.status === 'failed'
-                ? <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
-                : r.passed
-                  ? <CheckCircleOutlined style={{ color: '#52c41a' }} />
-                  : <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
-              }
-              <span>{r.test_case_name ? `「${r.test_case_name}」` : `用例 ${r.test_case_id?.slice(0, 8)}`}</span>
-              {r.status === 'failed'
-                ? <Tag color="error">执行失败</Tag>
-                : <Tag color={r.passed ? 'green' : 'red'}>{r.passed ? '通过' : '未通过'}</Tag>
-              }
-              {r.actual_rounds != null && <span>{r.actual_rounds} 轮</span>}
-              {r.termination_reason && (
-                <Tag>{TERM_REASON_MAP[r.termination_reason] || r.termination_reason}</Tag>
-              )}
-            </Space>
-          ),
-          children: <TestResultExpand result={r} />,
-        }))}
+      <Table
+        dataSource={sortedResults}
+        columns={columns}
+        rowKey="id"
+        pagination={false}
+        size="middle"
       />
     </>
-  )
-}
-
-function TestResultExpand({ result }: { result: TestResult }) {
-  if (result.status === 'failed') {
-    return (
-      <>
-        <Alert type="error" message={result.error_message || '执行失败'} style={{ marginBottom: 16 }} />
-        {result.conversation && result.conversation.length > 0 && (
-          <>
-            <Divider>对话记录（评判前）</Divider>
-            <Card size="small">
-              <ConversationBubbles messages={result.conversation} />
-            </Card>
-          </>
-        )}
-      </>
-    )
-  }
-
-  return (
-    <>
-      {/* Checklist */}
-      {result.checklist_results && result.checklist_results.length > 0 && (
-        <Descriptions title="Checklist 结果" column={1} size="small" style={{ marginBottom: 16 }}>
-          {result.checklist_results.map((c, i) => (
-            <Descriptions.Item
-              key={i}
-              label={
-                <Space>
-                  <Tag color={c.level === 'must' ? 'red' : 'orange'}>{c.level === 'must' ? '必过' : '重要'}</Tag>
-                  {c.content}
-                </Space>
-              }
-            >
-              <Tag color={c.passed ? 'green' : 'red'}>{c.passed ? '通过' : '未通过'}</Tag>
-              {c.reason && <Typography.Text type="secondary"> {c.reason}</Typography.Text>}
-            </Descriptions.Item>
-          ))}
-        </Descriptions>
-      )}
-
-      {/* Eval Scores */}
-      {result.eval_scores && result.eval_scores.length > 0 && (
-        <Descriptions title="Evaluation 评分" column={3} size="small" style={{ marginBottom: 16 }}>
-          {result.eval_scores.map((s, i) => (
-            <Descriptions.Item key={i} label={s.dimension}>
-              {'⭐'.repeat(s.score)} ({s.score}/3)
-              {s.reason && <div><Typography.Text type="secondary">{s.reason}</Typography.Text></div>}
-            </Descriptions.Item>
-          ))}
-        </Descriptions>
-      )}
-
-      {/* Conversation */}
-      {result.conversation && (
-        <Card title="对话记录" size="small" style={{ marginBottom: 16 }}>
-          <ConversationBubbles messages={result.conversation} />
-        </Card>
-      )}
-
-      {/* Judge Summary */}
-      {result.judge_summary && (
-        <Card title="裁判总结" size="small">
-          <Typography.Paragraph>{result.judge_summary}</Typography.Paragraph>
-        </Card>
-      )}
-    </>
-  )
-}
-
-function ConversationBubbles({ messages }: { messages: Array<{ role: string; content: string }> }) {
-  return (
-    <div style={{ maxHeight: 400, overflow: 'auto' }}>
-      {messages.map((msg, i) => (
-        <div key={i} style={{ marginBottom: 12, textAlign: msg.role === 'user' ? 'left' : 'right' }}>
-          <Tag color={msg.role === 'user' ? 'blue' : 'green'}>
-            {msg.role === 'user' ? '对练' : 'Agent'}
-          </Tag>
-          <div style={{
-            display: 'inline-block', maxWidth: '70%',
-            padding: '8px 12px', borderRadius: 8,
-            background: msg.role === 'user' ? '#e6f4ff' : '#f6ffed',
-            textAlign: 'left',
-          }}>
-            {msg.content}
-          </div>
-        </div>
-      ))}
-    </div>
   )
 }
