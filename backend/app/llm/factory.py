@@ -5,6 +5,7 @@ from app.llm.openai_adapter import OpenAIAdapter
 _ADAPTERS: dict[str, type[LLMAdapter]] = {
     "anthropic": AnthropicAdapter,
     "openai": OpenAIAdapter,
+    "dashscope": OpenAIAdapter,
 }
 
 
