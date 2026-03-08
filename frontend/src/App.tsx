@@ -1,9 +1,15 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { Spin } from 'antd'
 import MainLayout from './layouts/MainLayout'
 import ProjectList from './pages/ProjectList'
 import ProjectWorkbench from './pages/ProjectWorkbench'
 import ProviderSettings from './pages/ProviderSettings'
 import BatchTestDetail from './pages/BatchTestDetail'
+
+const ProjectConfig = lazy(() => import('./pages/ProjectConfig'))
+
+const PageLoading = () => <Spin style={{ display: 'block', margin: '100px auto' }} />
 
 function App() {
   return (
@@ -12,6 +18,7 @@ function App() {
         <Route path="/" element={<Navigate to="/projects" replace />} />
         <Route path="/projects" element={<ProjectList />} />
         <Route path="/projects/:id" element={<ProjectWorkbench />} />
+        <Route path="/projects/:id/config" element={<Suspense fallback={<PageLoading />}><ProjectConfig /></Suspense>} />
         <Route path="/projects/:id/batch-tests/:bid" element={<BatchTestDetail />} />
         <Route path="/settings/providers" element={<ProviderSettings />} />
       </Route>

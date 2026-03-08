@@ -10,6 +10,7 @@ export interface BatchTest {
   completed_cases: number
   created_at: string
   completed_at: string | null
+  config_snapshot: Record<string, unknown> | null
 }
 
 export interface BatchTestCreate {
@@ -31,6 +32,8 @@ export interface TestResult {
   judge_summary: string | null
   passed: boolean | null
   error_message: string | null
+  sparring_prompt_snapshot: string | null
+  judge_prompt_snapshot: string | null
 }
 
 export interface BatchTestDetail extends BatchTest {
