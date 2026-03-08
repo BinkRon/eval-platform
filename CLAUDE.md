@@ -10,7 +10,7 @@
 
 版本：v0.2 架构重构（进行中）
 基线：v0.1 MVP 已完成（Phase A-F）
-当前：Phase 2 已完成，Phase 3 待执行
+当前：Phase 3 已完成，Phase 4 待执行
 详见：`docs/progress.md`
 
 ## 文档索引

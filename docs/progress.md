@@ -46,12 +46,12 @@ Phase 2 (就绪 API) ───┘         ├──> Phase 4 (P4 改造)
 
 ### Phase 3：前端路由重构 + P2 + P3
 
-- [ ] **3.1：更新路由** — `App.tsx` 新增 `/projects/:id/config` 和 `/projects/:id/batch-tests/:bid/cases/:rid`
-- [ ] **3.2：重写 P2 — ProjectWorkbench** — 去掉 Tabs，改为配置摘要栏 + 批测列表 + `[发起批测]` 按钮
-- [ ] **3.3：提取 CreateBatchModal** — 从 `BatchTestTab.tsx` 提取为独立组件
-- [ ] **3.4：新建 P3 — ProjectConfig** — 4 个 Card 区块 + 锚点滚动，复用现有 Tab 组件
-- [ ] **3.5：更新前端类型** — `batchTest.ts` 增加快照字段
-- [ ] **3.6：清理废弃代码** — 删除 `ExperimentTab.tsx`
+- [x] **3.1：更新路由** — `App.tsx` 新增 `/projects/:id/config`，lazy load ProjectConfig
+- [x] **3.2：重写 P2 — ProjectWorkbench** — 去掉 Tabs，改为配置摘要栏 + 批测列表 + `[发起批测]` 按钮
+- [x] **3.3：提取 CreateBatchModal** — 从 `BatchTestTab.tsx` 提取为独立组件，新增 `onCreated` 回调
+- [x] **3.4：新建 P3 — ProjectConfig** — 4 个 Card 区块 + 锚点滚动，复用现有 Tab 组件
+- [x] **3.5：更新前端类型** — `batchTest.ts` 增加 `config_snapshot`、`sparring_prompt_snapshot`、`judge_prompt_snapshot`
+- [x] **3.6：清理废弃代码** — 删除 `ExperimentTab.tsx` + `BatchTestTab.tsx`
 
 **验证**：P2 无 Tab + 摘要卡片可点 → P3 四区块正常 → 发起批测跳转 P4 → 导航正常
 
@@ -93,6 +93,17 @@ Phase 2 (就绪 API) ───┘         ├──> Phase 4 (P4 改造)
 ---
 
 ## 交接备注
+
+**Session #12 (2026-03-08)**：Phase 3 完成。
+
+- 6 个任务全部完成：路由重构、P2 重写、CreateBatchModal 提取、P3 新建、类型更新、废弃代码清理
+- P2 改造：去掉 4-Tab 工作台，改为配置摘要栏（4 个 ReadinessCard + 就绪状态）+ 批测记录列表
+- P3 新建：ProjectConfig 页面，4 个 Card 纵向排列 + URL 锚点滚动定位
+- CreateBatchModal：独立组件，支持 `onCreated` 回调（创建后自动跳转 P4）
+- 代码审查修复：Modal 条件渲染改为始终渲染、catch 块拆分校验与 API 错误、filter 类型安全
+- 24 个后端测试通过，TypeScript 无报错
+
+下一步：Phase 4（P4 用例概览改造）。
 
 **Session #11 (2026-03-08)**：Phase 2 完成。
 
