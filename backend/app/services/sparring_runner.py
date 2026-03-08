@@ -22,6 +22,18 @@ class SparringRunner:
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.conversation: list[dict] = []
+        self.persona_prompt: str = self._build_persona_prompt()
+
+    def _build_persona_prompt(self) -> str:
+        prompt = self.system_prompt + "\n\n"
+        prompt += f"--- 当前用例的角色卡 ---\n"
+        prompt += f"首轮发言：{self.test_case.first_message}\n"
+        if self.test_case.persona_background:
+            prompt += f"角色背景：{self.test_case.persona_background}\n"
+        if self.test_case.persona_behavior:
+            prompt += f"行为特征：{self.test_case.persona_behavior}\n"
+        prompt += f"\n当对话可以自然结束时，请在回复末尾加上 {END_MARKER} 标记。"
+        return prompt
 
     async def run(self) -> tuple[list[dict], str, int]:
         """Run the sparring conversation loop.
@@ -65,19 +77,9 @@ class SparringRunner:
         return self.conversation, "max_rounds", actual_rounds
 
     async def _generate_next_message(self) -> str:
-        # Build sparring prompt with persona info
-        persona_prompt = self.system_prompt + "\n\n"
-        persona_prompt += f"--- 当前用例的角色卡 ---\n"
-        persona_prompt += f"首轮发言：{self.test_case.first_message}\n"
-        if self.test_case.persona_background:
-            persona_prompt += f"角色背景：{self.test_case.persona_background}\n"
-        if self.test_case.persona_behavior:
-            persona_prompt += f"行为特征：{self.test_case.persona_behavior}\n"
-        persona_prompt += f"\n当对话可以自然结束时，请在回复末尾加上 {END_MARKER} 标记。"
-
         kwargs: dict = {
             "messages": self.conversation,
-            "system_prompt": persona_prompt,
+            "system_prompt": self.persona_prompt,
         }
         if self.temperature is not None:
             kwargs["temperature"] = self.temperature

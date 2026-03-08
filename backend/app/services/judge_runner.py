@@ -40,9 +40,11 @@ class JudgeRunner:
         self.pass_threshold = pass_threshold
         self.temperature = temperature
         self.max_tokens = max_tokens
+        self.last_prompt: str | None = None
 
     async def judge(self, conversation: list[dict]) -> JudgeResult:
         prompt = self._build_prompt(conversation)
+        self.last_prompt = prompt
 
         # Call LLM with JSON mode, retry once on format error
         last_error = None

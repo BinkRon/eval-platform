@@ -21,6 +21,7 @@ class BatchTestResponse(BaseModel):
     completed_cases: int
     created_at: datetime
     completed_at: datetime | None
+    config_snapshot: dict | None = None
 
     model_config = {"from_attributes": True}
 
@@ -46,6 +47,8 @@ class TestResultResponse(BaseModel):
     judge_summary: str | None
     passed: bool | None
     error_message: str | None
+    sparring_prompt_snapshot: str | None = None
+    judge_prompt_snapshot: str | None = None
 
     model_config = {"from_attributes": True}
 

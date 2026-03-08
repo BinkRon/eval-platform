@@ -19,6 +19,7 @@ class BatchTest(UUIDPrimaryKey, TimestampMixin, Base):
     passed_cases: Mapped[int] = mapped_column(Integer, default=0)
     completed_cases: Mapped[int] = mapped_column(Integer, default=0)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime)
+    config_snapshot: Mapped[dict | None] = mapped_column(JSONB)
 
     project = relationship("Project", back_populates="batch_tests", lazy="raise")
     agent_version = relationship("AgentVersion", lazy="raise")
@@ -43,6 +44,8 @@ class TestResult(UUIDPrimaryKey, TimestampMixin, Base):
     judge_summary: Mapped[str | None] = mapped_column(Text)
     passed: Mapped[bool | None] = mapped_column(Boolean)
     error_message: Mapped[str | None] = mapped_column(Text)
+    sparring_prompt_snapshot: Mapped[str | None] = mapped_column(Text)
+    judge_prompt_snapshot: Mapped[str | None] = mapped_column(Text)
 
     batch_test = relationship("BatchTest", back_populates="test_results", lazy="raise")
     test_case = relationship("TestCase", lazy="raise")

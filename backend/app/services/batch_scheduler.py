@@ -272,6 +272,7 @@ async def _run_single_test(batch_test_id, test_case, ctx: BatchContext, sparring
             max_tokens=ctx.sparring_max_tokens,
         )
         conversation, termination_reason, actual_rounds = await sparring_runner.run()
+        sparring_prompt_snapshot = sparring_runner.persona_prompt
     except Exception as e:
         logger.exception(f"Test case {test_case.id} sparring failed: {e}")
         await _save_failed_result(batch_test_id, test_case.id, sanitize_error(f"对练失败: {e}"))
@@ -282,6 +283,7 @@ async def _run_single_test(batch_test_id, test_case, ctx: BatchContext, sparring
     checklist_results = None
     eval_scores = None
     judge_summary = None
+    judge_prompt_snapshot = None
 
     try:
         if ctx.judge_config:
@@ -299,6 +301,7 @@ async def _run_single_test(batch_test_id, test_case, ctx: BatchContext, sparring
             eval_scores = judge_result.eval_scores
             judge_summary = judge_result.summary
             passed = judge_result.passed
+            judge_prompt_snapshot = judge_runner.last_prompt
     except Exception as e:
         logger.exception(f"Test case {test_case.id} judge failed: {e}")
         await _save_failed_result(
@@ -326,6 +329,8 @@ async def _run_single_test(batch_test_id, test_case, ctx: BatchContext, sparring
         tr.eval_scores = eval_scores
         tr.judge_summary = judge_summary
         tr.passed = passed
+        tr.sparring_prompt_snapshot = sparring_prompt_snapshot
+        tr.judge_prompt_snapshot = judge_prompt_snapshot
         progress_values = {"completed_cases": BatchTest.completed_cases + 1}
         if passed:
             progress_values["passed_cases"] = BatchTest.passed_cases + 1

@@ -23,8 +23,11 @@ async def validate_and_create(db: AsyncSession, project_id: UUID, data: BatchTes
     if version.connection_status != "success":
         raise ValidationError("请先完成 Agent 版本的连接测试")
 
-    tc_result = await db.execute(select(TestCase).where(TestCase.project_id == project_id).limit(1))
-    if not tc_result.scalar_one_or_none():
+    tc_result = await db.execute(
+        select(TestCase).where(TestCase.project_id == project_id).order_by(TestCase.sort_order)
+    )
+    test_cases = list(tc_result.scalars().all())
+    if not test_cases:
         raise ValidationError("请先添加测试用例")
 
     jc_result = await db.execute(
@@ -41,11 +44,55 @@ async def validate_and_create(db: AsyncSession, project_id: UUID, data: BatchTes
     if not model_config or not model_config.sparring_provider or not model_config.judge_provider:
         raise ValidationError("请先配置对练模型和裁判模型")
 
+    # Freeze current experiment config as snapshot
+    config_snapshot = {
+        "agent_version": {
+            "id": str(version.id),
+            "name": version.name,
+            "endpoint": version.endpoint,
+        },
+        "test_cases": [
+            {
+                "id": str(tc.id),
+                "name": tc.name,
+                "first_message": tc.first_message,
+                "persona_background": tc.persona_background,
+                "persona_behavior": tc.persona_behavior,
+                "max_rounds": tc.max_rounds,
+            }
+            for tc in test_cases
+        ],
+        "judge_config": {
+            "pass_threshold": float(judge_config.pass_threshold),
+            "checklist_items": [
+                {"content": ci.content, "level": ci.level}
+                for ci in judge_config.checklist_items
+            ],
+            "eval_dimensions": [
+                {
+                    "name": ed.name,
+                    "description": ed.description,
+                    "level_3_desc": ed.level_3_desc,
+                    "level_2_desc": ed.level_2_desc,
+                    "level_1_desc": ed.level_1_desc,
+                }
+                for ed in judge_config.eval_dimensions
+            ],
+        },
+        "model_config": {
+            "sparring_provider": model_config.sparring_provider,
+            "sparring_model": model_config.sparring_model,
+            "judge_provider": model_config.judge_provider,
+            "judge_model": model_config.judge_model,
+        },
+    }
+
     batch = BatchTest(
         project_id=project_id,
         agent_version_id=data.agent_version_id,
         concurrency=data.concurrency,
         status="pending",
+        config_snapshot=config_snapshot,
     )
     db.add(batch)
     await db.flush()
