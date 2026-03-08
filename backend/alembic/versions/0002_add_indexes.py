@@ -1,13 +1,13 @@
 """Add indexes for high-frequency query fields
 
 Revision ID: 0002
-Revises: 0001_initial_tables
+Revises: 0001
 Create Date: 2026-03-06
 """
 from alembic import op
 
 revision = "0002_add_indexes"
-down_revision = "0001_initial_tables"
+down_revision = "0001"
 branch_labels = None
 depends_on = None
 

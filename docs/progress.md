@@ -1,207 +1,166 @@
 # 评测平台 — 开发进度
 
-## v0.1 MVP（质量加固完成）
+## v0.2 架构重构（进行中）
 
-> 从零搭建对话 Agent 评测平台 MVP。核心验证：自动化对练 + 裁判能可靠发现 Agent 的真实问题。
+> 基于 `docs/eval-platform-mvp-spec-v2.md`，将 Tab 式工作台升级为页面下钻式架构。
+> 核心变化：P2 配置摘要+批测列表、新增 P3 配置页、P4 表格化、新增 P5 对话剧场、后端快照字段。
 
-### Phase A：项目脚手架 + 基础设施
+### 依赖关系
 
-- [x] **A1：初始化后端项目** ✅
-- [x] **A2：初始化前端项目** ✅
-- [x] **A3：Docker Compose** ✅
-- [x] **A4：数据库模型 + 迁移** ✅
-- [x] **A5：LLM 适配层** ✅
-- [x] **A6：全局模型管理 API** ✅
-- [x] **A7：全局模型管理前端页面** ✅
-
-**Phase A 里程碑**：✅ 完成
-
----
-
-### Phase B：数据管理
-
-- [x] **B1：项目 CRUD API** ✅
-- [x] **B2：P1 项目列表页** ✅
-- [x] **B3：Agent 版本 CRUD API** ✅
-- [x] **B4：P2-T1 Agent 版本管理页** ✅
-- [x] **B5：测试用例 CRUD API** ✅
-- [x] **B6：P2-T2 用例子 Tab** ✅
-- [x] **B7：裁判配置 API** ✅
-- [x] **B8：P2-T2 裁判子 Tab** ✅
-- [x] **B9：模型配置 API** ✅
-- [x] **B10：P2-T3 模型配置页** ✅
-
-**Phase B 里程碑**：✅ 完成
+```
+Phase 1 (DB + 快照) ──┬──> Phase 3 (路由 + P2 + P3)
+                       │         │
+Phase 2 (就绪 API) ───┘         ├──> Phase 4 (P4 改造)
+                                │         │
+                                └─────────┴──> Phase 5 (P5 剧场)
+```
 
 ---
 
-### Phase C：核心引擎
+### Phase 1：数据库 + Prompt 快照
 
-- [x] **C1：Agent Client** ✅ — HTTP 调用、模板替换、JSONPath 解析
-- [x] **C2：Sparring Runner** ✅ — 对练循环、三种终止条件、[END] 标记
-- [x] **C3：Judge Runner** ✅ — Prompt 组装、JSON 输出、通过判定
-- [x] **C4：Batch Scheduler** ✅ — asyncio.Semaphore 并发、进度追踪
-- [x] **C5：批测 API** ✅ — 创建/列表/详情/进度、后台任务启动
+- [ ] **1.1：Alembic 迁移 — 新增 3 个字段**
+  - `batch_tests` + `config_snapshot` (JSONB)
+  - `test_results` + `sparring_prompt_snapshot` (Text) + `judge_prompt_snapshot` (Text)
+- [ ] **1.2：更新 SQLAlchemy 模型** — `models/batch_test.py`
+- [ ] **1.3：更新 Pydantic Schema** — `schemas/batch_test.py`
+- [ ] **1.4：批测创建时冻结 config_snapshot** — `services/batch_test_service.py`
+- [ ] **1.5：暴露 Prompt 文本** — `sparring_runner.py` 存 `self.persona_prompt`、`judge_runner.py` 存 `self.last_prompt`
+- [ ] **1.6：Batch Scheduler 保存快照** — `batch_scheduler.py` 写入两个 prompt 快照
 
-**Phase C 里程碑**：✅ 完成
-
----
-
-### Phase D：批测界面
-
-- [x] **D1：P2-T4 批测中心** ✅ — 列表 + 发起批测弹窗
-- [x] **D2：进度轮询** ✅ — TanStack Query refetchInterval 3s
-- [x] **D3：P3 统计摘要** ✅ — Checklist 通过率 + Evaluation 维度均分
-- [x] **D4：P3 用例结果列表** ✅ — Collapse 折叠/展开 + 排序切换
-- [x] **D5：P3 用例展开区** ✅ — Checklist + Evaluation + 对话气泡 + 裁判总结
-
-**Phase D 里程碑**：✅ 完成
+**验证**：迁移成功 → 创建批测有 config_snapshot → 完成后有 prompt 快照 → 现有测试不回归
 
 ---
 
-### Phase E：补全 + 打磨
+### Phase 2：就绪状态 API
 
-- [x] **E1：Agent 版本连接测试** ✅ — POST /test 接口 + 前端测试按钮 + 状态更新
-- [x] **E2：批测前置校验** ✅ — 校验 Agent 版本/用例/裁判配置/模型配置
-- [x] **E3：异常处理完善** ✅ — 分阶段错误处理 + 裁判重试 + 批测状态修复 + 前端失败展示
-- [x] **E4：项目卡片摘要信息** ✅ — 聚合查询 + ROW_NUMBER 窗口函数 + 前端卡片摘要渲染
-- [x] **E5：端到端验证** ✅ — 完整 API 链路验证 + 6 个 Bug 修复 + 代码审查
+- [ ] **2.1：后端就绪接口**
+  - `schemas/project.py` 新增 `ConfigReadiness` schema
+  - `services/project_service.py` 新增 `get_config_readiness()`
+  - `api/projects.py` 新增 `GET /api/projects/{id}/readiness`
+- [ ] **2.2：前端对接** — `types/project.ts` + `api/projects.ts` + `hooks/useProjects.ts`
 
-**Phase E 里程碑**：✅ 完成 — 非技术人员能独立完成完整评测流程。
+**验证**：各配置状态下 `/readiness` 返回正确就绪值
 
 ---
 
-### Phase F：质量加固
+### Phase 3：前端路由重构 + P2 + P3
 
-- [x] **F1：数据正确性修复** ✅
-  - F1.1: `updated_at` before_flush 事件监听器
-  - F1.2: 通过率分母改为 `batch.total_cases`
-  - F1.3: JSONB 字段类型标注 `dict` → `list`
-  - F1.4: `datetime.utcnow()` → `func.now()`
-- [x] **F2：安全加固** ✅
-  - F2.1: SSRF 防护（URL 校验 + DNS 解析 + 私有 IP 拒绝）
-  - F2.2: Schema 输入校验（max_length + Literal 约束）
-  - F2.3: Docker 非 root 用户
-  - F2.4: 错误信息脱敏（IP 正则替换）
-- [x] **F3：并发与前端稳定性** ✅
-  - F3.1: `asyncio.gather` 添加 `return_exceptions=True`
-  - F3.2: React hooks 调用顺序修复
-  - F3.3: Modal.confirm 异常捕获（4 处）
-  - F3.4: 批测详情页轮询 + 删除死代码
-- [x] **F4：架构对齐** ✅
-  - F4.1: 路由层业务逻辑提取（project_service + agent_version_service）
-  - F4.2: AgentTestResult schema 归位
-  - F4.3: 事务模式文档统一（手动 commit）
-  - F4.4: 前端代码整理（ConversationBubbles + useMemo + STATUS_MAP）
-- [x] **F5：工程实践** ✅
-  - F5.1: requirements.txt 精确版本锁定（pip-compile）
-  - F5.2: 迁移 squash 为单个正确初始迁移
-  - F5.3: conventions.md 补全（安全/容器/环境配置规范）
-  - F5.4: 引擎改进（裁判重试带错误上下文 + Anthropic 正则解析 + 裁判结果 key 匹配）
+- [ ] **3.1：更新路由** — `App.tsx` 新增 `/projects/:id/config` 和 `/projects/:id/batch-tests/:bid/cases/:rid`
+- [ ] **3.2：重写 P2 — ProjectWorkbench** — 去掉 Tabs，改为配置摘要栏 + 批测列表 + `[发起批测]` 按钮
+- [ ] **3.3：提取 CreateBatchModal** — 从 `BatchTestTab.tsx` 提取为独立组件
+- [ ] **3.4：新建 P3 — ProjectConfig** — 4 个 Card 区块 + 锚点滚动，复用现有 Tab 组件
+- [ ] **3.5：更新前端类型** — `batchTest.ts` 增加快照字段
+- [ ] **3.6：清理废弃代码** — 删除 `ExperimentTab.tsx`
 
-**Phase F 里程碑**：✅ 完成 — 12 个严重问题 + 15 个改进建议全部修复。
+**验证**：P2 无 Tab + 摘要卡片可点 → P3 四区块正常 → 发起批测跳转 P4 → 导航正常
+
+---
+
+### Phase 4：P4 用例概览改造
+
+- [ ] **4.1：提取 ConversationBubbles** — 从 `BatchTestDetail.tsx` 提取为 `components/shared/ConversationBubbles.tsx`
+- [ ] **4.2：改写 BatchTestDetail → 表格化** — `Table` 替代 `Collapse`，列：用例名/结果/轮次/终止原因/操作
+  - 排序：未通过优先(默认) / 按用例序号 / 按轮次
+  - `[进入剧场]` 按钮 → P5
+  - 运行中状态：进行中 `⏳`，等待中 `⏸`
+
+**验证**：表格正常 → 排序正常 → 进入剧场跳转正确 → 运行中实时更新
+
+---
+
+### Phase 5：P5 对话剧场
+
+- [ ] **5.1：新建 DialogTheater 页面** — `pages/DialogTheater.tsx`
+- [ ] **5.2：顶部用例切换栏** — 水平标签，按状态着色，点击切换 URL
+- [ ] **5.3：左侧对话区 (60%)** — ConversationBubbles + 终止原因标注 + 幕后信息折叠（角色卡 + 对练 Prompt）
+- [ ] **5.4：右侧评判区 (40%)** — Checklist 结果 + Evaluation 评分 + 裁判总结 + 裁判 Prompt 折叠
+- [ ] **5.5：运行中状态** — 轮询刷新，对话进行中/裁判评判中状态展示
+
+**验证**：P4 进入剧场 → P5 双栏正确 → 用例切换正常 → 幕后信息有内容 → 实时更新 → 返回正常
+
+---
+
+### 端到端验收
+
+完成所有 Phase 后：
+1. 创建项目 → P2 四张卡片全未就绪，发起按钮灰色
+2. 点卡片 → P3 锚点定位，配置完成后返回 P2 全绿
+3. 发起批测 → 自动跳转 P4，实时进度
+4. 进入剧场 → P5 双栏，切换用例，展开 prompt 快照
+5. 全部 `← 返回` 正常
 
 ---
 
 ## 交接备注
 
-**Session #1 (2026-03-06)**：项目启动。完成产品需求分析（三份文档）、技术架构设计、文档体系搭建。确认技术选型。
+**Session #9 (2026-03-08)**：v2 迭代规划。
 
-**Session #2 (2026-03-06)**：完成 Phase A 全部 7 个任务 + Phase B 全部 10 个任务 + Phase C 全部 5 个任务 + Phase D 全部 5 个任务。
+对比 `eval-platform-mvp-spec-v2.md` 与现有实现，完成完整评估：
+- 架构层面：核心引擎不变，前端页面结构从 Tab 改为页面下钻，DB 增 3 个快照字段
+- 拆分为 5 个 Phase、20 个任务，按依赖关系排序
+- 工作量分布：~70% 前端、~20% 后端、~10% 数据库
+- 最大工作量：Phase 5 P5 对话剧场（全新双栏页面）
 
-后端完成：FastAPI 骨架、10 张表 SQLAlchemy 模型 + Alembic 迁移、LLM 适配层（Anthropic/OpenAI + 工厂）、全部 CRUD API（providers/projects/agent-versions/test-cases/judge-config/model-config/batch-tests）、核心引擎（AgentClient/SparringRunner/JudgeRunner/BatchScheduler）。
+下一步：从 Phase 1 开始执行。
 
-前端完成：Vite + React + TS + Ant Design + TanStack Query + React Router、全局模型管理页、项目列表页（卡片 + CRUD 弹窗）、项目工作台（5 个 Tab：Agent 版本/测试用例/裁判配置/模型配置/批测中心）、批测详情页（统计摘要 + Checklist 通过率 + Evaluation 均分 + 用例折叠列表 + 对话气泡 + 裁判总结）。
+---
+---
 
-基础设施：Docker Compose + Dockerfile、本地 PostgreSQL 14 连接。
+## v0.1 MVP（已完成）
 
-下一步：Phase E 补全打磨。
+> 从零搭建对话 Agent 评测平台 MVP。Phase A-F 全部完成，含质量加固。
 
-**Session #3 (2026-03-06)**：代码质量审查 + 7 步修复。
+<details>
+<summary>Phase A-F 任务清单（全部 ✅）</summary>
 
-审查发现 20 个问题（安全漏洞、数据正确性、架构违规、前端缺陷等），按优先级分 7 步完成修复：
+### Phase A：项目脚手架 + 基础设施
+- [x] A1：初始化后端项目
+- [x] A2：初始化前端项目
+- [x] A3：Docker Compose
+- [x] A4：数据库模型 + 迁移
+- [x] A5：LLM 适配层
+- [x] A6：全局模型管理 API
+- [x] A7：全局模型管理前端页面
 
-1. **P0 安全与数据正确性**：模板注入修复（agent_client.py 改为先解析 JSON 再递归替换占位符）、并发计数竞态修复（batch_scheduler.py 改用 SQL 原子递增）、后台任务 GC 回收（batch_tests.py 持有 task 引用）
-2. **P0 类型 + P1 功能**：JSONB 类型对齐（provider_config.py dict→list）、temperature/max_tokens 透传（BatchContext→SparringRunner/JudgeRunner→LLM）、Anthropic 代码块解析修复
-3. **P2 架构违规**：提取 batch_test_service.py 和 judge_config_service.py、agent_versions.py 消除裸字典返回、移除冗余 db.refresh() 调用
-4. **前端轮询**：useBatchTests 改为条件轮询（refetchInterval 函数式）、消除 N+1 轮询、client.ts 422 错误格式化
-5. **前端防御性编程**：useParams 判空、handleSubmit/handleDelete try/catch
-6. **配置与健壮性**：debug 默认 False、CORS 配置化、LLM 适配层增加 timeout/max_retries
-7. **前端类型目录重构**：新建 src/types/ 目录，7 个模块类型文件 + barrel index.ts，API 文件改为从 types/ 导入并 re-export
+### Phase B：数据管理
+- [x] B1-B10：项目/Agent版本/用例/裁判/模型 CRUD API + 前端页面
 
-**Session #4 (2026-03-06)**：完成 E3 异常处理完善。
+### Phase C：核心引擎
+- [x] C1：Agent Client（HTTP 调用、模板替换、JSONPath 解析）
+- [x] C2：Sparring Runner（对练循环、三种终止条件、[END] 标记）
+- [x] C3：Judge Runner（Prompt 组装、JSON 输出、通过判定）
+- [x] C4：Batch Scheduler（asyncio.Semaphore 并发、进度追踪）
+- [x] C5：批测 API（创建/列表/详情/进度、后台任务启动）
 
-修改 4 个文件：
-1. **agent_client.py**：捕获 httpx 异常（超时/连接/HTTP 状态码/网络错误），JSON 解析异常包装为明确的 RuntimeError
-2. **judge_runner.py**：裁判 JSON 格式错误时重试 1 次（符合 MVP 需求 10.3 节要求）
-3. **batch_scheduler.py**：将单个大 try/catch 拆分为对练/裁判两个阶段；裁判失败时保留对话记录；提取 `_save_failed_result` helper；成功路径合并为单事务；全部用例失败时批测状态标记为 "failed"
-4. **BatchTestDetail.tsx**：修复 React Hooks 规则违反；失败用例展示错误信息 + 对话记录（评判前）；失败用例 label 不再显示 "未通过" 误导语义；批测状态 Tag 支持中文标签
+### Phase D：批测界面
+- [x] D1-D5：批测中心 + 进度轮询 + 统计摘要 + 用例结果列表 + 展开区
 
-完成 E4 项目卡片摘要信息：
-1. **project.py (schema)**：新增 LatestBatchSummary + 扩展 ProjectResponse（版本数/用例数/批测数/最近批测摘要）
-2. **projects.py (API)**：批量 count 子查询 + ROW_NUMBER 窗口函数取每项目最近 2 次批测 + 通过率环比计算
-3. **project.ts (types)**：扩展 Project 接口 + LatestBatchSummary 接口
-4. **ProjectList.tsx**：卡片显示版本数、最近批测摘要（时间+版本+通过率+变化箭头）、用例数、累计批测
+### Phase E：补全 + 打磨
+- [x] E1-E5：连接测试 + 前置校验 + 异常处理 + 卡片摘要 + 端到端验证
 
-下一步：E5 端到端验证。
+### Phase F：质量加固
+- [x] F1-F5：数据正确性 + 安全加固 + 并发稳定性 + 架构对齐 + 工程实践
 
-**Session #5 (2026-03-06)**：完成 E5 端到端验证。
+</details>
 
-完整 API 链路走通：创建 Provider → 创建项目 → 创建 Agent 版本 → 创建用例 → 配置裁判 → 配置模型 → 创建批测 → 轮询进度 → 查看详情。
+<details>
+<summary>Session #1-#8 交接备注</summary>
 
-发现并修复 6 个 Bug：
-1. **db.refresh 缺失**：`server_default=func.now()` 的时间戳在 commit 后为 None，导致 Pydantic 序列化 500。所有 create/update 端点添加 `await db.refresh(obj)`
-2. **时间戳列类型错误**：Alembic 自动生成的迁移将 TimestampMixin 字段映射为 `sa.String()` 而非 `sa.DateTime()`。新建迁移 `bb85f71f2b8a` 将 8 张表的 created_at/updated_at ALTER 为 TIMESTAMP
-3. **事务冲突**：`async with db.begin()` 与 asyncpg 自动开始的事务冲突。judge_configs.py、batch_tests.py 改为直接调用 + `await db.commit()`
-4. **时区感知 datetime 写入失败**：`datetime.now(UTC)` 返回 timezone-aware datetime，asyncpg 拒绝写入 `timestamp without time zone` 列，导致批测状态卡在 "running"。batch_scheduler.py 改用 `datetime.utcnow()`
-5. **dict 转换错误**：`dict(await db.execute(...))` 对 ChunkedIteratorResult 不可用。改为 `dict(result.all())`
-6. **307 重定向**：前端不带尾部斜杠，FastAPI 路由用 `"/"` 导致 307 重定向。设置 `redirect_slashes=False` + 所有集合路由改为 `""`
+**Session #1**：项目启动。产品需求分析、技术架构设计、文档体系搭建。
 
-代码审查修复：
-- `logging.basicConfig` 移到业务 import 之前
-- 全局异常处理器排除 HTTPException，避免覆盖 FastAPI 内置 404/400 处理
+**Session #2**：完成 Phase A-D。后端 FastAPI 骨架、10 张表、LLM 适配层、全部 CRUD API、核心引擎。前端 Vite+React+TS+AntD、全部页面。
 
-架构审查发现 2 个待优化项（记录但不阻塞 MVP）：
-- `batch_test_service.py` 的 service 层直接使用 HTTPException（应抛业务异常）
-- `projects.py` 的 `list_projects` 路由函数包含过多业务逻辑（应提取到 service 层）
+**Session #3**：代码质量审查 + 7 步修复（安全漏洞、数据正确性、架构违规等 20 个问题）。
 
-Phase E 全部完成，v0.1 MVP 所有 Phase (A-E) 开发完毕。
+**Session #4**：E3 异常处理 + E4 卡片摘要。
 
-**Session #6 (2026-03-06)**：SSE 流式响应支持 + 前端白屏修复。
+**Session #5**：E5 端到端验证 + 6 个 Bug 修复。
 
-1. **前端白屏修复**：`api/*.ts` 用 `export type` re-export 类型，Vite 7 esbuild 编译时被擦除，导致 hooks 中 `import { Type }` 找不到导出。7 个 hooks 文件改为 `import type` 直接从 `types/` 导入
-2. **SSE 流式响应支持**：Agent 返回 SSE (Server-Sent Events) 流式数据时，系统无法解析
-   - `agent_version` 模型新增 `response_format` 字段（json/sse），迁移 `b823ab70572f`
-   - `AgentClient` 新增 `_send_message_sse()` 方法：httpx 流式读取 `data:` 事件，逐事件用 `response_path` 提取文本并拼接，`data: [DONE]` 标记流结束
-   - 前端 Agent 版本表单新增「响应格式」下拉选择器（JSON / SSE）
-   - Schema 三端（Create/Update/Response）同步更新
+**Session #6**：SSE 流式响应支持 + 前端白屏修复。
 
-**Session #7 (2026-03-06)**：Phase F 质量加固，全部完成。
+**Session #7**：Phase F 质量加固（12 严重问题 + 15 改进建议全部修复）。
 
-经 5 个并行 code review agent 审查发现的 12 个严重问题 + 15 个改进建议，按 5 波次集中修复：
+**Session #8**：MVP 需求对齐（9 项偏差修正）。
 
-1. **F1 数据正确性**：`updated_at` 添加 before_flush 事件监听器；通过率分母统一用 `batch.total_cases`；JSONB 字段类型标注 `dict→list`；`datetime.utcnow()` 替换为 `func.now()`
-2. **F2 安全加固**：SSRF 防护（URL 校验+DNS 解析+私有 IP 拒绝）；Schema 输入校验（max_length+Literal 约束 5 个文件）；Docker 非 root 用户；错误信息 IP 脱敏
-3. **F3 并发+前端稳定性**：`asyncio.gather` 添加 `return_exceptions=True`；React hooks 调用顺序修复；4 处 Modal.confirm 异常捕获；批测详情页轮询+死代码清理
-4. **F4 架构对齐**：提取 project_service.py 和 agent_version_service.py；AgentTestResult schema 归位；事务模式文档统一；前端 ConversationBubbles 提取+useMemo+STATUS_MAP
-5. **F5 工程实践**：pip-compile 锁版本；迁移 squash 为单个正确初始迁移；conventions.md 补全 3 个安全规范章节；裁判重试带错误上下文+Anthropic 正则解析+裁判结果 key 匹配
-
-v0.1 MVP Phase A-F 全部完成。
-
-**Session #8 (2026-03-06)**：MVP 需求对齐修复（9 项偏差修正）。
-
-对比 `eval-platform-mvp-spec.md` 与实现，发现并修复 9 项需求偏差：
-
-后端修复 4 项：
-1. `test_case.py` schema：`max_rounds` 最小值从 1 改为 3（§6.1.3）
-2. `batch_test_service.py`：批测前置校验增加 `connection_status == "success"` 检查（§10.1）
-3. `batch_test.py` schema + service：`BatchTestResponse` 增加 `agent_version_name`，`TestResultResponse` 增加 `test_case_name`，数据拼装逻辑从路由层移至 service 层
-4. 新建 `test_case_service.py`：`list_with_last_result()` 查询最近批测结果填充用例上次通过状态
-
-前端修复 8 项：
-1. `ProjectWorkbench.tsx`：添加「← 返回项目列表」按钮（§4.1）
-2. 新建 `ExperimentTab.tsx`：测试用例和裁判配置合并为「实验设计」子 Tab（§6）
-3. `TestCaseTab.tsx`：`max_rounds` 前端校验 `min=3`；增加「上次结果」列（§6.1.1）
-4. `BatchTestTab.tsx`：批测列表增加 Agent 版本名 + 用例数列（§8.1）；发起弹窗增加配置摘要（§8.2）；提取 `CreateBatchModal` 组件实现 hooks 懒加载；并发数上限对齐后端 `max=20`
-5. `BatchTestDetail.tsx`：增加「按轮次」排序选项（§9.4）；用例名称显示从 UUID 改为 `「用例名」`（§9.4）
-6. `batchTest.ts`/`testCase.ts` 类型定义同步更新
+</details>
