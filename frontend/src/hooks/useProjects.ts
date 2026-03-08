@@ -29,6 +29,14 @@ export function useUpdateProject() {
   })
 }
 
+export function useProjectReadiness(id: string) {
+  return useQuery({
+    queryKey: ['projects', id, 'readiness'],
+    queryFn: () => projectApi.getReadiness(id),
+    enabled: !!id,
+  })
+}
+
 export function useDeleteProject() {
   const qc = useQueryClient()
   return useMutation({

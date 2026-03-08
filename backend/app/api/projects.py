@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.schemas.project import (
+    ConfigReadiness,
     ProjectCreate,
     ProjectResponse,
     ProjectUpdate,
@@ -27,6 +28,11 @@ async def create_project(data: ProjectCreate, db: AsyncSession = Depends(get_db)
 @router.get("/{project_id}", response_model=ProjectResponse)
 async def get_project(project_id: UUID, db: AsyncSession = Depends(get_db)):
     return await project_service.get_project(db, project_id)
+
+
+@router.get("/{project_id}/readiness", response_model=ConfigReadiness)
+async def get_config_readiness(project_id: UUID, db: AsyncSession = Depends(get_db)):
+    return await project_service.get_config_readiness(db, project_id)
 
 
 @router.put("/{project_id}", response_model=ProjectResponse)

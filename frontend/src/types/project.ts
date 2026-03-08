@@ -17,6 +17,19 @@ export interface Project {
   latest_batch: LatestBatchSummary | null
 }
 
+export interface ConfigReadinessItem {
+  ready: boolean
+  message: string
+}
+
+export interface ConfigReadiness {
+  agent_version: ConfigReadinessItem
+  test_case: ConfigReadinessItem
+  judge_config: ConfigReadinessItem
+  model_config_status: ConfigReadinessItem
+  all_ready: boolean
+}
+
 export interface ProjectCreate {
   name: string
   description?: string

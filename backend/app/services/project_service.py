@@ -7,9 +7,13 @@ from sqlalchemy.orm import selectinload
 from app.exceptions import NotFoundError
 from app.models.agent_version import AgentVersion
 from app.models.batch_test import BatchTest
+from app.models.judge_config import ChecklistItem, EvalDimension, JudgeConfig
+from app.models.model_config import ModelConfig
 from app.models.project import Project
 from app.models.test_case import TestCase
 from app.schemas.project import (
+    ConfigReadiness,
+    ConfigReadinessItem,
     LatestBatchSummary,
     ProjectCreate,
     ProjectResponse,
@@ -166,3 +170,90 @@ async def delete_project(db: AsyncSession, project_id: UUID) -> None:
 
     await db.delete(project)
     await db.commit()
+
+
+async def get_config_readiness(db: AsyncSession, project_id: UUID) -> ConfigReadiness:
+    project = await db.get(Project, project_id)
+    if not project:
+        raise NotFoundError("Project not found")
+
+    # 1. Agent Version: at least 1 with connection_status == "success"
+    av_result = await db.execute(
+        select(func.count()).select_from(AgentVersion).where(
+            AgentVersion.project_id == project_id,
+            AgentVersion.connection_status == "success",
+        )
+    )
+    av_success_count = av_result.scalar_one()
+    agent_version = ConfigReadinessItem(
+        ready=av_success_count > 0,
+        message=f"{av_success_count} 个版本连接测试通过" if av_success_count > 0 else "无可用 Agent 版本（需至少 1 个连接测试通过）",
+    )
+
+    # 2. Test Cases: at least 1
+    tc_result = await db.execute(
+        select(func.count()).select_from(TestCase).where(TestCase.project_id == project_id)
+    )
+    tc_count = tc_result.scalar_one()
+    test_case = ConfigReadinessItem(
+        ready=tc_count > 0,
+        message=f"{tc_count} 个测试用例" if tc_count > 0 else "无测试用例",
+    )
+
+    # 3. Judge Config: at least 1 ChecklistItem or 1 EvalDimension
+    jc_result = await db.execute(
+        select(JudgeConfig.id).where(JudgeConfig.project_id == project_id)
+    )
+    jc_id = jc_result.scalar_one_or_none()
+
+    if jc_id:
+        cl_result = await db.execute(
+            select(func.count()).select_from(ChecklistItem).where(ChecklistItem.judge_config_id == jc_id)
+        )
+        cl_count = cl_result.scalar_one()
+        ed_result = await db.execute(
+            select(func.count()).select_from(EvalDimension).where(EvalDimension.judge_config_id == jc_id)
+        )
+        ed_count = ed_result.scalar_one()
+    else:
+        cl_count = 0
+        ed_count = 0
+
+    judge_ready = cl_count > 0 or ed_count > 0
+    judge_config = ConfigReadinessItem(
+        ready=judge_ready,
+        message=f"{cl_count} 个检查项, {ed_count} 个评判维度" if judge_ready else "未配置裁判规则（需至少 1 个检查项或评判维度）",
+    )
+
+    # 4. Model Config: sparring + judge provider/model/system_prompt all set
+    mc_result = await db.execute(
+        select(ModelConfig).where(ModelConfig.project_id == project_id)
+    )
+    mc = mc_result.scalar_one_or_none()
+
+    if mc:
+        missing = []
+        if not mc.sparring_provider or not mc.sparring_model:
+            missing.append("对练模型")
+        if not mc.sparring_system_prompt:
+            missing.append("对练 System Prompt")
+        if not mc.judge_provider or not mc.judge_model:
+            missing.append("裁判模型")
+        if not mc.judge_system_prompt:
+            missing.append("裁判 System Prompt")
+        model_ready = len(missing) == 0
+        model_config_status = ConfigReadinessItem(
+            ready=model_ready,
+            message="模型配置完整" if model_ready else f"缺少: {', '.join(missing)}",
+        )
+    else:
+        model_config_status = ConfigReadinessItem(ready=False, message="未配置模型")
+
+    items = [agent_version, test_case, judge_config, model_config_status]
+    return ConfigReadiness(
+        agent_version=agent_version,
+        test_case=test_case,
+        judge_config=judge_config,
+        model_config_status=model_config_status,
+        all_ready=all(item.ready for item in items),
+    )

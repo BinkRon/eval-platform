@@ -21,6 +21,19 @@ class LatestBatchSummary(BaseModel):
     pass_rate_change: float | None = None
 
 
+class ConfigReadinessItem(BaseModel):
+    ready: bool
+    message: str
+
+
+class ConfigReadiness(BaseModel):
+    agent_version: ConfigReadinessItem
+    test_case: ConfigReadinessItem
+    judge_config: ConfigReadinessItem
+    model_config_status: ConfigReadinessItem
+    all_ready: bool
+
+
 class ProjectResponse(BaseModel):
     id: UUID
     name: str
