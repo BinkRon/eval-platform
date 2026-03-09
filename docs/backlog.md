@@ -94,7 +94,7 @@
 
 - **优先级**：P1
 - **复杂度**：S
-- **状态**：Open
+- **状态**：Scheduled → v0.3 P1
 - **来源**：设计评审 2026-03-08
 - **描述**：因安全原因后端不返回 `auth_token`，编辑时 token 字段总是空白。用户可能误以为 token 丢失，或不确定留空是否会清除已有 token。
 - **涉及文件**：`frontend/src/components/agent-version/AgentVersionTab.tsx`、`backend/app/services/agent_version_service.py`
@@ -104,7 +104,7 @@
 
 - **优先级**：P2
 - **复杂度**：S
-- **状态**：Open
+- **状态**：Scheduled → v0.3 P1
 - **来源**：设计评审 2026-03-08
 - **描述**：P5 对话剧场及批测详情页的对话气泡没有轮次编号。12 轮以上的对话很长，难以定位裁判总结中提到的具体轮次。
 - **涉及文件**：`frontend/src/components/shared/ConversationBubbles.tsx`
@@ -149,7 +149,7 @@
 
 - **优先级**：P1
 - **复杂度**：M
-- **状态**：Open
+- **状态**：Scheduled → v0.3 P2
 - **来源**：用户反馈 2026-03-09
 - **描述**：三处配置表单存在信息结构问题：
   1. **Agent 版本 Modal**：12 个字段平铺在 640px 弹窗里，基础信息（名称/描述）、连接配置（endpoint/method/auth）、协议配置（request_template/response_path/end_signal）无视觉分组
@@ -167,7 +167,7 @@
 
 - **优先级**：P1
 - **复杂度**：M
-- **状态**：Open
+- **状态**：Scheduled → v0.3 P1
 - **来源**：设计评审 2026-03-08
 - **描述**：`projects` 和 `agent_versions` 已抽取 service 层，但 `test_cases`（create/update/delete）、`model_configs`、`providers` 的 CRUD 逻辑仍直接写在路由函数中，违反架构约定。
 - **涉及文件**：`backend/app/api/test_cases.py`、`backend/app/api/model_configs.py`、`backend/app/api/providers.py`
@@ -177,7 +177,7 @@
 
 - **优先级**：P1
 - **复杂度**：M
-- **状态**：Open
+- **状态**：Scheduled → v0.3 P1
 - **来源**：设计评审 2026-03-08
 - **描述**：`test_cases.py`、`judge_configs.py`、`model_configs.py`、`providers.py` 仍直接 raise `HTTPException`，与 `main.py` 注册的领域异常处理器（`NotFoundError` → 404）模式不一致。
 - **涉及文件**：同 AR-01 涉及文件 + `backend/app/api/judge_configs.py`
@@ -187,7 +187,7 @@
 
 - **优先级**：P2
 - **复杂度**：S
-- **状态**：Open
+- **状态**：Scheduled → v0.3 P2
 - **来源**：设计评审 2026-03-08
 - **描述**：`exceptions.py` 定义了 `ConflictError`，`main.py` 注册了 409 处理器，但代码中没有任何地方 raise 它。
 - **涉及文件**：`backend/app/exceptions.py`、`backend/app/main.py`
@@ -229,7 +229,7 @@
 
 - **优先级**：P2
 - **复杂度**：S
-- **状态**：Open
+- **状态**：Scheduled → v0.3 P1
 - **来源**：设计评审 2026-03-08
 - **描述**：`batch_scheduler.py` 使用 `datetime.utcnow()`，该方法在 Python 3.12+ 已弃用。
 - **涉及文件**：`backend/app/services/batch_scheduler.py`
@@ -239,7 +239,7 @@
 
 - **优先级**：P2
 - **复杂度**：S
-- **状态**：Open
+- **状态**：Scheduled → v0.3 P2
 - **来源**：设计评审 2026-03-08
 - **描述**：`base.py` 抽象方法声明了 `json_schema` 参数，但 `OpenAIAdapter` 和 `AnthropicAdapter` 都未使用它。
 - **涉及文件**：`backend/app/llm/base.py`、`backend/app/llm/openai_adapter.py`、`backend/app/llm/anthropic_adapter.py`
@@ -265,7 +265,7 @@
 
 - **优先级**：P2
 - **复杂度**：S
-- **状态**：Open
+- **状态**：Scheduled → v0.3 P2
 - **来源**：设计评审 2026-03-08
 - **描述**：后端 Pydantic 的 `Numeric` 类型序列化为字符串，前端 TypeScript 类型标注为 `number`，组件中用 `Number(config.pass_threshold)` 显式转换。类型声明与运行时行为不一致。
 - **涉及文件**：`frontend/src/types/judgeConfig.ts`、`frontend/src/components/judge-config/JudgeConfigTab.tsx`
@@ -285,7 +285,7 @@
 
 - **优先级**：P1
 - **复杂度**：M
-- **状态**：Open
+- **状态**：Scheduled → v0.3 P1
 - **来源**：设计评审 2026-03-08，用户反馈 2026-03-09（提升优先级）
 - **描述**：批测 API 没有 DELETE 端点。调试阶段会产生大量无效批测记录，无法清理，列表越来越长，干扰有效数据查阅。
 - **涉及文件**：`backend/app/api/batch_tests.py`、`frontend/src/pages/ProjectWorkbench.tsx`
@@ -304,7 +304,7 @@
 
 - **优先级**：P2
 - **复杂度**：M
-- **状态**：Open
+- **状态**：Scheduled → v0.3 P2
 - **来源**：用户反馈 2026-03-09
 - **描述**：发起批测的确认弹窗只能选 Agent 版本和并发数，测试用例全量跑，无法选取部分用例。调试某个失败场景时只想跑 1-2 个用例，但必须等全量跑完。
 - **涉及文件**：`frontend/src/components/batch-test/CreateBatchModal.tsx`、`backend/app/api/batch_tests.py`、`backend/app/schemas/batch_test.py`、`backend/app/services/batch_scheduler.py`
