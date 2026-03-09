@@ -1,4 +1,4 @@
-import { Descriptions, Form, InputNumber, Modal, Select, message } from 'antd'
+import { Descriptions, Form, InputNumber, Modal, Select, Tag, message } from 'antd'
 import { useAgentVersions } from '../../hooks/useAgentVersions'
 import { useCreateBatchTest } from '../../hooks/useBatchTests'
 import { useTestCases } from '../../hooks/useTestCases'
@@ -59,6 +59,26 @@ export default function CreateBatchModal({ projectId, open, onClose, onCreated }
         <Descriptions.Item label="裁判配置">
           Checklist {judgeConfig?.checklist_items?.length ?? 0} 条 + Evaluation {judgeConfig?.eval_dimensions?.length ?? 0} 维度
         </Descriptions.Item>
+        {(judgeConfig?.checklist_items?.length ?? 0) > 0 && (
+          <Descriptions.Item label="Checklist 条目">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+              {judgeConfig!.checklist_items.map((item, i) => (
+                <Tag key={i} color={item.level === 'must' ? 'red' : 'orange'}>
+                  {item.content}
+                </Tag>
+              ))}
+            </div>
+          </Descriptions.Item>
+        )}
+        {(judgeConfig?.eval_dimensions?.length ?? 0) > 0 && (
+          <Descriptions.Item label="评判维度">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+              {judgeConfig!.eval_dimensions.map((dim, i) => (
+                <Tag key={i}>{dim.name}</Tag>
+              ))}
+            </div>
+          </Descriptions.Item>
+        )}
         <Descriptions.Item label="对练模型">
           {modelConfig?.sparring_provider ?? '-'} / {modelConfig?.sparring_model ?? '-'}
         </Descriptions.Item>

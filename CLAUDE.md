@@ -10,7 +10,7 @@
 
 版本：v0.2 架构重构（已完成）
 基线：v0.1 MVP 已完成（Phase A-F）
-当前：Phase 1-5 + 端到端验收 全部完成
+当前：Phase 1-5 + 端到端验收 + Phase UX 易用性修复 全部完成
 详见：`docs/progress.md`
 
 ## 文档索引

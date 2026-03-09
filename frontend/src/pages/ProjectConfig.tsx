@@ -1,8 +1,8 @@
-import { useEffect } from 'react'
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
-import { Button, Card, Space, Spin, Typography } from 'antd'
-import { ArrowLeftOutlined } from '@ant-design/icons'
+import { useCallback, useEffect, useState } from 'react'
+import { useParams, useSearchParams, useBlocker } from 'react-router-dom'
+import { Card, Modal, Spin, Typography } from 'antd'
 import { useProject } from '../hooks/useProjects'
+import BreadcrumbNav from '../components/shared/BreadcrumbNav'
 import AgentVersionTab from '../components/agent-version/AgentVersionTab'
 import TestCaseTab from '../components/test-case/TestCaseTab'
 import JudgeConfigTab from '../components/judge-config/JudgeConfigTab'
@@ -14,13 +14,44 @@ export default function ProjectConfig() {
   const { id } = useParams<{ id: string }>()
   const [searchParams] = useSearchParams()
   const { data: project, isLoading } = useProject(id ?? '')
-  const navigate = useNavigate()
+
+  // Track dirty state from judge config and model config
+  const [judgeDirty, setJudgeDirty] = useState(false)
+  const [modelDirty, setModelDirty] = useState(false)
+  const hasDirty = judgeDirty || modelDirty
+
+  // Block navigation when there are unsaved changes
+  const blocker = useBlocker(hasDirty)
+
+  useEffect(() => {
+    if (blocker.state === 'blocked') {
+      Modal.confirm({
+        title: '有未保存的更改',
+        content: '裁判配置或模型配置有未保存的更改，确定离开？',
+        okText: '离开',
+        okType: 'danger',
+        cancelText: '继续编辑',
+        onOk: () => blocker.proceed(),
+        onCancel: () => blocker.reset(),
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blocker.state])
+
+  // Warn on browser close/refresh
+  useEffect(() => {
+    if (!hasDirty) return
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [hasDirty])
 
   const targetSection = searchParams.get('section')
 
   useEffect(() => {
     if (targetSection && SECTION_IDS.includes(targetSection as typeof SECTION_IDS[number])) {
-      // Wait for DOM to render
       const timer = setTimeout(() => {
         const el = document.getElementById(targetSection)
         if (el) {
@@ -31,18 +62,21 @@ export default function ProjectConfig() {
     }
   }, [targetSection])
 
+  const handleJudgeDirty = useCallback((dirty: boolean) => setJudgeDirty(dirty), [])
+  const handleModelDirty = useCallback((dirty: boolean) => setModelDirty(dirty), [])
+
   if (!id) return <Typography.Text type="danger">项目 ID 缺失</Typography.Text>
   if (isLoading) return <Spin style={{ display: 'block', margin: '100px auto' }} />
   if (!project) return <Typography.Text type="danger">项目不存在</Typography.Text>
 
   return (
     <>
-      <Space align="center" style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/projects/${id}`)}>
-          返回项目工作台
-        </Button>
-        <Typography.Title level={3} style={{ margin: 0 }}>{project.name} · 项目配置</Typography.Title>
-      </Space>
+      <BreadcrumbNav items={[
+        { title: '项目列表', path: '/projects' },
+        { title: project.name, path: `/projects/${id}` },
+        { title: '项目配置' },
+      ]} />
+      <Typography.Title level={3} style={{ marginBottom: 8, marginTop: 0 }}>{project.name} · 项目配置</Typography.Title>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         <Card id="agent-versions" title="Agent 版本">
@@ -54,11 +88,11 @@ export default function ProjectConfig() {
         </Card>
 
         <Card id="judge-config" title="裁判配置">
-          <JudgeConfigTab projectId={id} />
+          <JudgeConfigTab projectId={id} onDirtyChange={handleJudgeDirty} />
         </Card>
 
         <Card id="model-config" title="模型配置">
-          <ModelConfigTab projectId={id} />
+          <ModelConfigTab projectId={id} onDirtyChange={handleModelDirty} />
         </Card>
       </div>
     </>
