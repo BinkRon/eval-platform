@@ -43,7 +43,7 @@ export default function AgentVersionTab({ projectId }: { projectId: string }) {
       method: record.method,
       response_format: record.response_format,
       auth_type: record.auth_type,
-      auth_token: record.auth_token,
+      auth_token: undefined,
       request_template: record.request_template,
       response_path: record.response_path,
       has_end_signal: record.has_end_signal,
@@ -162,7 +162,7 @@ export default function AgentVersionTab({ projectId }: { projectId: string }) {
             <Select allowClear options={[{ value: 'bearer', label: 'Bearer Token' }, { value: 'header', label: '自定义 Header' }]} />
           </Form.Item>
           <Form.Item name="auth_token" label="认证令牌">
-            <Input.Password />
+            <Input.Password placeholder={editing?.auth_token_set ? '已配置，留空表示不修改' : undefined} />
           </Form.Item>
           <Form.Item name="request_template" label="请求模板 (JSON)">
             <Input.TextArea rows={4} placeholder='{"message": "{{message}}", "session_id": "{{session_id}}"}' />

@@ -53,7 +53,11 @@ async def update_version(
     if not version or version.project_id != project_id:
         raise NotFoundError("Agent version not found")
 
-    for key, value in data.model_dump(exclude_unset=True).items():
+    update_data = data.model_dump(exclude_unset=True)
+    # 空 token 表示不修改，跳过更新
+    if "auth_token" in update_data and not update_data["auth_token"]:
+        del update_data["auth_token"]
+    for key, value in update_data.items():
         setattr(version, key, value)
 
     await db.commit()
