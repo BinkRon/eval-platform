@@ -4,13 +4,51 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.exceptions import NotFoundError
 from app.models.batch_test import BatchTest
+from app.models.project import Project
 from app.models.test_case import TestCase
-from app.schemas.test_case import TestCaseResponse
+from app.schemas.test_case import TestCaseCreate, TestCaseResponse, TestCaseUpdate
+
+
+async def _get_project(db: AsyncSession, project_id: UUID) -> Project:
+    project = await db.get(Project, project_id)
+    if not project:
+        raise NotFoundError("项目不存在")
+    return project
+
+
+async def create_test_case(db: AsyncSession, project_id: UUID, data: TestCaseCreate) -> TestCase:
+    await _get_project(db, project_id)
+    tc = TestCase(project_id=project_id, **data.model_dump())
+    db.add(tc)
+    await db.commit()
+    await db.refresh(tc)
+    return tc
+
+
+async def update_test_case(db: AsyncSession, project_id: UUID, case_id: UUID, data: TestCaseUpdate) -> TestCase:
+    tc = await db.get(TestCase, case_id)
+    if not tc or tc.project_id != project_id:
+        raise NotFoundError("测试用例不存在")
+    for key, value in data.model_dump(exclude_unset=True).items():
+        setattr(tc, key, value)
+    await db.commit()
+    await db.refresh(tc)
+    return tc
+
+
+async def delete_test_case(db: AsyncSession, project_id: UUID, case_id: UUID) -> None:
+    tc = await db.get(TestCase, case_id)
+    if not tc or tc.project_id != project_id:
+        raise NotFoundError("测试用例不存在")
+    await db.delete(tc)
+    await db.commit()
 
 
 async def list_with_last_result(db: AsyncSession, project_id: UUID) -> list[TestCaseResponse]:
     """List test cases with last batch test result."""
+    await _get_project(db, project_id)
     tc_result = await db.execute(
         select(TestCase)
         .where(TestCase.project_id == project_id)
