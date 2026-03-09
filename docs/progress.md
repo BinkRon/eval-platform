@@ -45,7 +45,7 @@
 
 ---
 
-### Phase P2：交互重设计 + 工程清理（6 项）
+### Phase P2：交互重设计 + 工程清理（6 项）✅
 
 > PRD：[`docs/prd/p2-interaction-redesign.md`](prd/p2-interaction-redesign.md)
 
@@ -59,15 +59,16 @@
   - 通过阈值 InputNumber 可调
   - 后端 BatchTestCreate 增加 test_case_ids / checklist_item_ids / eval_dimension_ids / pass_threshold
   - batch_scheduler _load_context 从 snapshot 读取过滤后的 checklist/dimensions
-- [ ] **P2-2a：裁判配置查看态** `UX-09`
+- [x] **P2-2a：裁判配置查看态** `UX-09`
   - 查看态：Table 展示 Checklist + Card 展示评判维度（含评分标准）
   - 编辑态：保留原有 Form.List 动态表单
   - view/edit 切换，首次无数据自动编辑态
-- [ ] **P2-2b：模型配置查看态** `UX-09`
+- [x] **P2-2b：模型配置查看态** `UX-09`
   - 纵向双 Card 堆叠（对练模型在上、裁判模型在下）
   - 每个 Card 独立编辑按钮，分别 view/edit
   - System Prompt 浅灰背景 + ellipsis 展开
-- [ ] **P2-2c：Agent 版本 Modal 分组** `UX-09`
+  - dirty 状态隔离（Set 追踪），scoped validateFields
+- [x] **P2-2c：Agent 版本 Modal 分组** `UX-09`
   - Divider 三段：基础信息 / 连接配置 / 协议配置
 
 **验证**：批测 Modal 多选正常 → 裁判配置 Table/Card 查看态 → 模型纵向+分别编辑 → Agent Modal 分组
@@ -75,6 +76,14 @@
 ---
 
 ## 交接备注
+
+**Session #23 (2026-03-09)**：P2-2a/P2-2b/P2-2c 配置展示优化全部完成。
+
+- P2-2a：裁判配置 Table+Card 查看态，view/edit 切换，首次无数据自动编辑态
+- P2-2b：模型配置纵向双 Card 堆叠，独立 view/edit，dirty 状态隔离（Set 追踪），scoped validateFields
+- P2-2c：Agent 版本 Modal Divider 三段分组
+- 代码审查修复：enterEdit 空 config 防护、dirty 互覆盖、validateFields 跨 card 校验、syncForm 定义顺序
+- Phase P2 全部完成（6/6），UX-09 可标记 Done
 
 **Session #22 (2026-03-09)**：P2-1 发起批测 Modal 多选。
 
