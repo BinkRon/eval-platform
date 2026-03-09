@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Divider, Form, Input, Modal, Select, Space, Switch, Table, Tag, message } from 'antd'
+import { Button, Form, Input, Modal, Select, Space, Switch, Table, Tag, message } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, ApiOutlined } from '@ant-design/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import { agentVersionApi, type AgentVersion } from '../../api/agentVersions'
@@ -143,15 +143,12 @@ export default function AgentVersionTab({ projectId }: { projectId: string }) {
         confirmLoading={createMutation.isPending || updateMutation.isPending}
       >
         <Form form={form} layout="vertical" initialValues={{ method: 'POST', response_format: 'json', has_end_signal: false }}>
-          <Divider orientation="left" orientationMargin={0} style={{ marginTop: 0 }}>基础信息</Divider>
           <Form.Item name="name" label="版本名称" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
           <Form.Item name="description" label="描述">
             <Input.TextArea rows={2} />
           </Form.Item>
-
-          <Divider orientation="left" orientationMargin={0}>连接配置</Divider>
           <Form.Item name="endpoint" label="API Endpoint">
             <Input placeholder="https://your-agent.com/api/chat" />
           </Form.Item>
@@ -167,8 +164,6 @@ export default function AgentVersionTab({ projectId }: { projectId: string }) {
           <Form.Item name="auth_token" label="认证令牌">
             <Input.Password placeholder={editing?.auth_token_set ? '已配置，留空表示不修改' : undefined} />
           </Form.Item>
-
-          <Divider orientation="left" orientationMargin={0}>协议配置</Divider>
           <Form.Item name="request_template" label="请求模板 (JSON)">
             <Input.TextArea rows={4} placeholder='{"message": "{{message}}", "session_id": "{{session_id}}"}' />
           </Form.Item>

@@ -42,6 +42,7 @@ class AnthropicAdapter(LLMAdapter):
         system_prompt: str | None = None,
         temperature: float = 0.0,
         max_tokens: int = 2048,
+        json_schema: dict | None = None,
     ) -> dict:
         prompt = system_prompt or ""
         prompt += "\n\nYou must respond with valid JSON only. No other text."

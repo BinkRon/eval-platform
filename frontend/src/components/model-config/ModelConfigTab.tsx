@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { Alert, Button, Card, Col, Descriptions, Form, Input, InputNumber, Row, Select, Space, message } from 'antd'
-import { EditOutlined } from '@ant-design/icons'
+import { Alert, Button, Card, Col, Form, Input, InputNumber, Row, Select, message } from 'antd'
 import { useModelConfig, useUpdateModelConfig, useModelOptions } from '../../hooks/useModelConfig'
 
 interface ModelConfigTabProps {
@@ -15,7 +14,6 @@ export default function ModelConfigTab({ projectId, onDirtyChange }: ModelConfig
   const updateMutation = useUpdateModelConfig(projectId)
   const [form] = Form.useForm()
   const dataLoaded = useRef(false)
-  const [editing, setEditing] = useState(false)
 
   useEffect(() => {
     if (config) {
@@ -24,15 +22,6 @@ export default function ModelConfigTab({ projectId, onDirtyChange }: ModelConfig
       dataLoaded.current = true
     }
   }, [config, form])
-
-  // Auto-enter edit mode when config has no models configured (once only)
-  const hasAutoEntered = useRef(false)
-  useEffect(() => {
-    if (!hasAutoEntered.current && config && !config.sparring_provider && !config.judge_provider) {
-      hasAutoEntered.current = true
-      setEditing(true)
-    }
-  }, [config])
 
   const handleValuesChange = useCallback(() => {
     if (dataLoaded.current) {
@@ -45,19 +34,10 @@ export default function ModelConfigTab({ projectId, onDirtyChange }: ModelConfig
       const values = await form.validateFields()
       await updateMutation.mutateAsync(values)
       onDirtyChange?.(false)
-      setEditing(false)
       message.success('保存成功')
     } catch {
       // validation or API error handled by global interceptor
     }
-  }
-
-  const handleCancel = () => {
-    if (config) {
-      form.setFieldsValue(config)
-    }
-    onDirtyChange?.(false)
-    setEditing(false)
   }
 
   // Group models by provider
@@ -77,56 +57,6 @@ export default function ModelConfigTab({ projectId, onDirtyChange }: ModelConfig
   if (isLoading) return <Card loading />
 
   const noProviders = !optionsLoading && providerOptions.length === 0
-
-  if (!editing && config) {
-    const hasConfig = config.sparring_provider || config.judge_provider
-    return (
-      <div>
-        <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
-          <Button icon={<EditOutlined />} onClick={() => setEditing(true)}>编辑</Button>
-        </div>
-
-        {hasConfig ? (
-          <Row gutter={24}>
-            <Col span={12}>
-              <Card title="对练模型" size="small">
-                <Descriptions column={1} size="small">
-                  <Descriptions.Item label="厂商">{config.sparring_provider || '-'}</Descriptions.Item>
-                  <Descriptions.Item label="模型">{config.sparring_model || '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Temperature">{config.sparring_temperature ?? '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Max Tokens">{config.sparring_max_tokens ?? '-'}</Descriptions.Item>
-                  {config.sparring_system_prompt && (
-                    <Descriptions.Item label="System Prompt">
-                      <div style={{ whiteSpace: 'pre-wrap', maxHeight: 100, overflow: 'auto' }}>{config.sparring_system_prompt}</div>
-                    </Descriptions.Item>
-                  )}
-                </Descriptions>
-              </Card>
-            </Col>
-            <Col span={12}>
-              <Card title="裁判模型" size="small">
-                <Descriptions column={1} size="small">
-                  <Descriptions.Item label="厂商">{config.judge_provider || '-'}</Descriptions.Item>
-                  <Descriptions.Item label="模型">{config.judge_model || '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Temperature">{config.judge_temperature ?? '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Max Tokens">{config.judge_max_tokens ?? '-'}</Descriptions.Item>
-                  {config.judge_system_prompt && (
-                    <Descriptions.Item label="System Prompt">
-                      <div style={{ whiteSpace: 'pre-wrap', maxHeight: 100, overflow: 'auto' }}>{config.judge_system_prompt}</div>
-                    </Descriptions.Item>
-                  )}
-                </Descriptions>
-              </Card>
-            </Col>
-          </Row>
-        ) : (
-          <Card size="small">
-            <span style={{ color: '#999' }}>尚未配置模型，点击"编辑"开始配置</span>
-          </Card>
-        )}
-      </div>
-    )
-  }
 
   return (
     <Form form={form} layout="vertical" onValuesChange={handleValuesChange}>
@@ -192,10 +122,7 @@ export default function ModelConfigTab({ projectId, onDirtyChange }: ModelConfig
         </Col>
       </Row>
       <div style={{ marginTop: 16 }}>
-        <Space>
-          <Button type="primary" onClick={handleSave} loading={updateMutation.isPending}>保存</Button>
-          <Button onClick={handleCancel}>取消</Button>
-        </Space>
+        <Button type="primary" onClick={handleSave} loading={updateMutation.isPending}>保存模型配置</Button>
       </div>
     </Form>
   )

@@ -1,4 +1,6 @@
 """Tests for JudgeRunner: prompt building, result parsing, pass/fail logic, full flow."""
+from decimal import Decimal
+
 import pytest
 
 from app.models.judge_config import ChecklistItem, EvalDimension
@@ -19,7 +21,7 @@ class TestBuildPrompt:
             system_prompt="You are a judge.",
             checklist_items=checklist_items,
             eval_dimensions=eval_dimensions,
-            pass_threshold=2.0,
+            pass_threshold=Decimal("2.0"),
         )
 
     def test_includes_checklist_items(self, mock_llm, checklist_item_factory):
@@ -87,7 +89,7 @@ class TestParseResult:
             system_prompt="You are a judge.",
             checklist_items=checklist_items,
             eval_dimensions=eval_dimensions,
-            pass_threshold=2.0,
+            pass_threshold=Decimal("2.0"),
         )
 
     def test_parse_complete_result(self, mock_llm, checklist_item_factory, eval_dimension_factory):
@@ -158,7 +160,7 @@ class TestParseResult:
 class TestCheckPassed:
     """Verify _check_passed logic for must items and eval threshold."""
 
-    def _make_runner(self, mock_llm, threshold=2.0):
+    def _make_runner(self, mock_llm, threshold=Decimal("2.0")):
         return JudgeRunner(
             llm=mock_llm,
             system_prompt="judge",
@@ -184,7 +186,7 @@ class TestCheckPassed:
         assert runner._check_passed(checklist, []) is False
 
     def test_eval_below_threshold(self, mock_llm):
-        runner = self._make_runner(mock_llm, threshold=2.5)
+        runner = self._make_runner(mock_llm, threshold=Decimal("2.5"))
         eval_scores = [
             {"dimension": "D1", "score": 2, "reason": ""},
             {"dimension": "D2", "score": 2, "reason": ""},
@@ -193,7 +195,7 @@ class TestCheckPassed:
         assert runner._check_passed([], eval_scores) is False
 
     def test_eval_at_threshold(self, mock_llm):
-        runner = self._make_runner(mock_llm, threshold=2.0)
+        runner = self._make_runner(mock_llm, threshold=Decimal("2.0"))
         eval_scores = [
             {"dimension": "D1", "score": 2, "reason": ""},
             {"dimension": "D2", "score": 2, "reason": ""},
@@ -230,7 +232,7 @@ class TestJudgeFlow:
             system_prompt="Judge system prompt",
             checklist_items=items,
             eval_dimensions=dims,
-            pass_threshold=2.0,
+            pass_threshold=Decimal("2.0"),
         )
 
         result = await runner.judge(sample_conversation)
@@ -275,7 +277,7 @@ class TestJudgeFlow:
             system_prompt="Judge",
             checklist_items=items,
             eval_dimensions=dims,
-            pass_threshold=2.0,
+            pass_threshold=Decimal("2.0"),
         )
 
         result = await runner.judge(sample_conversation)
@@ -312,7 +314,7 @@ class TestJudgeFlow:
             system_prompt="Judge",
             checklist_items=items,
             eval_dimensions=dims,
-            pass_threshold=2.0,
+            pass_threshold=Decimal("2.0"),
         )
 
         with pytest.raises(ValueError, match="裁判输出格式错误"):

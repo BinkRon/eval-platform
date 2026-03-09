@@ -16,7 +16,6 @@ export interface BatchTest {
 export interface BatchTestCreate {
   agent_version_id: string
   concurrency?: number
-  test_case_ids?: string[]
 }
 
 export interface TestResult {

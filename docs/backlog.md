@@ -67,14 +67,14 @@
 
 | 分类 | P0 | P1 | P2 | P3 | 总计 |
 |------|----|----|----|----|------|
-| UX 产品与体验 | 0 | 0 | 1 | 1 | 2 |
+| UX 产品与体验 | 0 | 1 | 1 | 1 | 3 |
 | AR 架构 | 0 | 0 | 0 | 0 | 0 |
 | DM 数据模型 | 0 | 0 | 1 | 0 | 1 |
 | SE 安全 | 0 | 1 | 0 | 0 | 1 |
-| EN 工程质量 | 0 | 0 | 0 | 0 | 0 |
+| EN 工程质量 | 0 | 0 | 2 | 0 | 2 |
 | PF 性能 | 0 | 0 | 0 | 0 | 0 |
-| FT 新功能 | 0 | 0 | 2 | 0 | 2 |
-| **合计** | **0** | **1** | **4** | **1** | **6** |
+| FT 新功能 | 0 | 0 | 3 | 0 | 3 |
+| **合计** | **0** | **2** | **7** | **1** | **10** |
 
 ---
 
@@ -149,7 +149,7 @@
 
 - **优先级**：P1
 - **复杂度**：M
-- **状态**：Done
+- **状态**：Scheduled → v0.3 P2
 - **来源**：用户反馈 2026-03-09
 - **描述**：三处配置表单存在信息结构问题：
   1. **Agent 版本 Modal**：12 个字段平铺在 640px 弹窗里，基础信息（名称/描述）、连接配置（endpoint/method/auth）、协议配置（request_template/response_path/end_signal）无视觉分组
@@ -240,7 +240,7 @@
 
 - **优先级**：P2
 - **复杂度**：S
-- **状态**：Done
+- **状态**：Scheduled → v0.3 P2
 - **来源**：设计评审 2026-03-08
 - **描述**：`base.py` 抽象方法声明了 `json_schema` 参数，但 `OpenAIAdapter` 和 `AnthropicAdapter` 都未使用它。
 - **涉及文件**：`backend/app/llm/base.py`、`backend/app/llm/openai_adapter.py`、`backend/app/llm/anthropic_adapter.py`
@@ -266,7 +266,7 @@
 
 - **优先级**：P2
 - **复杂度**：S
-- **状态**：Done
+- **状态**：Scheduled → v0.3 P2
 - **来源**：设计评审 2026-03-08
 - **描述**：后端 Pydantic 的 `Numeric` 类型序列化为字符串，前端 TypeScript 类型标注为 `number`，组件中用 `Number(config.pass_threshold)` 显式转换。类型声明与运行时行为不一致。
 - **涉及文件**：`frontend/src/types/judgeConfig.ts`、`frontend/src/components/judge-config/JudgeConfigTab.tsx`
@@ -305,7 +305,7 @@
 
 - **优先级**：P2
 - **复杂度**：M
-- **状态**：Done
+- **状态**：Scheduled → v0.3 P2
 - **来源**：用户反馈 2026-03-09
 - **描述**：发起批测的确认弹窗只能选 Agent 版本和并发数，测试用例全量跑，无法选取部分用例。调试某个失败场景时只想跑 1-2 个用例，但必须等全量跑完。
 - **涉及文件**：`frontend/src/components/batch-test/CreateBatchModal.tsx`、`backend/app/api/batch_tests.py`、`backend/app/schemas/batch_test.py`、`backend/app/services/batch_scheduler.py`
@@ -344,7 +344,3 @@
 | UX-04 | Token 字段编辑体验 | 2026-03-09 | v0.3 P1-3：placeholder 提示 + 空值跳过更新 |
 | UX-05 | 对话气泡轮次编号 | 2026-03-09 | v0.3 P1-4：每轮显示 R1、R2 居中标记 |
 | EN-01 | datetime.utcnow() 弃用 | 2026-03-09 | v0.3 P1-5：替换为 datetime.now(timezone.utc) |
-| FT-03 | 批测选取部分用例 | 2026-03-09 | v0.3 P2-1：Checkbox 多选 + test_case_ids 后端过滤 + config_snapshot 联动 |
-| UX-09 | 配置表单信息结构扁平 | 2026-03-09 | v0.3 P2-2：Agent Modal Divider 分组 + 裁判/模型查看态/编辑态切换 |
-| EN-03 | pass_threshold 类型不匹配 | 2026-03-09 | v0.3 P2-3：schema Decimal→float，全链路统一 |
-| EN-02 | chat_json json_schema 无用 | 2026-03-09 | v0.3 P2-4：移除 base/openai/anthropic/mock 四处参数 |
