@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Card, Collapse, Spin, Tag, Typography } from 'antd'
+import { Card, Collapse, Select, Space, Spin, Tag, Typography } from 'antd'
 import { useBatchTestDetail } from '../hooks/useBatchTests'
 import { useProject } from '../hooks/useProjects'
 import BreadcrumbNav from '../components/shared/BreadcrumbNav'
@@ -21,6 +21,63 @@ function caseIcon(r: TestResult): string {
   if (r.passed === true) return '✅'
   if (r.passed === false) return '❌'
   return '⏸'
+}
+
+type StatusFilter = 'all' | 'failed' | 'passed'
+
+function CaseSwitcher({ results, activeId, onSwitch }: { results: TestResult[]; activeId: string; onSwitch: (id: string) => void }) {
+  const [filter, setFilter] = useState<StatusFilter>('all')
+
+  const filtered = useMemo(() => {
+    if (filter === 'all') return results
+    if (filter === 'failed') return results.filter((r) => r.status === 'failed' || (r.status === 'completed' && !r.passed))
+    return results.filter((r) => r.status === 'completed' && r.passed)
+  }, [results, filter])
+
+  const completedCount = results.filter((r) => r.status === 'completed' || r.status === 'failed').length
+
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <Space style={{ marginBottom: 8 }}>
+        <Select
+          size="small"
+          value={filter}
+          onChange={setFilter}
+          style={{ width: 120 }}
+          options={[
+            { value: 'all', label: '全部用例' },
+            { value: 'failed', label: '未通过' },
+            { value: 'passed', label: '已通过' },
+          ]}
+        />
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          已完成 {completedCount}/{results.length}
+        </Typography.Text>
+      </Space>
+      <div style={{ overflowX: 'auto', whiteSpace: 'nowrap', paddingBottom: 4 }}>
+        <Space size={4} style={{ display: 'inline-flex' }}>
+          {filtered.map((r) => {
+            const isActive = r.id === activeId
+            const label = r.test_case_name || `用例 ${r.test_case_id?.slice(0, 8) ?? '?'}`
+            return (
+              <Tag
+                key={r.id}
+                color={isActive ? 'blue' : undefined}
+                style={{
+                  cursor: 'pointer',
+                  fontWeight: isActive ? 'bold' : 'normal',
+                  borderWidth: isActive ? 2 : 1,
+                }}
+                onClick={() => onSwitch(r.id)}
+              >
+                {caseIcon(r)} {label}
+              </Tag>
+            )
+          })}
+        </Space>
+      </div>
+    </div>
+  )
 }
 
 export default function DialogTheater() {
@@ -91,26 +148,11 @@ export default function DialogTheater() {
       ]} />
 
       {/* 5.3: Case Switcher Tabs */}
-      <div style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-        {sortedResults.map((r) => {
-          const isActive = r.id === rid
-          const label = r.test_case_name || `用例 ${r.test_case_id?.slice(0, 8) ?? '?'}`
-          return (
-            <Tag
-              key={r.id}
-              color={isActive ? 'blue' : undefined}
-              style={{
-                cursor: 'pointer',
-                fontWeight: isActive ? 'bold' : 'normal',
-                borderWidth: isActive ? 2 : 1,
-              }}
-              onClick={() => navigate(`/projects/${projectId}/batch-tests/${batchId}/theater/${r.id}`, { replace: true })}
-            >
-              {caseIcon(r)} {label}
-            </Tag>
-          )
-        })}
-      </div>
+      <CaseSwitcher
+        results={sortedResults}
+        activeId={rid!}
+        onSwitch={(id) => navigate(`/projects/${projectId}/batch-tests/${batchId}/theater/${id}`, { replace: true })}
+      />
 
       {/* 5.2: Dual-column layout (60/40) */}
       <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
