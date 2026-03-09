@@ -23,27 +23,29 @@
 
 ---
 
-### Phase P1：功能补全 + 架构清理（5 项）
+### Phase P1：功能补全 + 架构清理（5 项）✅
 
-- [ ] **P1-1：批测记录删除功能** `FT-01`
+- [x] **P1-1：批测记录删除功能** `FT-01`
   - 后端 `DELETE /api/projects/:id/batch-tests/:bid`，级联删除 test_results，running 状态不可删
   - 前端批测列表增加删除按钮（Popconfirm 二次确认）
-- [ ] **P1-2：Service 层补全 + 异常处理统一** `AR-01` `AR-02`
+  - 模型层增加 `passive_deletes=True` 避免 `lazy="raise"` 冲突
+- [x] **P1-2：Service 层补全 + 异常处理统一** `AR-01` `AR-02` `AR-03`
   - test_cases / model_configs / providers 抽取 service 层
-  - 全部路由改为 raise 领域异常（NotFoundError / ValidationError），移除直接 HTTPException
-- [ ] **P1-3：Agent 版本 Token 字段体验** `UX-04`
+  - 全部路由改为 raise 领域异常（NotFoundError / ConflictError），移除直接 HTTPException
+  - ConflictError 用于 provider 重名检测
+- [x] **P1-3：Agent 版本 Token 字段体验** `UX-04`
   - 已配置 token 时 placeholder "已配置，留空表示不修改"
   - 后端 update 时 token 为空则跳过更新
-- [ ] **P1-4：对话气泡轮次编号** `UX-05`
-  - ConversationBubbles 每轮对话增加 "R1"、"R2" 编号（一轮 = user + assistant）
-- [ ] **P1-5：datetime.utcnow() 替换** `EN-01`
+- [x] **P1-4：对话气泡轮次编号** `UX-05`
+  - ConversationBubbles 每轮对话增加居中的 "R1"、"R2" 编号（一轮 = user + assistant）
+- [x] **P1-5：datetime.utcnow() 替换** `EN-01`
   - batch_scheduler.py 中 `datetime.utcnow()` → `datetime.now(timezone.utc).replace(tzinfo=None)`
 
 **验证**：批测可删除 → 路由层无直接 DB 操作和 HTTPException → Token 编辑体验 → 对话有轮次标记
 
 ---
 
-### Phase P2：体验打磨 + 工程清理（5 项）
+### Phase P2：体验打磨 + 工程清理（4 项）
 
 - [ ] **P2-1：批测选取部分用例** `FT-03`
   - Modal 增加用例多选（Checkbox，默认全选）
@@ -55,14 +57,22 @@
   - 后端 schema pass_threshold 改为 float，消除前端 Number() 强转
 - [ ] **P2-4：chat_json json_schema 参数清理** `EN-02`
   - 移除 LLMAdapter.chat_json() 的无用 json_schema 参数
-- [ ] **P2-5：ConflictError 使用或移除** `AR-03`
-  - 在 provider 重名等场景使用，或确认不需要则移除
 
 **验证**：批测可选用例 → 表单分组清晰 → 类型一致 → 无废代码
 
 ---
 
 ## 交接备注
+
+**Session #19 (2026-03-09)**：Phase P1 全部完成（5/5）。
+
+- P1-1：批测删除 API + Popconfirm 前端按钮 + passive_deletes 修复
+- P1-2：test_cases/model_configs/providers 三组 service 层抽取，路由层清除 HTTPException，ConflictError 用于 provider 重名
+- P1-3：Token 编辑 placeholder + 后端空值跳过
+- P1-4：ConversationBubbles 居中轮次编号 R1/R2
+- P1-5：3 处 datetime.utcnow() → datetime.now(timezone.utc)
+- backlog 7 条标记 Done 并归档，P2 移除已完成的 P2-5（AR-03），剩余 4 项
+- 下一步：Phase P2（4 项）
 
 **Session #18 (2026-03-09)**：Phase BugFix 全部完成。
 

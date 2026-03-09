@@ -67,14 +67,14 @@
 
 | 分类 | P0 | P1 | P2 | P3 | 总计 |
 |------|----|----|----|----|------|
-| UX 产品与体验 | 0 | 2 | 2 | 1 | 5 |
-| AR 架构 | 0 | 2 | 1 | 0 | 3 |
+| UX 产品与体验 | 0 | 1 | 1 | 1 | 3 |
+| AR 架构 | 0 | 0 | 0 | 0 | 0 |
 | DM 数据模型 | 0 | 0 | 1 | 0 | 1 |
 | SE 安全 | 0 | 1 | 0 | 0 | 1 |
-| EN 工程质量 | 0 | 0 | 3 | 0 | 3 |
+| EN 工程质量 | 0 | 0 | 2 | 0 | 2 |
 | PF 性能 | 0 | 0 | 0 | 0 | 0 |
-| FT 新功能 | 0 | 1 | 3 | 0 | 4 |
-| **合计** | **0** | **6** | **10** | **1** | **17** |
+| FT 新功能 | 0 | 0 | 3 | 0 | 3 |
+| **合计** | **0** | **2** | **7** | **1** | **10** |
 
 ---
 
@@ -94,7 +94,7 @@
 
 - **优先级**：P1
 - **复杂度**：S
-- **状态**：Scheduled → v0.3 P1
+- **状态**：Done
 - **来源**：设计评审 2026-03-08
 - **描述**：因安全原因后端不返回 `auth_token`，编辑时 token 字段总是空白。用户可能误以为 token 丢失，或不确定留空是否会清除已有 token。
 - **涉及文件**：`frontend/src/components/agent-version/AgentVersionTab.tsx`、`backend/app/services/agent_version_service.py`
@@ -104,7 +104,7 @@
 
 - **优先级**：P2
 - **复杂度**：S
-- **状态**：Scheduled → v0.3 P1
+- **状态**：Done
 - **来源**：设计评审 2026-03-08
 - **描述**：P5 对话剧场及批测详情页的对话气泡没有轮次编号。12 轮以上的对话很长，难以定位裁判总结中提到的具体轮次。
 - **涉及文件**：`frontend/src/components/shared/ConversationBubbles.tsx`
@@ -167,7 +167,7 @@
 
 - **优先级**：P1
 - **复杂度**：M
-- **状态**：Scheduled → v0.3 P1
+- **状态**：Done
 - **来源**：设计评审 2026-03-08
 - **描述**：`projects` 和 `agent_versions` 已抽取 service 层，但 `test_cases`（create/update/delete）、`model_configs`、`providers` 的 CRUD 逻辑仍直接写在路由函数中，违反架构约定。
 - **涉及文件**：`backend/app/api/test_cases.py`、`backend/app/api/model_configs.py`、`backend/app/api/providers.py`
@@ -177,7 +177,7 @@
 
 - **优先级**：P1
 - **复杂度**：M
-- **状态**：Scheduled → v0.3 P1
+- **状态**：Done
 - **来源**：设计评审 2026-03-08
 - **描述**：`test_cases.py`、`judge_configs.py`、`model_configs.py`、`providers.py` 仍直接 raise `HTTPException`，与 `main.py` 注册的领域异常处理器（`NotFoundError` → 404）模式不一致。
 - **涉及文件**：同 AR-01 涉及文件 + `backend/app/api/judge_configs.py`
@@ -187,11 +187,12 @@
 
 - **优先级**：P2
 - **复杂度**：S
-- **状态**：Scheduled → v0.3 P2
+- **状态**：Done
 - **来源**：设计评审 2026-03-08
 - **描述**：`exceptions.py` 定义了 `ConflictError`，`main.py` 注册了 409 处理器，但代码中没有任何地方 raise 它。
 - **涉及文件**：`backend/app/exceptions.py`、`backend/app/main.py`
 - **建议方案**：在 provider 重名、项目重名等场景使用它；或确认不需要则移除。
+- **解决**：P1-2 中 provider_service 使用 ConflictError 处理供应商重名。
 
 ---
 
@@ -229,7 +230,7 @@
 
 - **优先级**：P2
 - **复杂度**：S
-- **状态**：Scheduled → v0.3 P1
+- **状态**：Done
 - **来源**：设计评审 2026-03-08
 - **描述**：`batch_scheduler.py` 使用 `datetime.utcnow()`，该方法在 Python 3.12+ 已弃用。
 - **涉及文件**：`backend/app/services/batch_scheduler.py`
@@ -285,7 +286,7 @@
 
 - **优先级**：P1
 - **复杂度**：M
-- **状态**：Scheduled → v0.3 P1
+- **状态**：Done
 - **来源**：设计评审 2026-03-08，用户反馈 2026-03-09（提升优先级）
 - **描述**：批测 API 没有 DELETE 端点。调试阶段会产生大量无效批测记录，无法清理，列表越来越长，干扰有效数据查阅。
 - **涉及文件**：`backend/app/api/batch_tests.py`、`frontend/src/pages/ProjectWorkbench.tsx`
@@ -336,3 +337,10 @@
 | UX-02 | 新项目无步骤引导 | 2026-03-08 | v0.2 Phase 2-3：就绪 API + P2 ReadinessCard 四张卡片（含就绪状态 + 点击跳转） |
 | UX-03 | 批测前置校验失败时无跳转 | 2026-03-08 | v0.2 Phase 3：ReadinessCard 点击直接跳转 P3 对应锚点，未就绪时发起按钮禁用并 tooltip 提示 |
 | UX-06 | 裁判总结需滚过整段对话 | 2026-03-08 | v0.2 Phase 5：P5 对话剧场左右双栏布局，评判区（Checklist + 评分 + 总结）独立在右侧 40% 区域 |
+| FT-01 | 批测记录删除功能 | 2026-03-09 | v0.3 P1-1：DELETE API + Popconfirm 删除按钮，passive_deletes=True |
+| AR-01 | API 层架构不一致 | 2026-03-09 | v0.3 P1-2：test_cases/model_configs/providers 抽取 service 层 |
+| AR-02 | 异常处理不统一 | 2026-03-09 | v0.3 P1-2：路由层统一委托 service，使用 NotFoundError/ConflictError |
+| AR-03 | ConflictError 未使用 | 2026-03-09 | v0.3 P1-2：provider_service 使用 ConflictError 处理供应商重名 |
+| UX-04 | Token 字段编辑体验 | 2026-03-09 | v0.3 P1-3：placeholder 提示 + 空值跳过更新 |
+| UX-05 | 对话气泡轮次编号 | 2026-03-09 | v0.3 P1-4：每轮显示 R1、R2 居中标记 |
+| EN-01 | datetime.utcnow() 弃用 | 2026-03-09 | v0.3 P1-5：替换为 datetime.now(timezone.utc) |
