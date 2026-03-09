@@ -43,14 +43,13 @@ class MockLLMAdapter(LLMAdapter):
         return self.chat_responses.pop(0)
 
     async def chat_json(self, messages, system_prompt=None, temperature=0.0,
-                        max_tokens=2048, json_schema=None) -> dict:
+                        max_tokens=2048) -> dict:
         self.chat_json_call_count += 1
         self.chat_json_call_args.append({
             "messages": messages,
             "system_prompt": system_prompt,
             "temperature": temperature,
             "max_tokens": max_tokens,
-            "json_schema": json_schema,
         })
         if not self.chat_json_responses:
             raise ValueError("MockLLMAdapter: chat_json_responses exhausted")

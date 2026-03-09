@@ -1,4 +1,3 @@
-from decimal import Decimal
 from typing import Literal
 from uuid import UUID
 
@@ -23,7 +22,7 @@ class EvalDimensionData(BaseModel):
 
 
 class JudgeConfigUpdate(BaseModel):
-    pass_threshold: Decimal = Decimal("2.0")
+    pass_threshold: float = 2.0
     checklist_items: list[ChecklistItemData] = []
     eval_dimensions: list[EvalDimensionData] = []
 
@@ -52,7 +51,7 @@ class EvalDimensionResponse(BaseModel):
 class JudgeConfigResponse(BaseModel):
     id: UUID
     project_id: UUID
-    pass_threshold: Decimal
+    pass_threshold: float
     checklist_items: list[ChecklistItemResponse]
     eval_dimensions: list[EvalDimensionResponse]
 

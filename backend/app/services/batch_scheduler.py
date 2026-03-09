@@ -2,7 +2,6 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import select, update
@@ -58,7 +57,7 @@ class BatchContext:
     judge_model: str | None
     judge_base_url: str | None
     judge_system_prompt: str
-    pass_threshold: Decimal
+    pass_threshold: float
     concurrency: int
     sparring_temperature: float | None
     sparring_max_tokens: int | None
@@ -94,10 +93,22 @@ async def _load_context(db: AsyncSession, batch: BatchTest) -> BatchContext | No
     if not agent_version:
         return None
 
+    # Use test case IDs from config_snapshot if available (partial selection)
+    snapshot_tc_ids = None
+    if batch.config_snapshot and "test_cases" in batch.config_snapshot:
+        snapshot_tc_ids = {tc["id"] for tc in batch.config_snapshot["test_cases"]}
+
     result = await db.execute(
         select(TestCase).where(TestCase.project_id == batch.project_id).order_by(TestCase.sort_order)
     )
-    test_cases = list(result.scalars().all())
+    all_test_cases = list(result.scalars().all())
+    if snapshot_tc_ids:
+        test_cases = [tc for tc in all_test_cases if str(tc.id) in snapshot_tc_ids]
+        if not test_cases:
+            logger.error(f"Batch {batch.id}: all snapshot test cases have been deleted")
+            return None
+    else:
+        test_cases = all_test_cases
 
     result = await db.execute(
         select(JudgeConfig)
@@ -143,7 +154,7 @@ async def _load_context(db: AsyncSession, batch: BatchTest) -> BatchContext | No
         judge_model=model_config.judge_model,
         judge_base_url=judge_p.base_url,
         judge_system_prompt=model_config.judge_system_prompt or "",
-        pass_threshold=judge_config.pass_threshold if judge_config else Decimal("2.0"),
+        pass_threshold=float(judge_config.pass_threshold) if judge_config else 2.0,
         concurrency=batch.concurrency or 3,
         sparring_temperature=float(model_config.sparring_temperature) if model_config.sparring_temperature is not None else None,
         sparring_max_tokens=model_config.sparring_max_tokens,

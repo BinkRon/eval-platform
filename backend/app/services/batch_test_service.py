@@ -26,9 +26,17 @@ async def validate_and_create(db: AsyncSession, project_id: UUID, data: BatchTes
     tc_result = await db.execute(
         select(TestCase).where(TestCase.project_id == project_id).order_by(TestCase.sort_order)
     )
-    test_cases = list(tc_result.scalars().all())
-    if not test_cases:
+    all_test_cases = list(tc_result.scalars().all())
+    if not all_test_cases:
         raise ValidationError("请先添加测试用例")
+
+    if data.test_case_ids:
+        id_set = set(data.test_case_ids)
+        test_cases = [tc for tc in all_test_cases if tc.id in id_set]
+        if not test_cases:
+            raise ValidationError("所选用例不存在")
+    else:
+        test_cases = all_test_cases
 
     jc_result = await db.execute(
         select(JudgeConfig)

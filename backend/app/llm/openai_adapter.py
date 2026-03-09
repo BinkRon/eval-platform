@@ -72,7 +72,6 @@ class OpenAIAdapter(LLMAdapter):
         system_prompt: str | None = None,
         temperature: float = 0.0,
         max_tokens: int = 2048,
-        json_schema: dict | None = None,
     ) -> dict:
         msgs = []
         prompt = system_prompt or ""

@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef } from 'react'
-import { Button, Card, Form, Input, InputNumber, Select, Space, message } from 'antd'
-import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Button, Card, Descriptions, Form, Input, InputNumber, Select, Space, Tag, message } from 'antd'
+import { PlusOutlined, MinusCircleOutlined, EditOutlined } from '@ant-design/icons'
 import { useJudgeConfig, useUpdateJudgeConfig } from '../../hooks/useJudgeConfig'
 
 interface JudgeConfigTabProps {
@@ -13,18 +13,28 @@ export default function JudgeConfigTab({ projectId, onDirtyChange }: JudgeConfig
   const updateMutation = useUpdateJudgeConfig(projectId)
   const [form] = Form.useForm()
   const dataLoaded = useRef(false)
+  const [editing, setEditing] = useState(false)
 
   useEffect(() => {
     if (config) {
       dataLoaded.current = false
       form.setFieldsValue({
-        pass_threshold: Number(config.pass_threshold),
+        pass_threshold: config.pass_threshold,
         checklist_items: config.checklist_items,
         eval_dimensions: config.eval_dimensions,
       })
       dataLoaded.current = true
     }
   }, [config, form])
+
+  // Auto-enter edit mode when no config exists yet (once only)
+  const hasAutoEntered = useRef(false)
+  useEffect(() => {
+    if (!hasAutoEntered.current && config && !config.checklist_items.length && !config.eval_dimensions.length) {
+      hasAutoEntered.current = true
+      setEditing(true)
+    }
+  }, [config])
 
   const handleValuesChange = useCallback(() => {
     if (dataLoaded.current) {
@@ -45,13 +55,70 @@ export default function JudgeConfigTab({ projectId, onDirtyChange }: JudgeConfig
       }))
       await updateMutation.mutateAsync(values)
       onDirtyChange?.(false)
+      setEditing(false)
       message.success('保存成功')
     } catch {
       // validation or API error handled by global interceptor
     }
   }
 
+  const handleCancel = () => {
+    if (config) {
+      form.setFieldsValue({
+        pass_threshold: config.pass_threshold,
+        checklist_items: config.checklist_items,
+        eval_dimensions: config.eval_dimensions,
+      })
+    }
+    onDirtyChange?.(false)
+    setEditing(false)
+  }
+
   if (isLoading) return <Card loading />
+
+  if (!editing && config) {
+    return (
+      <div>
+        <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
+          <Button icon={<EditOutlined />} onClick={() => setEditing(true)}>编辑</Button>
+        </div>
+
+        <Descriptions column={1} bordered size="small" style={{ marginBottom: 16 }}>
+          <Descriptions.Item label="通过阈值">{config.pass_threshold}</Descriptions.Item>
+        </Descriptions>
+
+        {config.checklist_items.length > 0 && (
+          <Card title="Checklist 检查项" size="small" style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {config.checklist_items.map((item) => (
+                <Tag key={item.id} color={item.level === 'must' ? 'red' : 'orange'}>{item.content}</Tag>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {config.eval_dimensions.length > 0 && (
+          <Card title="Evaluation 评判维度" size="small">
+            {config.eval_dimensions.map((dim) => (
+              <Descriptions key={dim.id} column={2} size="small" bordered style={{ marginBottom: 8 }}>
+                <Descriptions.Item label="维度名称" span={2}>{dim.name}</Descriptions.Item>
+                {dim.description && <Descriptions.Item label="描述" span={2}>{dim.description}</Descriptions.Item>}
+                {dim.level_3_desc && <Descriptions.Item label="3 分标准">{dim.level_3_desc}</Descriptions.Item>}
+                {dim.level_2_desc && <Descriptions.Item label="2 分标准">{dim.level_2_desc}</Descriptions.Item>}
+                {dim.level_1_desc && <Descriptions.Item label="1 分标准" span={2}>{dim.level_1_desc}</Descriptions.Item>}
+              </Descriptions>
+            ))}
+          </Card>
+        )}
+
+        {config.checklist_items.length === 0 && config.eval_dimensions.length === 0 && (
+          <Card size="small">
+            <span style={{ color: '#999' }}>尚未配置裁判标准，点击"编辑"开始配置</span>
+          </Card>
+        )}
+      </div>
+    )
+  }
 
   return (
     <Form form={form} layout="vertical" initialValues={{ pass_threshold: 2.0, checklist_items: [], eval_dimensions: [] }} onValuesChange={handleValuesChange}>
@@ -109,7 +176,10 @@ export default function JudgeConfigTab({ projectId, onDirtyChange }: JudgeConfig
         </Form.List>
       </Card>
 
-      <Button type="primary" onClick={handleSave} loading={updateMutation.isPending}>保存裁判配置</Button>
+      <Space>
+        <Button type="primary" onClick={handleSave} loading={updateMutation.isPending}>保存</Button>
+        <Button onClick={handleCancel}>取消</Button>
+      </Space>
     </Form>
   )
 }

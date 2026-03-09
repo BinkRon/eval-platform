@@ -1,6 +1,5 @@
 import json
 import logging
-from decimal import Decimal
 
 from app.llm.base import LLMAdapter
 from app.models.judge_config import ChecklistItem, EvalDimension
@@ -29,7 +28,7 @@ class JudgeRunner:
         system_prompt: str,
         checklist_items: list[ChecklistItem],
         eval_dimensions: list[EvalDimension],
-        pass_threshold: Decimal,
+        pass_threshold: float,
         temperature: float | None = None,
         max_tokens: int | None = None,
     ):
@@ -167,7 +166,7 @@ class JudgeRunner:
         # Evaluation average >= threshold
         if eval_scores:
             avg = sum(s["score"] for s in eval_scores) / len(eval_scores)
-            if avg < float(self.pass_threshold):
+            if avg < self.pass_threshold:
                 return False
 
         return True
