@@ -1,8 +1,8 @@
 import { useEffect } from 'react'
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
-import { Button, Card, Space, Spin, Typography } from 'antd'
-import { ArrowLeftOutlined } from '@ant-design/icons'
+import { useParams, useSearchParams } from 'react-router-dom'
+import { Card, Spin, Typography } from 'antd'
 import { useProject } from '../hooks/useProjects'
+import BreadcrumbNav from '../components/shared/BreadcrumbNav'
 import AgentVersionTab from '../components/agent-version/AgentVersionTab'
 import TestCaseTab from '../components/test-case/TestCaseTab'
 import JudgeConfigTab from '../components/judge-config/JudgeConfigTab'
@@ -14,7 +14,6 @@ export default function ProjectConfig() {
   const { id } = useParams<{ id: string }>()
   const [searchParams] = useSearchParams()
   const { data: project, isLoading } = useProject(id ?? '')
-  const navigate = useNavigate()
 
   const targetSection = searchParams.get('section')
 
@@ -37,12 +36,12 @@ export default function ProjectConfig() {
 
   return (
     <>
-      <Space align="center" style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/projects/${id}`)}>
-          返回项目工作台
-        </Button>
-        <Typography.Title level={3} style={{ margin: 0 }}>{project.name} · 项目配置</Typography.Title>
-      </Space>
+      <BreadcrumbNav items={[
+        { title: '项目列表', path: '/projects' },
+        { title: project.name, path: `/projects/${id}` },
+        { title: '项目配置' },
+      ]} />
+      <Typography.Title level={3} style={{ marginBottom: 8, marginTop: 0 }}>{project.name} · 项目配置</Typography.Title>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         <Card id="agent-versions" title="Agent 版本">

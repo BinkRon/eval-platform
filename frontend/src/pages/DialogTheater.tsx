@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Button, Card, Collapse, Spin, Tag, Typography } from 'antd'
-import { ArrowLeftOutlined } from '@ant-design/icons'
+import { Card, Collapse, Spin, Tag, Typography } from 'antd'
 import { useBatchTestDetail } from '../hooks/useBatchTests'
+import { useProject } from '../hooks/useProjects'
+import BreadcrumbNav from '../components/shared/BreadcrumbNav'
 import ConversationBubbles from '../components/shared/ConversationBubbles'
 import type { TestResult } from '../types/batchTest'
 
@@ -26,6 +27,7 @@ export default function DialogTheater() {
   const { id: projectId, bid: batchId, rid } = useParams<{ id: string; bid: string; rid: string }>()
   const navigate = useNavigate()
   const { data: batch, isLoading } = useBatchTestDetail(projectId ?? '', batchId ?? '')
+  const { data: project } = useProject(projectId ?? '')
   const conversationEndRef = useRef<HTMLDivElement>(null)
 
   // Sort: failed/not-passed first, then by original order
@@ -81,18 +83,12 @@ export default function DialogTheater() {
   return (
     <div>
       {/* Header */}
-      <div style={{ marginBottom: 12 }}>
-        <Button
-          icon={<ArrowLeftOutlined />}
-          onClick={() => navigate(`/projects/${projectId}/batch-tests/${batchId}`)}
-          style={{ marginRight: 12 }}
-        >
-          返回用例概览
-        </Button>
-        <Typography.Text strong style={{ fontSize: 16 }}>
-          批测详情{batch.agent_version_name ? ` · ${batch.agent_version_name}` : ''}
-        </Typography.Text>
-      </div>
+      <BreadcrumbNav items={[
+        { title: '项目列表', path: '/projects' },
+        { title: project?.name ?? '项目', path: `/projects/${projectId}` },
+        { title: `批测${batch.agent_version_name ? ` · ${batch.agent_version_name}` : ''}`, path: `/projects/${projectId}/batch-tests/${batchId}` },
+        { title: '对话剧场' },
+      ]} />
 
       {/* 5.3: Case Switcher Tabs */}
       <div style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 8 }}>

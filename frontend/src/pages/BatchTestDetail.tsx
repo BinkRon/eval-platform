@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Button, Card, Col, Row, Space, Spin, Statistic, Table, Tag, Typography } from 'antd'
-import { ArrowLeftOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import type { TestResult } from '../api/batchTests'
 import { useBatchTestDetail } from '../hooks/useBatchTests'
+import { useProject } from '../hooks/useProjects'
+import BreadcrumbNav from '../components/shared/BreadcrumbNav'
 
 const BATCH_STATUS_MAP: Record<string, { color: string; label: string }> = {
   completed: { color: 'success', label: '已完成' },
@@ -25,6 +26,7 @@ export default function BatchTestDetail() {
   const { id: projectId, bid: batchId } = useParams<{ id: string; bid: string }>()
   const navigate = useNavigate()
   const { data: batch, isLoading } = useBatchTestDetail(projectId ?? '', batchId ?? '')
+  const { data: project } = useProject(projectId ?? '')
   const [sortBy, setSortBy] = useState<SortMode>('failed_first')
 
   const { dimScores, checklistStats } = useMemo(() => {
@@ -135,10 +137,12 @@ export default function BatchTestDetail() {
   return (
     <>
       {/* Header */}
+      <BreadcrumbNav items={[
+        { title: '项目列表', path: '/projects' },
+        { title: project?.name ?? '项目', path: `/projects/${projectId}` },
+        { title: `批测${batch.agent_version_name ? ` · ${batch.agent_version_name}` : ''}` },
+      ]} />
       <Space style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/projects/${projectId}`)}>
-          返回项目工作台
-        </Button>
         <Typography.Title level={4} style={{ margin: 0 }}>
           批测详情{batch.agent_version_name ? ` · ${batch.agent_version_name}` : ''}
         </Typography.Title>

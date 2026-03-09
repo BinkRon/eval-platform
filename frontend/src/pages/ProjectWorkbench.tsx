@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Button, Card, Col, Progress, Row, Space, Spin, Table, Tag, Tooltip, Typography } from 'antd'
 import {
-  ArrowLeftOutlined,
   PlayCircleOutlined,
   EyeOutlined,
   CheckCircleFilled,
@@ -15,6 +14,7 @@ import {
 import { useProject, useProjectReadiness } from '../hooks/useProjects'
 import { useBatchTests } from '../hooks/useBatchTests'
 import CreateBatchModal from '../components/batch-test/CreateBatchModal'
+import BreadcrumbNav from '../components/shared/BreadcrumbNav'
 import type { BatchTest } from '../types/batchTest'
 
 const STATUS_MAP: Record<string, { color: string; label: string }> = {
@@ -161,12 +161,11 @@ export default function ProjectWorkbench() {
 
   return (
     <>
-      <Space align="center" style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/projects')}>
-          返回项目列表
-        </Button>
-        <Typography.Title level={3} style={{ margin: 0 }}>{project.name}</Typography.Title>
-      </Space>
+      <BreadcrumbNav items={[
+        { title: '项目列表', path: '/projects' },
+        { title: project.name },
+      ]} />
+      <Typography.Title level={3} style={{ marginBottom: 8, marginTop: 0 }}>{project.name}</Typography.Title>
       {project.description && (
         <Typography.Paragraph type="secondary">{project.description}</Typography.Paragraph>
       )}
