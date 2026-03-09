@@ -89,7 +89,19 @@ export default function BatchTestDetail() {
     {
       title: '结果',
       key: 'result',
-      width: 100,
+      width: 120,
+      filters: [
+        { text: '✅ 通过', value: 'passed' },
+        { text: '❌ 未通过', value: 'not_passed' },
+        { text: '⚠️ 执行失败', value: 'failed' },
+        { text: '⏳ 进行中', value: 'running' },
+        { text: '⏸ 等待中', value: 'pending' },
+      ],
+      onFilter: (value, r) => {
+        if (value === 'passed') return r.status === 'completed' && r.passed === true
+        if (value === 'not_passed') return r.status === 'completed' && r.passed === false
+        return r.status === value
+      },
       render: (_: unknown, r: TestResult) => {
         if (r.status === 'running') return <Tag color="processing">⏳ 进行中</Tag>
         if (r.status === 'pending') return <Tag>⏸ 等待中</Tag>
