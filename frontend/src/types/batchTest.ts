@@ -16,6 +16,10 @@ export interface BatchTest {
 export interface BatchTestCreate {
   agent_version_id: string
   concurrency?: number
+  test_case_ids?: string[]
+  checklist_item_ids?: string[]
+  eval_dimension_ids?: string[]
+  pass_threshold?: number
 }
 
 export interface TestResult {

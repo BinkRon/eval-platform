@@ -23,10 +23,13 @@ async def validate_and_create(db: AsyncSession, project_id: UUID, data: BatchTes
     if version.connection_status != "success":
         raise ValidationError("请先完成 Agent 版本的连接测试")
 
-    tc_result = await db.execute(
-        select(TestCase).where(TestCase.project_id == project_id).order_by(TestCase.sort_order)
-    )
+    tc_query = select(TestCase).where(TestCase.project_id == project_id).order_by(TestCase.sort_order)
+    if data.test_case_ids:
+        tc_query = tc_query.where(TestCase.id.in_(data.test_case_ids))
+    tc_result = await db.execute(tc_query)
     test_cases = list(tc_result.scalars().all())
+    if data.test_case_ids and not test_cases:
+        raise ValidationError("所选测试用例不存在或不属于当前项目")
     if not test_cases:
         raise ValidationError("请先添加测试用例")
 
@@ -39,12 +42,32 @@ async def validate_and_create(db: AsyncSession, project_id: UUID, data: BatchTes
     if not judge_config or (not judge_config.checklist_items and not judge_config.eval_dimensions):
         raise ValidationError("请先配置裁判标准（至少 1 条 Checklist 或 1 个评判维度）")
 
+    # Filter checklist items and eval dimensions by provided IDs
+    checklist_items = judge_config.checklist_items
+    if data.checklist_item_ids:
+        id_set = set(data.checklist_item_ids)
+        checklist_items = [ci for ci in checklist_items if ci.id in id_set]
+
+    eval_dimensions = judge_config.eval_dimensions
+    if data.eval_dimension_ids:
+        id_set = set(data.eval_dimension_ids)
+        eval_dimensions = [ed for ed in eval_dimensions if ed.id in id_set]
+
+    if data.checklist_item_ids and not checklist_items:
+        raise ValidationError("所选 Checklist 检查项不属于当前项目")
+    if data.eval_dimension_ids and not eval_dimensions:
+        raise ValidationError("所选评判维度不属于当前项目")
+    if not checklist_items and not eval_dimensions:
+        raise ValidationError("至少需要选择 1 条 Checklist 或 1 个评判维度")
+
+    pass_threshold = data.pass_threshold if data.pass_threshold is not None else float(judge_config.pass_threshold)
+
     mc_result = await db.execute(select(ModelConfig).where(ModelConfig.project_id == project_id))
     model_config = mc_result.scalar_one_or_none()
     if not model_config or not model_config.sparring_provider or not model_config.judge_provider:
         raise ValidationError("请先配置对练模型和裁判模型")
 
-    # Freeze current experiment config as snapshot
+    # Freeze current experiment config as snapshot (with filtered selections)
     config_snapshot = {
         "agent_version": {
             "id": str(version.id),
@@ -63,10 +86,10 @@ async def validate_and_create(db: AsyncSession, project_id: UUID, data: BatchTes
             for tc in test_cases
         ],
         "judge_config": {
-            "pass_threshold": float(judge_config.pass_threshold),
+            "pass_threshold": pass_threshold,
             "checklist_items": [
                 {"content": ci.content, "level": ci.level}
-                for ci in judge_config.checklist_items
+                for ci in checklist_items
             ],
             "eval_dimensions": [
                 {
@@ -76,7 +99,7 @@ async def validate_and_create(db: AsyncSession, project_id: UUID, data: BatchTes
                     "level_2_desc": ed.level_2_desc,
                     "level_1_desc": ed.level_1_desc,
                 }
-                for ed in judge_config.eval_dimensions
+                for ed in eval_dimensions
             ],
         },
         "model_config": {

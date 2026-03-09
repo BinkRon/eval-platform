@@ -7,6 +7,10 @@ from pydantic import BaseModel, Field
 class BatchTestCreate(BaseModel):
     agent_version_id: UUID
     concurrency: int = Field(default=3, ge=1, le=20)
+    test_case_ids: list[UUID] | None = None
+    checklist_item_ids: list[UUID] | None = None
+    eval_dimension_ids: list[UUID] | None = None
+    pass_threshold: float | None = Field(default=None, ge=1.0, le=3.0)
 
 
 class BatchTestResponse(BaseModel):

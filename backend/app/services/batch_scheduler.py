@@ -1,18 +1,17 @@
 import asyncio
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from types import SimpleNamespace
 from uuid import UUID
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.database import async_session
 from app.llm.factory import create_llm_adapter
 from app.models.agent_version import AgentVersion
 from app.models.batch_test import BatchTest, TestResult
-from app.models.judge_config import JudgeConfig
 from app.models.model_config import ModelConfig
 from app.models.provider_config import ProviderConfig
 from app.models.test_case import TestCase
@@ -46,23 +45,24 @@ async def cleanup_stale_running_records() -> tuple[int, int]:
 class BatchContext:
     agent_version: AgentVersion
     test_cases: list[TestCase]
-    judge_config: JudgeConfig | None
-    sparring_provider_name: str
-    sparring_api_key: str
-    sparring_model: str | None
-    sparring_base_url: str | None
-    sparring_system_prompt: str
-    judge_provider_name: str
-    judge_api_key: str
-    judge_model: str | None
-    judge_base_url: str | None
-    judge_system_prompt: str
-    pass_threshold: float
-    concurrency: int
-    sparring_temperature: float | None
-    sparring_max_tokens: int | None
-    judge_temperature: float | None
-    judge_max_tokens: int | None
+    checklist_items: list[SimpleNamespace] = field(default_factory=list)
+    eval_dimensions: list[SimpleNamespace] = field(default_factory=list)
+    sparring_provider_name: str = ""
+    sparring_api_key: str = ""
+    sparring_model: str | None = None
+    sparring_base_url: str | None = None
+    sparring_system_prompt: str = ""
+    judge_provider_name: str = ""
+    judge_api_key: str = ""
+    judge_model: str | None = None
+    judge_base_url: str | None = None
+    judge_system_prompt: str = ""
+    pass_threshold: float = 2.0
+    concurrency: int = 3
+    sparring_temperature: float | None = None
+    sparring_max_tokens: int | None = None
+    judge_temperature: float | None = None
+    judge_max_tokens: int | None = None
 
 
 async def run_batch_test(batch_test_id: UUID):
@@ -93,17 +93,27 @@ async def _load_context(db: AsyncSession, batch: BatchTest) -> BatchContext | No
     if not agent_version:
         return None
 
+    snapshot = batch.config_snapshot or {}
+
+    # Load test cases from snapshot IDs (filtered at create time)
+    try:
+        snapshot_tc_ids = [UUID(tc["id"]) for tc in snapshot.get("test_cases", [])]
+    except (KeyError, ValueError) as e:
+        logger.error(f"BatchTest {batch.id} snapshot test_cases format error: {e}")
+        return None
+    if not snapshot_tc_ids:
+        logger.error(f"BatchTest {batch.id} has no test cases in snapshot")
+        return None
     result = await db.execute(
-        select(TestCase).where(TestCase.project_id == batch.project_id).order_by(TestCase.sort_order)
+        select(TestCase).where(TestCase.id.in_(snapshot_tc_ids)).order_by(TestCase.sort_order)
     )
     test_cases = list(result.scalars().all())
 
-    result = await db.execute(
-        select(JudgeConfig)
-        .where(JudgeConfig.project_id == batch.project_id)
-        .options(selectinload(JudgeConfig.checklist_items), selectinload(JudgeConfig.eval_dimensions))
-    )
-    judge_config = result.scalar_one_or_none()
+    # Read judge config from snapshot (already filtered at create time)
+    snapshot_judge = snapshot.get("judge_config", {})
+    checklist_items = [SimpleNamespace(**ci) for ci in snapshot_judge.get("checklist_items", [])]
+    eval_dimensions = [SimpleNamespace(**ed) for ed in snapshot_judge.get("eval_dimensions", [])]
+    pass_threshold = float(snapshot_judge.get("pass_threshold", 2.0))
 
     result = await db.execute(select(ModelConfig).where(ModelConfig.project_id == batch.project_id))
     model_config = result.scalar_one_or_none()
@@ -131,7 +141,8 @@ async def _load_context(db: AsyncSession, batch: BatchTest) -> BatchContext | No
     return BatchContext(
         agent_version=agent_version,
         test_cases=test_cases,
-        judge_config=judge_config,
+        checklist_items=checklist_items,
+        eval_dimensions=eval_dimensions,
         sparring_provider_name=model_config.sparring_provider,
         sparring_api_key=sparring_p.api_key,
         sparring_model=model_config.sparring_model,
@@ -142,7 +153,7 @@ async def _load_context(db: AsyncSession, batch: BatchTest) -> BatchContext | No
         judge_model=model_config.judge_model,
         judge_base_url=judge_p.base_url,
         judge_system_prompt=model_config.judge_system_prompt or "",
-        pass_threshold=float(judge_config.pass_threshold) if judge_config else 2.0,
+        pass_threshold=pass_threshold,
         concurrency=batch.concurrency or 3,
         sparring_temperature=float(model_config.sparring_temperature) if model_config.sparring_temperature is not None else None,
         sparring_max_tokens=model_config.sparring_max_tokens,
@@ -343,12 +354,12 @@ async def _run_single_test(batch_test_id, test_case, ctx: BatchContext, sparring
     judge_prompt_snapshot = None
 
     try:
-        if ctx.judge_config:
+        if ctx.checklist_items or ctx.eval_dimensions:
             judge_runner = JudgeRunner(
                 llm=judge_llm,
                 system_prompt=ctx.judge_system_prompt,
-                checklist_items=ctx.judge_config.checklist_items,
-                eval_dimensions=ctx.judge_config.eval_dimensions,
+                checklist_items=ctx.checklist_items,
+                eval_dimensions=ctx.eval_dimensions,
                 pass_threshold=ctx.pass_threshold,
                 temperature=ctx.judge_temperature,
                 max_tokens=ctx.judge_max_tokens,
