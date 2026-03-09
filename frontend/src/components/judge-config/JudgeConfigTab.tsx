@@ -16,6 +16,7 @@ export default function JudgeConfigTab({ projectId, onDirtyChange }: JudgeConfig
 
   useEffect(() => {
     if (config) {
+      dataLoaded.current = false
       form.setFieldsValue({
         pass_threshold: Number(config.pass_threshold),
         checklist_items: config.checklist_items,

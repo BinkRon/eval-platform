@@ -16,6 +16,7 @@ export default function ModelConfigTab({ projectId, onDirtyChange }: ModelConfig
 
   useEffect(() => {
     if (config) {
+      dataLoaded.current = false
       form.setFieldsValue(config)
       dataLoaded.current = true
     }

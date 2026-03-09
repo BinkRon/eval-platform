@@ -35,7 +35,8 @@ export default function ProjectConfig() {
         onCancel: () => blocker.reset(),
       })
     }
-  }, [blocker])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blocker.state])
 
   // Warn on browser close/refresh
   useEffect(() => {
