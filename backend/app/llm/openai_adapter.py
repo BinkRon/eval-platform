@@ -1,8 +1,39 @@
 import json
+import re
 
 from openai import AsyncOpenAI
 
 from app.llm.base import LLMAdapter
+
+_THINK_RE = re.compile(r"<think>[\s\S]*?</think>\s*", re.IGNORECASE)
+_CODE_BLOCK_RE = re.compile(r"^```(?:json)?\s*\n?([\s\S]*?)\n?\s*```\s*$")
+_CODE_BLOCK_OPEN_RE = re.compile(r"^```(?:json)?\s*\n?([\s\S]*)")  # unclosed block
+
+
+def _extract_json_content(content: str) -> str:
+    """Extract JSON from LLM output that may be wrapped in markdown code blocks.
+
+    Handles: raw JSON, ```json...```, unclosed ```json... (truncated output),
+    and JSON embedded in surrounding text.
+    """
+    # 1. Closed code block: ```json ... ```
+    m = _CODE_BLOCK_RE.match(content)
+    if m:
+        return m.group(1).strip()
+
+    # 2. Unclosed code block (truncated output): ```json ...
+    m = _CODE_BLOCK_OPEN_RE.match(content)
+    if m:
+        return m.group(1).strip()
+
+    # 3. JSON embedded in text — find outermost { ... }
+    start = content.find("{")
+    if start != -1:
+        end = content.rfind("}")
+        if end > start:
+            return content[start:end + 1]
+
+    return content
 
 
 class OpenAIAdapter(LLMAdapter):
@@ -32,7 +63,8 @@ class OpenAIAdapter(LLMAdapter):
             temperature=temperature,
             max_tokens=max_tokens,
         )
-        return response.choices[0].message.content or ""
+        content = response.choices[0].message.content or ""
+        return _THINK_RE.sub("", content).strip()
 
     async def chat_json(
         self,
@@ -58,6 +90,8 @@ class OpenAIAdapter(LLMAdapter):
 
         response = await self.client.chat.completions.create(**kwargs)
         content = response.choices[0].message.content or ""
+        content = _THINK_RE.sub("", content).strip()
+        content = _extract_json_content(content)
         try:
             return json.loads(content)
         except json.JSONDecodeError:
