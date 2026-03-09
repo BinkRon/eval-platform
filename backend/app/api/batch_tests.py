@@ -42,6 +42,14 @@ async def create_batch_test(project_id: UUID, data: BatchTestCreate, db: AsyncSe
     return batch
 
 
+@router.delete("/{batch_id}", status_code=204)
+async def delete_batch_test(project_id: UUID, batch_id: UUID, db: AsyncSession = Depends(get_db)):
+    project = await db.get(Project, project_id)
+    if not project:
+        raise HTTPException(404, detail="Project not found")
+    await batch_test_service.delete_batch_test(db, project_id, batch_id)
+
+
 @router.get("/{batch_id}", response_model=BatchTestDetail)
 async def get_batch_test(project_id: UUID, batch_id: UUID, db: AsyncSession = Depends(get_db)):
     detail = await batch_test_service.get_batch_test_detail(db, project_id, batch_id)

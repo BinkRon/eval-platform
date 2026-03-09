@@ -10,4 +10,6 @@ export const batchTestApi = {
     client.post<BatchTest>(`/projects/${projectId}/batch-tests`, data).then((r) => r.data),
   get: (projectId: string, batchId: string) =>
     client.get<BatchTestDetail>(`/projects/${projectId}/batch-tests/${batchId}`).then((r) => r.data),
+  delete: (projectId: string, batchId: string) =>
+    client.delete(`/projects/${projectId}/batch-tests/${batchId}`),
 }

@@ -27,6 +27,16 @@ export function useCreateBatchTest(projectId: string) {
   })
 }
 
+export function useDeleteBatchTest(projectId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (batchId: string) => batchTestApi.delete(projectId, batchId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['batch-tests', projectId] })
+    },
+  })
+}
+
 export function useBatchTestDetail(projectId: string, batchId: string) {
   return useQuery({
     queryKey: ['batch-test-detail', projectId, batchId],

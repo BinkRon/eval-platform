@@ -23,7 +23,7 @@ class BatchTest(UUIDPrimaryKey, TimestampMixin, Base):
 
     project = relationship("Project", back_populates="batch_tests", lazy="raise")
     agent_version = relationship("AgentVersion", lazy="raise")
-    test_results = relationship("TestResult", back_populates="batch_test", cascade="all, delete-orphan", lazy="raise")
+    test_results = relationship("TestResult", back_populates="batch_test", cascade="all, delete-orphan", passive_deletes=True, lazy="raise")
 
 
 class TestResult(UUIDPrimaryKey, TimestampMixin, Base):

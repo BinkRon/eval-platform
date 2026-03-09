@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Button, Card, Col, Progress, Row, Space, Spin, Table, Tag, Tooltip, Typography } from 'antd'
+import { Button, Card, Col, message, Popconfirm, Progress, Row, Space, Spin, Table, Tag, Tooltip, Typography } from 'antd'
 import {
   PlayCircleOutlined,
   EyeOutlined,
+  DeleteOutlined,
   CheckCircleFilled,
   ExclamationCircleFilled,
   ApiOutlined,
@@ -12,7 +13,7 @@ import {
   RobotOutlined,
 } from '@ant-design/icons'
 import { useProject, useProjectReadiness } from '../hooks/useProjects'
-import { useBatchTests } from '../hooks/useBatchTests'
+import { useBatchTests, useDeleteBatchTest } from '../hooks/useBatchTests'
 import CreateBatchModal from '../components/batch-test/CreateBatchModal'
 import BreadcrumbNav from '../components/shared/BreadcrumbNav'
 import type { BatchTest } from '../types/batchTest'
@@ -84,6 +85,7 @@ export default function ProjectWorkbench() {
   const { data: project, isLoading } = useProject(id ?? '')
   const { data: readiness } = useProjectReadiness(id ?? '')
   const { data: batches, isLoading: batchLoading } = useBatchTests(id ?? '')
+  const deleteMutation = useDeleteBatchTest(id ?? '')
   const navigate = useNavigate()
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -145,16 +147,40 @@ export default function ProjectWorkbench() {
     {
       title: '操作',
       key: 'actions',
-      width: 80,
+      width: 140,
       render: (_: unknown, r: BatchTest) => (
-        <Button
-          type="link"
-          icon={<EyeOutlined />}
-          onClick={() => navigate(`/projects/${id}/batch-tests/${r.id}`)}
-          disabled={r.status === 'pending'}
-        >
-          查看
-        </Button>
+        <Space size={0}>
+          <Button
+            type="link"
+            icon={<EyeOutlined />}
+            onClick={() => navigate(`/projects/${id}/batch-tests/${r.id}`)}
+            disabled={r.status === 'pending'}
+          >
+            查看
+          </Button>
+          <Popconfirm
+            title="确认删除该批测记录？"
+            description="删除后不可恢复"
+            onConfirm={async () => {
+              try {
+                await deleteMutation.mutateAsync(r.id)
+                message.success('已删除')
+              } catch { /* global interceptor */ }
+            }}
+            okText="删除"
+            cancelText="取消"
+            okButtonProps={{ danger: true }}
+          >
+            <Button
+              type="link"
+              danger
+              icon={<DeleteOutlined />}
+              disabled={r.status === 'running' || r.status === 'pending'}
+            >
+              删除
+            </Button>
+          </Popconfirm>
+        </Space>
       ),
     },
   ]

@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.exceptions import ValidationError
+from app.exceptions import NotFoundError, ValidationError
 from app.models.agent_version import AgentVersion
 from app.models.batch_test import BatchTest, TestResult
 from app.models.judge_config import JudgeConfig
@@ -97,6 +97,17 @@ async def validate_and_create(db: AsyncSession, project_id: UUID, data: BatchTes
     db.add(batch)
     await db.flush()
     return batch
+
+
+async def delete_batch_test(db: AsyncSession, project_id: UUID, batch_id: UUID) -> None:
+    """Delete a batch test and its results. Running/pending batches cannot be deleted."""
+    batch = await db.get(BatchTest, batch_id)
+    if not batch or batch.project_id != project_id:
+        raise NotFoundError("批测记录不存在")
+    if batch.status in ("running", "pending"):
+        raise ValidationError("运行中或等待中的批测不可删除")
+    await db.delete(batch)
+    await db.commit()
 
 
 async def list_batch_tests(db: AsyncSession, project_id: UUID) -> list[BatchTestResponse]:
