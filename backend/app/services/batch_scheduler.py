@@ -83,7 +83,7 @@ async def run_batch_test(batch_test_id: UUID):
             batch = await db.get(BatchTest, batch_test_id)
             if batch:
                 batch.status = "failed"
-                batch.completed_at = datetime.utcnow()
+                batch.completed_at = datetime.now(timezone.utc).replace(tzinfo=None)
                 await db.commit()
         if is_cancelled:
             raise
@@ -162,7 +162,7 @@ async def _load_batch_context(batch_test_id: UUID) -> BatchContext | None:
         ctx = await _load_context(db, batch)
         if not ctx:
             batch.status = "failed"
-            batch.completed_at = datetime.utcnow()
+            batch.completed_at = datetime.now(timezone.utc).replace(tzinfo=None)
             await db.commit()
             return None
     return ctx
@@ -231,7 +231,7 @@ async def _finalize_batch(batch_test_id: UUID):
                 batch.status = "failed"
             else:
                 batch.status = "completed"
-            batch.completed_at = datetime.utcnow()
+            batch.completed_at = datetime.now(timezone.utc).replace(tzinfo=None)
             await db.commit()
     except Exception as e:
         logger.exception(f"Failed to finalize batch test {batch_test_id}: {e}")
