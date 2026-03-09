@@ -1,4 +1,5 @@
 import asyncio
+import os
 from logging.config import fileConfig
 
 from sqlalchemy import pool
@@ -12,6 +13,15 @@ config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+# 优先从环境变量或 .env 读取数据库 URL，兼容不同开发机
+db_url = os.environ.get("EVAL_DATABASE_URL")
+if not db_url:
+    from dotenv import load_dotenv
+    load_dotenv()
+    db_url = os.environ.get("EVAL_DATABASE_URL")
+if db_url:
+    config.set_main_option("sqlalchemy.url", db_url)
 
 target_metadata = Base.metadata
 

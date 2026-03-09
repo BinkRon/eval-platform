@@ -15,7 +15,5 @@ def create_llm_adapter(
     model: str,
     base_url: str | None = None,
 ) -> LLMAdapter:
-    adapter_cls = _ADAPTERS.get(provider_name)
-    if not adapter_cls:
-        raise ValueError(f"Unknown provider: {provider_name}. Available: {list(_ADAPTERS.keys())}")
+    adapter_cls = _ADAPTERS.get(provider_name, OpenAIAdapter)
     return adapter_cls(api_key=api_key, model=model, base_url=base_url)
