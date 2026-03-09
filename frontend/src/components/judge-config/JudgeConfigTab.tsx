@@ -1,12 +1,18 @@
-import { useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { Button, Card, Form, Input, InputNumber, Select, Space, message } from 'antd'
 import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons'
 import { useJudgeConfig, useUpdateJudgeConfig } from '../../hooks/useJudgeConfig'
 
-export default function JudgeConfigTab({ projectId }: { projectId: string }) {
+interface JudgeConfigTabProps {
+  projectId: string
+  onDirtyChange?: (dirty: boolean) => void
+}
+
+export default function JudgeConfigTab({ projectId, onDirtyChange }: JudgeConfigTabProps) {
   const { data: config, isLoading } = useJudgeConfig(projectId)
   const updateMutation = useUpdateJudgeConfig(projectId)
   const [form] = Form.useForm()
+  const dataLoaded = useRef(false)
 
   useEffect(() => {
     if (config) {
@@ -15,8 +21,15 @@ export default function JudgeConfigTab({ projectId }: { projectId: string }) {
         checklist_items: config.checklist_items,
         eval_dimensions: config.eval_dimensions,
       })
+      dataLoaded.current = true
     }
   }, [config, form])
+
+  const handleValuesChange = useCallback(() => {
+    if (dataLoaded.current) {
+      onDirtyChange?.(true)
+    }
+  }, [onDirtyChange])
 
   const handleSave = async () => {
     try {
@@ -30,6 +43,7 @@ export default function JudgeConfigTab({ projectId }: { projectId: string }) {
         sort_order: i,
       }))
       await updateMutation.mutateAsync(values)
+      onDirtyChange?.(false)
       message.success('保存成功')
     } catch {
       // validation or API error handled by global interceptor
@@ -39,7 +53,7 @@ export default function JudgeConfigTab({ projectId }: { projectId: string }) {
   if (isLoading) return <Card loading />
 
   return (
-    <Form form={form} layout="vertical" initialValues={{ pass_threshold: 2.0, checklist_items: [], eval_dimensions: [] }}>
+    <Form form={form} layout="vertical" initialValues={{ pass_threshold: 2.0, checklist_items: [], eval_dimensions: [] }} onValuesChange={handleValuesChange}>
       <Form.Item name="pass_threshold" label="通过阈值（评判维度平均分 ≥ 该值即通过）">
         <InputNumber min={1} max={3} step={0.1} />
       </Form.Item>

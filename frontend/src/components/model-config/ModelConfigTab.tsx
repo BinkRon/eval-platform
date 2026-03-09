@@ -1,23 +1,37 @@
-import { useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { Button, Card, Col, Form, Input, InputNumber, Row, Select, message } from 'antd'
 import { useModelConfig, useUpdateModelConfig, useModelOptions } from '../../hooks/useModelConfig'
 
-export default function ModelConfigTab({ projectId }: { projectId: string }) {
+interface ModelConfigTabProps {
+  projectId: string
+  onDirtyChange?: (dirty: boolean) => void
+}
+
+export default function ModelConfigTab({ projectId, onDirtyChange }: ModelConfigTabProps) {
   const { data: config, isLoading } = useModelConfig(projectId)
   const { data: modelOptions } = useModelOptions()
   const updateMutation = useUpdateModelConfig(projectId)
   const [form] = Form.useForm()
+  const dataLoaded = useRef(false)
 
   useEffect(() => {
     if (config) {
       form.setFieldsValue(config)
+      dataLoaded.current = true
     }
   }, [config, form])
+
+  const handleValuesChange = useCallback(() => {
+    if (dataLoaded.current) {
+      onDirtyChange?.(true)
+    }
+  }, [onDirtyChange])
 
   const handleSave = async () => {
     try {
       const values = await form.validateFields()
       await updateMutation.mutateAsync(values)
+      onDirtyChange?.(false)
       message.success('保存成功')
     } catch {
       // validation or API error handled by global interceptor
@@ -41,7 +55,7 @@ export default function ModelConfigTab({ projectId }: { projectId: string }) {
   if (isLoading) return <Card loading />
 
   return (
-    <Form form={form} layout="vertical">
+    <Form form={form} layout="vertical" onValuesChange={handleValuesChange}>
       <Row gutter={24}>
         <Col span={12}>
           <Card title="对练模型配置" size="small">
