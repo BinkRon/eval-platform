@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 import httpx
 from jsonpath_ng import parse as jsonpath_parse
 
+from app.config import settings
 from app.models.agent_version import AgentVersion
 
 logger = logging.getLogger(__name__)
@@ -17,8 +18,8 @@ logger = logging.getLogger(__name__)
 async def _validate_url(url: str) -> None:
     """Validate URL to prevent SSRF attacks.
 
-    Note: DNS rebinding is not fully mitigated — the IP check and actual
-    HTTP request are not atomic. Acceptable for MVP.
+    Set env ALLOW_PRIVATE_URLS=true to allow internal network addresses
+    (for development / internal agent testing).
     """
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
@@ -27,6 +28,9 @@ async def _validate_url(url: str) -> None:
     hostname = parsed.hostname
     if not hostname:
         raise ValueError("URL 缺少主机名")
+
+    if settings.allow_private_urls:
+        return
 
     if hostname.lower() in ("localhost", "127.0.0.1", "::1"):
         raise ValueError("不允许访问本地地址")
@@ -47,6 +51,7 @@ class AgentClient:
     def __init__(self, agent_version: AgentVersion):
         self.agent = agent_version
         self.session_id = str(uuid.uuid4())
+        self._history: list[dict] = []
 
     async def send_message(self, message: str) -> tuple[str, bool]:
         """Send a message to the agent and return (reply, is_ended).
@@ -56,8 +61,13 @@ class AgentClient:
         """
         await _validate_url(self.agent.endpoint)
         if self.agent.response_format == "sse":
-            return await self._send_message_sse(message)
-        return await self._send_message_json(message)
+            reply, ended = await self._send_message_sse(message)
+        else:
+            reply, ended = await self._send_message_json(message)
+        # Track conversation history for {{dialog_history}} placeholder
+        self._history.append({"role": "user", "content": message})
+        self._history.append({"role": "assistant", "content": reply})
+        return reply, ended
 
     async def _send_message_json(self, message: str) -> tuple[str, bool]:
         body = self._build_request_body(message)
@@ -104,6 +114,7 @@ class AgentClient:
 
         chunks: list[str] = []
         last_event_data: dict | None = None
+        event_count = 0
 
         try:
             async with asyncio.timeout(300):
@@ -130,6 +141,7 @@ class AgentClient:
                                 logger.warning(f"SSE 事件 JSON 解析失败: {payload[:100]}")
                                 continue
 
+                            event_count += 1
                             last_event_data = event_data
 
                             # Extract text chunk using response_path
@@ -152,6 +164,21 @@ class AgentClient:
             raise RuntimeError("Agent API 网络错误")
 
         if not chunks:
+            # Agent may send end signal with empty text (e.g. hangup with no reply).
+            # This is valid — treat as empty reply + ended.
+            if last_event_data and self._check_end_signal(last_event_data):
+                logger.info(
+                    f"SSE 流无文本但检测到结束信号: event_count={event_count}, "
+                    f"session={self.session_id}"
+                )
+                return "", True
+
+            logger.error(
+                f"SSE 流未提取到文本: event_count={event_count}, "
+                f"session={self.session_id}, message={message[:50]!r}, "
+                f"last_event_keys={list(last_event_data.keys()) if last_event_data else None}, "
+                f"last_event_sample={json.dumps(last_event_data, ensure_ascii=False)[:300] if last_event_data else None}"
+            )
             raise RuntimeError("Agent API SSE 流未返回有效数据")
 
         reply = "".join(chunks)
@@ -188,18 +215,25 @@ class AgentClient:
             raise ValueError(f"Invalid request_template JSON: {e}")
 
         placeholders = {"{{message}}": message, "{{session_id}}": self.session_id}
-        return self._replace_placeholders(body, placeholders)
+        # Support {{dialog_history}} — replaced with actual conversation array
+        typed_placeholders = {"{{dialog_history}}": self._history}
+        return self._replace_placeholders(body, placeholders, typed_placeholders)
 
     @staticmethod
-    def _replace_placeholders(obj, placeholders: dict):
+    def _replace_placeholders(obj, placeholders: dict, typed_placeholders: dict | None = None):
         if isinstance(obj, str):
+            # Typed placeholders: when the entire value is a placeholder, replace with actual type
+            if typed_placeholders:
+                stripped = obj.strip()
+                if stripped in typed_placeholders:
+                    return typed_placeholders[stripped]
             for key, value in placeholders.items():
                 obj = obj.replace(key, value)
             return obj
         elif isinstance(obj, dict):
-            return {k: AgentClient._replace_placeholders(v, placeholders) for k, v in obj.items()}
+            return {k: AgentClient._replace_placeholders(v, placeholders, typed_placeholders) for k, v in obj.items()}
         elif isinstance(obj, list):
-            return [AgentClient._replace_placeholders(item, placeholders) for item in obj]
+            return [AgentClient._replace_placeholders(item, placeholders, typed_placeholders) for item in obj]
         return obj
 
     @staticmethod

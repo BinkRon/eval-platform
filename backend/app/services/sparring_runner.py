@@ -58,8 +58,9 @@ class SparringRunner:
             # Send to agent
             agent_reply, agent_ended = await self.agent_client.send_message(user_message)
 
-            # Record agent reply
-            self.conversation.append({"role": "assistant", "content": agent_reply})
+            # Record agent reply (skip empty hangup replies)
+            if agent_reply:
+                self.conversation.append({"role": "assistant", "content": agent_reply})
 
             # Check: agent end signal
             if agent_ended:
@@ -98,12 +99,27 @@ class SparringRunner:
         return conversation or [], termination_reason or "max_rounds", actual_rounds
 
     async def _generate_next_message(self) -> str:
+        # Swap roles: the sparring LLM *is* the assistant generating user messages,
+        # so agent replies should appear as "user" and sparring messages as "assistant".
+        # Without this swap, conversations ending with an assistant message cause many
+        # models to return empty content.
+        swapped = []
+        for msg in self.conversation:
+            role = "assistant" if msg["role"] == "user" else "user"
+            swapped.append({"role": role, "content": msg["content"]})
+
         kwargs: dict = {
-            "messages": self.conversation,
+            "messages": swapped,
             "system_prompt": self.persona_prompt,
         }
         if self.temperature is not None:
             kwargs["temperature"] = self.temperature
         if self.max_tokens is not None:
             kwargs["max_tokens"] = self.max_tokens
-        return await self.llm.chat(**kwargs)
+
+        # Retry once if LLM returns empty (e.g. think-tag-only response)
+        for _attempt in range(2):
+            result = await self.llm.chat(**kwargs)
+            if result.strip():
+                return result
+        return "嗯，请继续"

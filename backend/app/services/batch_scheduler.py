@@ -261,6 +261,7 @@ async def _run_single_test(batch_test_id, test_case, ctx: BatchContext, sparring
         await db.commit()
 
     # Phase 1: Sparring (对练) — 逐轮写入 conversation 以支持实时观测
+    sparring_runner: SparringRunner | None = None
     try:
         agent_client = AgentClient(ctx.agent_version)
         sparring_runner = SparringRunner(
@@ -296,7 +297,11 @@ async def _run_single_test(batch_test_id, test_case, ctx: BatchContext, sparring
         sparring_prompt_snapshot = sparring_runner.persona_prompt
     except Exception as e:
         logger.exception(f"Test case {test_case.id} sparring failed: {e}")
-        await _save_failed_result(batch_test_id, test_case.id, sanitize_error(f"对练失败: {e}"))
+        await _save_failed_result(
+            batch_test_id, test_case.id, sanitize_error(f"对练失败: {e}"),
+            conversation=sparring_runner.conversation if sparring_runner and sparring_runner.conversation else None,
+            actual_rounds=actual_rounds,
+        )
         return
 
     # Phase 2: Judge (裁判)
