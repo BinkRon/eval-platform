@@ -45,24 +45,36 @@
 
 ---
 
-### Phase P2：体验打磨 + 工程清理（4 项）
+### Phase P2：体验打磨 + 工程清理（4 项）✅
 
-- [ ] **P2-1：批测选取部分用例** `FT-03`
+- [x] **P2-1：批测选取部分用例** `FT-03`
   - Modal 增加用例多选（Checkbox，默认全选）
   - 后端 BatchTestCreate 增加可选 `test_case_ids` 字段
-- [ ] **P2-2：配置表单分组** `UX-09`
+  - batch_scheduler 通过 config_snapshot 过滤选定用例
+- [x] **P2-2：配置表单分组** `UX-09`
   - Agent 版本 Modal 用 Divider 分为「基础信息」「连接配置」「协议配置」三组
-  - 裁判配置 / 模型配置增加查看态 / 编辑态切换
-- [ ] **P2-3：pass_threshold 类型修复** `EN-03`
+  - 裁判配置 / 模型配置增加查看态（Descriptions）/ 编辑态（Form）切换
+- [x] **P2-3：pass_threshold 类型修复** `EN-03`
   - 后端 schema pass_threshold 改为 float，消除前端 Number() 强转
-- [ ] **P2-4：chat_json json_schema 参数清理** `EN-02`
-  - 移除 LLMAdapter.chat_json() 的无用 json_schema 参数
+  - JudgeRunner / BatchContext 的 pass_threshold 全链路统一为 float
+- [x] **P2-4：chat_json json_schema 参数清理** `EN-02`
+  - 移除 LLMAdapter.chat_json() 的无用 json_schema 参数（base/openai/anthropic/mock）
 
 **验证**：批测可选用例 → 表单分组清晰 → 类型一致 → 无废代码
 
 ---
 
 ## 交接备注
+
+**Session #20 (2026-03-09)**：Phase P2 全部完成（4/4），v0.3 全部 Phase 完成。
+
+- P2-1：批测选取部分用例 — 后端 test_case_ids 可选字段 + config_snapshot 过滤 + 前端 Checkbox 多选
+- P2-2：配置表单分组 — Agent Modal Divider 三段 + 裁判/模型配置查看态/编辑态切换（Descriptions ↔ Form）
+- P2-3：pass_threshold 全链路 float 统一（schema → JudgeRunner → BatchContext）
+- P2-4：移除 chat_json json_schema 无用参数（base/openai/anthropic/mock 四处）
+- 审查修复：_load_context 空用例防护、CreateBatchModal 异步加载同步、auto-edit hasAutoEntered ref
+- v0.3 所有 Phase（BugFix + P1 + P2）全部完成
+- 下一步：规划 v0.4 或从 backlog 选取新条目
 
 **Session #19 (2026-03-09)**：Phase P1 全部完成（5/5）。
 
