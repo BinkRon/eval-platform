@@ -307,7 +307,7 @@
 
 - **优先级**：P2
 - **复杂度**：M
-- **状态**：Scheduled → v0.3 P2
+- **状态**：Done
 - **来源**：用户反馈 2026-03-09
 - **PRD**：[`docs/prd/p2-interaction-redesign.md`](prd/p2-interaction-redesign.md) §2
 - **描述**：发起批测的确认弹窗只能选 Agent 版本和并发数，无法定制本次批测的评测范围（用例、Checklist、评判维度、通过阈值）。

@@ -54,7 +54,7 @@
   - 全链路 Decimal → float：schema → BatchContext → JudgeRunner → 测试
 - [x] **P2-4：chat_json json_schema 参数清理** `EN-02`
   - 移除 LLMAdapter.chat_json() 的无用 json_schema 参数（base/openai/anthropic/mock）
-- [ ] **P2-1：发起批测 Modal 多选** `FT-03`
+- [x] **P2-1：发起批测 Modal 多选** `FT-03`
   - Select multiple 多选：测试用例 / Checklist 检查项 / 评判维度（默认全选）
   - 通过阈值 InputNumber 可调
   - 后端 BatchTestCreate 增加 test_case_ids / checklist_item_ids / eval_dimension_ids / pass_threshold
@@ -75,6 +75,16 @@
 ---
 
 ## 交接备注
+
+**Session #22 (2026-03-09)**：P2-1 发起批测 Modal 多选。
+
+- 后端 BatchTestCreate 新增 4 个可选字段（test_case_ids/checklist_item_ids/eval_dimension_ids/pass_threshold）
+- validate_and_create 按选中 ID 过滤，过滤后存入 config_snapshot
+- batch_scheduler _load_context 从 snapshot 读取测试用例 ID 和裁判配置（SimpleNamespace 替代 JudgeConfig ORM）
+- 前端 Modal 增加三个 Select multiple（默认全选）+ 通过阈值 InputNumber + 模型配置只读区
+- 全选时不传 ID（后端默认全量），部分选中传选中列表
+- 代码审查修复：snapshot 空值不回退全量、异常处理、类型标注、校验错误提示
+- 下一步：P2-2a（裁判配置查看态）→ P2-2b → P2-2c
 
 **Session #21 (2026-03-09)**：Phase P2 交互重设计 — 回退 + PRD + 工程修复。
 
