@@ -95,6 +95,18 @@ Phase 2 (就绪 API) ───┘         ├──> Phase 4 (P4 改造)
 
 ---
 
+### Phase UX：易用性修复
+
+- [x] **U7：全局面包屑导航** — P2/P3/P4/P5 用 BreadcrumbNav 替代 ← 返回按钮，支持跨级跳转
+- [x] **U2：配置保存后同步就绪状态缓存** — 4 个配置 hook 的 onSuccess 增加 invalidate readiness
+- [x] **U1：P3 离开未保存警告** — JudgeConfigTab/ModelConfigTab 追踪 dirty 状态，useBlocker + beforeunload 拦截
+- [x] **U3：发起批测 Modal 增加配置预览** — 展示 Checklist 条目 Tag 和评判维度名称
+- [x] **U5：P4 状态筛选** — 结果列增加 Ant Design Table column filters（通过/未通过/失败/进行中/等待中）
+- [x] **U6：对话气泡角色头像** — Avatar + UserOutlined/RobotOutlined 替代 Tag
+- [x] **U4：P5 用例切换栏优化** — 水平滚动替代 flexWrap + 状态筛选下拉 + 进度统计
+
+---
+
 ### 端到端验收 ✅
 
 完成所有 Phase 后：
@@ -108,6 +120,19 @@ Phase 2 (就绪 API) ───┘         ├──> Phase 4 (P4 改造)
 ---
 
 ## 交接备注
+
+**Session #16 (2026-03-09)**：Phase UX 易用性修复完成（7 项）。
+
+- 基于设计评审（Value → Ease of Use → Delight 框架）识别的 7 个易用性问题全部修复
+- 新增 BreadcrumbNav 共享组件，P2-P5 四个页面均用面包屑替代返回按钮
+- 配置保存后自动 invalidate readiness 缓存（4 个 hooks），P3→P2 就绪状态实时同步
+- 裁判/模型配置增加 dirty state tracking + useBlocker 离开确认 + beforeunload
+- 发起批测 Modal 展示 Checklist 条目和评判维度名称
+- P4 结果表格增加状态筛选（column filters）
+- 对话气泡用 Avatar 替代 Tag 增强角色可区分性
+- P5 用例切换栏改为水平滚动 + 状态筛选 + 进度统计
+- 代码审查修复：blocker.state 依赖、dataLoaded 重置、类型导入路径
+- TypeScript 无报错
 
 **Session #15 (2026-03-08)**：端到端验收完成 + dashscope adapter。
 
