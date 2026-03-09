@@ -151,13 +151,15 @@
 - **复杂度**：M
 - **状态**：Scheduled → v0.3 P2
 - **来源**：用户反馈 2026-03-09
+- **PRD**：[`docs/prd/p2-interaction-redesign.md`](prd/p2-interaction-redesign.md) §2-4
 - **描述**：三处配置表单存在信息结构问题：
   1. **Agent 版本 Modal**：12 个字段平铺在 640px 弹窗里，基础信息（名称/描述）、连接配置（endpoint/method/auth）、协议配置（request_template/response_path/end_signal）无视觉分组
   2. **裁判配置 / 模型配置**：始终处于编辑态，无查看/编辑模式切换。配置项多时 P3 页面超长，用户难以快速浏览当前配置
 - **涉及文件**：`frontend/src/components/agent-version/AgentVersionTab.tsx`、`frontend/src/components/judge-config/JudgeConfigTab.tsx`、`frontend/src/components/model-config/ModelConfigTab.tsx`
 - **建议方案**：
-  - Agent 版本 Modal：用 Divider 或 Typography.Title 将字段分为「基础信息」「连接配置」「协议配置」三组
-  - 裁判配置 / 模型配置：增加查看态（Typography/Descriptions 紧凑展示）和编辑态（Form 表单）的切换，默认查看态
+  - Agent 版本 Modal：用 Divider 分为「基础信息」「连接配置」「协议配置」三组
+  - 裁判配置：查看态用 Table + Card 结构化展示，编辑态保留 Form.List
+  - 模型配置：纵向双 Card 堆叠 + 分别编辑（每个模型独立 view/edit 状态）
 
 ---
 
@@ -240,7 +242,7 @@
 
 - **优先级**：P2
 - **复杂度**：S
-- **状态**：Scheduled → v0.3 P2
+- **状态**：Done
 - **来源**：设计评审 2026-03-08
 - **描述**：`base.py` 抽象方法声明了 `json_schema` 参数，但 `OpenAIAdapter` 和 `AnthropicAdapter` 都未使用它。
 - **涉及文件**：`backend/app/llm/base.py`、`backend/app/llm/openai_adapter.py`、`backend/app/llm/anthropic_adapter.py`
@@ -266,7 +268,7 @@
 
 - **优先级**：P2
 - **复杂度**：S
-- **状态**：Scheduled → v0.3 P2
+- **状态**：Done
 - **来源**：设计评审 2026-03-08
 - **描述**：后端 Pydantic 的 `Numeric` 类型序列化为字符串，前端 TypeScript 类型标注为 `number`，组件中用 `Number(config.pass_threshold)` 显式转换。类型声明与运行时行为不一致。
 - **涉及文件**：`frontend/src/types/judgeConfig.ts`、`frontend/src/components/judge-config/JudgeConfigTab.tsx`
@@ -301,15 +303,16 @@
 - **描述**：Anthropic 适配器无原生 JSON mode，裁判输出稳定性依赖 prompt 工程。建议 MVP 验证阶段收集裁判一致性数据，以量化 H1 假设的可信度。
 - **建议方案**：提供"重新评判"功能，对同一段对话再次调用裁判，对比两次结果的一致性。或在批测时自动对随机 N% 的用例做双重评判。
 
-### FT-03 批测发起支持选取部分用例
+### FT-03 批测发起支持选取部分用例/Checklist/维度
 
 - **优先级**：P2
 - **复杂度**：M
 - **状态**：Scheduled → v0.3 P2
 - **来源**：用户反馈 2026-03-09
-- **描述**：发起批测的确认弹窗只能选 Agent 版本和并发数，测试用例全量跑，无法选取部分用例。调试某个失败场景时只想跑 1-2 个用例，但必须等全量跑完。
+- **PRD**：[`docs/prd/p2-interaction-redesign.md`](prd/p2-interaction-redesign.md) §2
+- **描述**：发起批测的确认弹窗只能选 Agent 版本和并发数，无法定制本次批测的评测范围（用例、Checklist、评判维度、通过阈值）。
 - **涉及文件**：`frontend/src/components/batch-test/CreateBatchModal.tsx`、`backend/app/api/batch_tests.py`、`backend/app/schemas/batch_test.py`、`backend/app/services/batch_scheduler.py`
-- **建议方案**：Modal 增加用例多选（Checkbox 列表，默认全选），后端 `BatchTestCreate` 增加可选 `test_case_ids: list[UUID] | None` 字段，为 None 时全量，有值时按指定用例跑。
+- **建议方案**：Modal 增加 Select multiple 多选（用例/checklist/维度，默认全选）+ 通过阈值 InputNumber。后端 BatchTestCreate 增加 test_case_ids / checklist_item_ids / eval_dimension_ids / pass_threshold 可选字段。
 
 ### FT-04 模型管理连通性测试 + Agent 版本弹窗内测试
 

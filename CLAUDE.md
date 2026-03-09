@@ -8,21 +8,22 @@
 
 ## 当前状态
 
-版本：v0.2 架构重构（已完成）
-基线：v0.1 MVP 已完成（Phase A-F）
-当前：Phase 1-5 + 端到端验收 + Phase UX 易用性修复 全部完成
+版本：v0.3 稳定性与体验修复（进行中）
+基线：v0.2 架构重构已完成（Phase 1-5 + UX 修复）
 详见：`docs/progress.md`
 
 ## 文档索引
 
 | 级别 | 文档 | 说明 |
 |------|------|------|
-| 每次必读 | `docs/progress.md` | 开发进度、交接备注 |
+| 每次必读 | `docs/progress.md` | 开发进度、当前 Phase 任务 |
+| 每次必读 | `docs/backlog.md` | 需求池（问题追踪、优先级、排期状态） |
 | 开发参考 | `docs/architecture.md` | 技术架构、数据库、API、核心引擎 |
 | 开发参考 | `docs/conventions.md` | 代码规范、命名、Git 规范 |
 | 开发参考 | `docs/testing.md` | 测试策略、编写规范 |
-| 开发参考 | `docs/eval-platform-mvp-spec-v2.md` | v2 产品需求（页面下钻架构、对话剧场） |
-| 归档 | `docs/eval-platform-mvp-spec.md` | v1 MVP 产品需求（已被 v2 取代） |
+| 产品设计 | `docs/prd/` | PRD 目录，涉及界面和交互的设计方案在此对齐 |
+| 产品设计 | `docs/prd/eval-platform-mvp-spec-v2.md` | v2 产品需求（页面下钻架构、对话剧场） |
+| 归档 | `docs/prd/eval-platform-mvp-spec.md` | v1 MVP 产品需求（已被 v2 取代） |
 | 归档 | `docs/archive/eval-platform-framework.md` | 产品完整愿景（含未纳入 MVP 的功能） |
 | 归档 | `docs/archive/project-roadmap.md` | 跨项目总规划（含编排平台） |
 
@@ -49,11 +50,31 @@
 - Phase 内的任务按顺序执行，每个任务走完上述标准流程
 - 如果 Phase 过大无法在一个 session 完成，在交接备注中标明断点
 
+### 需求管理（backlog ↔ progress 联动）
+
+**两份文档各司其职**：
+- `docs/backlog.md`：需求池 — 所有已识别的问题/需求，含优先级、复杂度、状态
+- `docs/progress.md`：执行计划 — 当前版本的 Phase 任务和开发进度
+
+**排期流程**：
+1. 从 backlog 选取条目 → backlog 中标记 `Scheduled → vX.Y Phase名`
+2. 在 progress.md 中创建对应 Phase 和任务清单
+3. 开始开发 → backlog 标记 `In Progress`
+4. 任务完成 → progress.md 勾选 → backlog 标记 `Done`
+5. 版本发布后 → backlog 中 `Done` 条目移入归档区
+
+**新问题录入**：开发/评审中发现的问题直接录入 backlog（状态 `Open`），不阻塞当前 Phase。
+
+**progress.md 压缩规则**：
+- 新版本排期时，将上一版本已完成的 Phase 折叠进 `<details>` 并写一行摘要
+- progress.md 顶层只保持当前版本的任务清单
+
 ### 结束前（必做）
 1. 更新 `docs/progress.md` — 标记完成项、更新进行中项、写交接备注
 2. 更新本文件的”当前状态”（版本号、当前 Phase）
 3. 如有新的架构决策 → 更新 `docs/architecture.md`
 4. 如有新的代码约定 → 更新 `docs/conventions.md`
+5. 如有新发现的问题/需求 → 录入 `docs/backlog.md`（状态 `Open`）
 
 ## 开发规则
 

@@ -26,7 +26,7 @@
 eval-platform/
 ├── CLAUDE.md                      # 项目入口文档
 ├── docs/                          # 产品 + 技术文档
-│   ├── eval-platform-mvp-spec.md  # MVP 需求文档
+│   ├── prd/                       # PRD 目录（产品需求文档）
 │   ├── architecture.md            # 本文档
 │   ├── conventions.md             # 代码规范
 │   ├── progress.md                # 开发进度

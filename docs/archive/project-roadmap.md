@@ -29,7 +29,7 @@
 
 **详细设计**（位于独立项目 `eval-platform`）：
 - 完整框架：`eval-platform/docs/eval-platform-framework.md`
-- MVP 需求：`eval-platform/docs/eval-platform-mvp-spec.md`
+- MVP 需求：`eval-platform/docs/prd/eval-platform-mvp-spec.md`
 
 ### 2.2 任务型 Agent 编排平台
 
@@ -131,5 +131,5 @@
 |------|------|------|------|
 | project-roadmap.md | 两个项目各一份 | 本文档，项目总体规划 | — |
 | eval-platform-framework.md | `eval-platform/docs/` | 评测平台完整框架 | Phase 1 |
-| eval-platform-mvp-spec.md | `eval-platform/docs/` | 评测平台 MVP 需求 | Phase 1 |
+| eval-platform-mvp-spec.md | `eval-platform/docs/prd/` | 评测平台 MVP 需求 | Phase 1 |
 | [orchestration-mvp-spec.md](orchestration-mvp-spec.md) | `agent/docs/` | 编排平台 MVP 需求 | Phase 2 |

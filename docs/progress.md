@@ -45,24 +45,46 @@
 
 ---
 
-### Phase P2：体验打磨 + 工程清理（4 项）
+### Phase P2：交互重设计 + 工程清理（6 项）
 
-- [ ] **P2-1：批测选取部分用例** `FT-03`
-  - Modal 增加用例多选（Checkbox，默认全选）
-  - 后端 BatchTestCreate 增加可选 `test_case_ids` 字段
-- [ ] **P2-2：配置表单分组** `UX-09`
-  - Agent 版本 Modal 用 Divider 分为「基础信息」「连接配置」「协议配置」三组
-  - 裁判配置 / 模型配置增加查看态 / 编辑态切换
-- [ ] **P2-3：pass_threshold 类型修复** `EN-03`
+> PRD：[`docs/prd/p2-interaction-redesign.md`](prd/p2-interaction-redesign.md)
+
+- [x] **P2-3：pass_threshold 类型修复** `EN-03`
   - 后端 schema pass_threshold 改为 float，消除前端 Number() 强转
-- [ ] **P2-4：chat_json json_schema 参数清理** `EN-02`
-  - 移除 LLMAdapter.chat_json() 的无用 json_schema 参数
+  - 全链路 Decimal → float：schema → BatchContext → JudgeRunner → 测试
+- [x] **P2-4：chat_json json_schema 参数清理** `EN-02`
+  - 移除 LLMAdapter.chat_json() 的无用 json_schema 参数（base/openai/anthropic/mock）
+- [ ] **P2-1：发起批测 Modal 多选** `FT-03`
+  - Select multiple 多选：测试用例 / Checklist 检查项 / 评判维度（默认全选）
+  - 通过阈值 InputNumber 可调
+  - 后端 BatchTestCreate 增加 test_case_ids / checklist_item_ids / eval_dimension_ids / pass_threshold
+  - batch_scheduler _load_context 从 snapshot 读取过滤后的 checklist/dimensions
+- [ ] **P2-2a：裁判配置查看态** `UX-09`
+  - 查看态：Table 展示 Checklist + Card 展示评判维度（含评分标准）
+  - 编辑态：保留原有 Form.List 动态表单
+  - view/edit 切换，首次无数据自动编辑态
+- [ ] **P2-2b：模型配置查看态** `UX-09`
+  - 纵向双 Card 堆叠（对练模型在上、裁判模型在下）
+  - 每个 Card 独立编辑按钮，分别 view/edit
+  - System Prompt 浅灰背景 + ellipsis 展开
+- [ ] **P2-2c：Agent 版本 Modal 分组** `UX-09`
+  - Divider 三段：基础信息 / 连接配置 / 协议配置
 
-**验证**：批测可选用例 → 表单分组清晰 → 类型一致 → 无废代码
+**验证**：批测 Modal 多选正常 → 裁判配置 Table/Card 查看态 → 模型纵向+分别编辑 → Agent Modal 分组
 
 ---
 
 ## 交接备注
+
+**Session #21 (2026-03-09)**：Phase P2 交互重设计 — 回退 + PRD + 工程修复。
+
+- 用户对 P2 交互设计不满意，回退 74d5760 和 4a045a1 两个 commit
+- 重新单独提交工程修复：P2-3（pass_threshold float）、P2-4（chat_json 参数清理）
+- 建立 `docs/prd/` 目录，编写 PRD：`p2-interaction-redesign.md`
+- 设计要点：发起批测保持 Modal + Select multiple 多选；裁判配置 Table+Card 查看态；模型配置纵向+分别编辑
+- 更新 CLAUDE.md 文档索引、backlog UX-09/FT-03 关联 PRD、progress.md P2 任务清单
+- P2-3/P2-4 已完成，P2-1/P2-2a/P2-2b/P2-2c 待实现
+- 下一步：按 PRD 实现 P2-1 → P2-2a → P2-2b → P2-2c
 
 **Session #19 (2026-03-09)**：Phase P1 全部完成（5/5）。
 
@@ -96,7 +118,7 @@
 <details>
 <summary>v0.2 架构重构（已完成） — Phase 1-5 + UX 修复，Session #9-#16</summary>
 
-> 基于 `docs/eval-platform-mvp-spec-v2.md`，将 Tab 式工作台升级为页面下钻式架构。
+> 基于 `docs/prd/eval-platform-mvp-spec-v2.md`，将 Tab 式工作台升级为页面下钻式架构。
 > 核心变化：P2 配置摘要+批测列表、新增 P3 配置页、P4 表格化、新增 P5 对话剧场、后端快照字段。
 
 - **Phase 1**：DB + Prompt 快照（6 任务 ✅）— Alembic 迁移、config_snapshot JSONB、prompt 快照
