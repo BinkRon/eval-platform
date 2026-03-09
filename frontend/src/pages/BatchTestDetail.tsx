@@ -131,7 +131,7 @@ export default function BatchTestDetail() {
       key: 'action',
       width: 100,
       render: (_: unknown, r: TestResult) => {
-        const canEnter = r.status === 'completed' || r.status === 'running'
+        const canEnter = r.status !== 'pending'
         return (
           <Button
             type="link"
