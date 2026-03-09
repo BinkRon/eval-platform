@@ -14,7 +14,10 @@ export function useCreateTestCase(projectId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (data: TestCaseCreate) => testCaseApi.create(projectId, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['test-cases', projectId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['test-cases', projectId] })
+      qc.invalidateQueries({ queryKey: ['projects', projectId, 'readiness'] })
+    },
   })
 }
 
@@ -22,7 +25,10 @@ export function useUpdateTestCase(projectId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: TestCaseUpdate }) => testCaseApi.update(projectId, id, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['test-cases', projectId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['test-cases', projectId] })
+      qc.invalidateQueries({ queryKey: ['projects', projectId, 'readiness'] })
+    },
   })
 }
 
@@ -30,6 +36,9 @@ export function useDeleteTestCase(projectId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => testCaseApi.delete(projectId, id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['test-cases', projectId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['test-cases', projectId] })
+      qc.invalidateQueries({ queryKey: ['projects', projectId, 'readiness'] })
+    },
   })
 }

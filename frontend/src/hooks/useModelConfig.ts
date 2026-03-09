@@ -14,7 +14,10 @@ export function useUpdateModelConfig(projectId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (data: ModelConfigUpdate) => modelConfigApi.update(projectId, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['model-config', projectId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['model-config', projectId] })
+      qc.invalidateQueries({ queryKey: ['projects', projectId, 'readiness'] })
+    },
   })
 }
 

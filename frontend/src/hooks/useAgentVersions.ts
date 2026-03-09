@@ -14,7 +14,10 @@ export function useCreateAgentVersion(projectId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (data: AgentVersionCreate) => agentVersionApi.create(projectId, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['agent-versions', projectId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['agent-versions', projectId] })
+      qc.invalidateQueries({ queryKey: ['projects', projectId, 'readiness'] })
+    },
   })
 }
 
@@ -23,7 +26,10 @@ export function useUpdateAgentVersion(projectId: string) {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: AgentVersionUpdate }) =>
       agentVersionApi.update(projectId, id, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['agent-versions', projectId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['agent-versions', projectId] })
+      qc.invalidateQueries({ queryKey: ['projects', projectId, 'readiness'] })
+    },
   })
 }
 
@@ -31,6 +37,9 @@ export function useDeleteAgentVersion(projectId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => agentVersionApi.delete(projectId, id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['agent-versions', projectId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['agent-versions', projectId] })
+      qc.invalidateQueries({ queryKey: ['projects', projectId, 'readiness'] })
+    },
   })
 }
