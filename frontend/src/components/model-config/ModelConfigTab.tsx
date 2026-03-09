@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { Button, Card, Col, Form, Input, InputNumber, Row, Select, message } from 'antd'
+import { Link } from 'react-router-dom'
+import { Alert, Button, Card, Col, Form, Input, InputNumber, Row, Select, message } from 'antd'
 import { useModelConfig, useUpdateModelConfig, useModelOptions } from '../../hooks/useModelConfig'
 
 interface ModelConfigTabProps {
@@ -9,7 +10,7 @@ interface ModelConfigTabProps {
 
 export default function ModelConfigTab({ projectId, onDirtyChange }: ModelConfigTabProps) {
   const { data: config, isLoading } = useModelConfig(projectId)
-  const { data: modelOptions } = useModelOptions()
+  const { data: modelOptions, isLoading: optionsLoading } = useModelOptions()
   const updateMutation = useUpdateModelConfig(projectId)
   const [form] = Form.useForm()
   const dataLoaded = useRef(false)
@@ -55,8 +56,23 @@ export default function ModelConfigTab({ projectId, onDirtyChange }: ModelConfig
 
   if (isLoading) return <Card loading />
 
+  const noProviders = !optionsLoading && providerOptions.length === 0
+
   return (
     <Form form={form} layout="vertical" onValuesChange={handleValuesChange}>
+      {noProviders && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="尚未配置模型供应商"
+          description={
+            <span>
+              请先前往 <Link to="/settings/providers">模型管理</Link> 添加供应商并配置 API Key，然后再选择模型。
+            </span>
+          }
+        />
+      )}
       <Row gutter={24}>
         <Col span={12}>
           <Card title="对练模型配置" size="small">

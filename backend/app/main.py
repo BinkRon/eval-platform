@@ -1,5 +1,6 @@
 import logging
 import traceback
+from contextlib import asynccontextmanager
 
 logging.basicConfig(level=logging.INFO)
 
@@ -10,6 +11,7 @@ from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.exceptions import NotFoundError, ValidationError, ConflictError
+from app.services.batch_scheduler import cleanup_stale_running_records
 from app.api.agent_versions import router as agent_versions_router
 from app.api.batch_tests import router as batch_tests_router
 from app.api.judge_configs import router as judge_configs_router
@@ -18,7 +20,21 @@ from app.api.projects import router as projects_router
 from app.api.providers import router as providers_router
 from app.api.test_cases import router as test_cases_router
 
-app = FastAPI(title="对话 Agent 评测平台", version="0.1.0", redirect_slashes=False)
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    stale_batches, stale_results = await cleanup_stale_running_records()
+    if stale_batches or stale_results:
+        logger.warning(
+            f"Startup cleanup: marked {stale_batches} stale batch(es) and "
+            f"{stale_results} stale test result(s) as failed"
+        )
+    yield
+
+
+app = FastAPI(title="对话 Agent 评测平台", version="0.1.0", redirect_slashes=False, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

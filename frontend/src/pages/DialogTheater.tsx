@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Card, Collapse, Select, Space, Spin, Tag, Typography } from 'antd'
+import { Card, Collapse, Select, Skeleton, Space, Spin, Tag, Typography } from 'antd'
 import { useBatchTestDetail } from '../hooks/useBatchTests'
 import { useProject } from '../hooks/useProjects'
 import BreadcrumbNav from '../components/shared/BreadcrumbNav'
@@ -85,7 +85,6 @@ export default function DialogTheater() {
   const navigate = useNavigate()
   const { data: batch, isLoading } = useBatchTestDetail(projectId ?? '', batchId ?? '')
   const { data: project } = useProject(projectId ?? '')
-  const conversationEndRef = useRef<HTMLDivElement>(null)
 
   // Sort: failed/not-passed first, then by original order
   const sortedResults = useMemo(() => {
@@ -106,16 +105,6 @@ export default function DialogTheater() {
     () => batch?.test_results.find((r) => r.id === rid) ?? null,
     [batch, rid],
   )
-
-  // Auto-scroll conversation to bottom when new messages arrive
-  const prevMsgCount = useRef(0)
-  useEffect(() => {
-    const msgCount = currentResult?.conversation?.length ?? 0
-    if (msgCount > prevMsgCount.current) {
-      conversationEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }
-    prevMsgCount.current = msgCount
-  }, [currentResult?.conversation?.length])
 
   if (!projectId || !batchId || !rid) return <Typography.Text type="danger">路由参数缺失</Typography.Text>
   if (isLoading) return <Spin style={{ display: 'block', margin: '100px auto' }} />
@@ -173,10 +162,7 @@ export default function DialogTheater() {
             size="small"
           >
             {hasConversation ? (
-              <div>
-                <ConversationBubbles messages={currentResult.conversation!} maxHeight={500} />
-                <div ref={conversationEndRef} />
-              </div>
+              <ConversationBubbles messages={currentResult.conversation!} height="calc(100vh - 320px)" />
             ) : (
               <Typography.Text type="secondary">
                 {isRunning ? '⏳ 等待对话开始…' : '暂无对话数据'}
@@ -283,6 +269,18 @@ export default function DialogTheater() {
               <Typography.Paragraph style={{ margin: 0 }}>
                 {currentResult.judge_summary}
               </Typography.Paragraph>
+            </Card>
+          )}
+
+          {/* Empty state placeholder when no judge data yet */}
+          {!judgeStatusText && !hasJudgeResult && !currentResult.judge_summary && currentResult.status !== 'completed' && (
+            <Card size="small" style={{ marginBottom: 12 }}>
+              <Skeleton active title={{ width: '60%' }} paragraph={{ rows: 3, width: ['100%', '80%', '50%'] }} />
+              <div style={{ textAlign: 'center', marginTop: 16 }}>
+                <Typography.Text type="secondary">
+                  {currentResult.status === 'pending' ? '⏸ 用例待执行' : '评判结果将在此处展示'}
+                </Typography.Text>
+              </div>
             </Card>
           )}
 

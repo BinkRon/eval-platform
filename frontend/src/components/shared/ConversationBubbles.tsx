@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { Avatar } from 'antd'
 import { UserOutlined, RobotOutlined } from '@ant-design/icons'
 
@@ -8,12 +9,30 @@ export interface ConversationMessage {
 
 interface ConversationBubblesProps {
   messages: ConversationMessage[]
+  /** CSS height value, e.g. "calc(100vh - 280px)". Falls back to maxHeight for backward compat. */
+  height?: string
+  /** @deprecated Use height instead */
   maxHeight?: number
 }
 
-export default function ConversationBubbles({ messages, maxHeight = 400 }: ConversationBubblesProps) {
+export default function ConversationBubbles({ messages, height, maxHeight = 400 }: ConversationBubblesProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const prevCountRef = useRef(0)
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (messages.length > prevCountRef.current && containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight
+    }
+    prevCountRef.current = messages.length
+  }, [messages.length])
+
+  const containerStyle: React.CSSProperties = height
+    ? { height, overflow: 'auto' }
+    : { maxHeight, overflow: 'auto' }
+
   return (
-    <div style={{ maxHeight, overflow: 'auto' }}>
+    <div ref={containerRef} style={containerStyle}>
       {messages.map((msg, i) => {
         const isUser = msg.role === 'user'
         return (

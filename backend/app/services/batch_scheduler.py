@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
@@ -23,6 +23,24 @@ from app.services.sparring_runner import SparringRunner
 from app.utils.error_sanitizer import sanitize_error
 
 logger = logging.getLogger(__name__)
+
+
+async def cleanup_stale_running_records() -> tuple[int, int]:
+    """Startup cleanup: mark records interrupted by a previous crash as failed."""
+    async with async_session() as db:
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        r_batch = await db.execute(
+            update(BatchTest)
+            .where(BatchTest.status == "running")
+            .values(status="failed", completed_at=now)
+        )
+        r_result = await db.execute(
+            update(TestResult)
+            .where(TestResult.status == "running")
+            .values(status="failed", error_message="服务重启，执行中断")
+        )
+        await db.commit()
+    return r_batch.rowcount, r_result.rowcount
 
 
 @dataclass
@@ -178,7 +196,19 @@ async def _run_all_cases(batch_test_id: UUID, ctx: BatchContext, sparring_llm, j
 
     async def run_single_case(test_case: TestCase):
         async with semaphore:
-            await _run_single_test(batch_test_id, test_case, ctx, sparring_llm, judge_llm)
+            try:
+                await asyncio.wait_for(
+                    _run_single_test(batch_test_id, test_case, ctx, sparring_llm, judge_llm),
+                    timeout=600,  # 单用例 10 分钟上限
+                )
+            except asyncio.TimeoutError:
+                logger.error(f"Test case {test_case.id} timed out after 600s")
+                try:
+                    await _save_failed_result(
+                        batch_test_id, test_case.id, "用例执行超时（10 分钟上限）"
+                    )
+                except Exception as save_err:
+                    logger.error(f"Failed to save timeout result for {test_case.id}: {save_err}")
 
     results = await asyncio.gather(*[run_single_case(tc) for tc in ctx.test_cases], return_exceptions=True)
     for r in results:
@@ -235,6 +265,8 @@ async def _save_failed_result(
             )
         )
         tr = result.scalar_one()
+        if tr.status in ("completed", "failed"):
+            return  # Already in terminal state, skip to avoid double counting
         tr.status = "failed"
         tr.error_message = error_message
         tr.conversation = conversation
