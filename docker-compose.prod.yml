@@ -18,9 +18,11 @@ services:
     build: ./backend
     expose:
       - "8000"
-    env_file: .env.production
     environment:
       EVAL_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-eval_user}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/${POSTGRES_DB:-eval_platform}
+      EVAL_DEBUG: ${EVAL_DEBUG:-false}
+      EVAL_CORS_ORIGINS: ${EVAL_CORS_ORIGINS:-["*"]}
+      EVAL_ALLOW_PRIVATE_URLS: ${EVAL_ALLOW_PRIVATE_URLS:-false}
     depends_on:
       db:
         condition: service_healthy

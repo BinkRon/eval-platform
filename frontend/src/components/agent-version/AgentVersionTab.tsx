@@ -143,7 +143,7 @@ export default function AgentVersionTab({ projectId }: { projectId: string }) {
         confirmLoading={createMutation.isPending || updateMutation.isPending}
       >
         <Form form={form} layout="vertical" initialValues={{ method: 'POST', response_format: 'json', has_end_signal: false }}>
-          <Divider orientation="left" style={{ marginTop: 0 }}>基础信息</Divider>
+          <Divider titlePlacement="left" style={{ marginTop: 0 }}>基础信息</Divider>
           <Form.Item name="name" label="版本名称" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
@@ -151,7 +151,7 @@ export default function AgentVersionTab({ projectId }: { projectId: string }) {
             <Input.TextArea rows={2} />
           </Form.Item>
 
-          <Divider orientation="left">连接配置</Divider>
+          <Divider titlePlacement="left">连接配置</Divider>
           <Form.Item name="endpoint" label="API Endpoint">
             <Input placeholder="https://your-agent.com/api/chat" />
           </Form.Item>
@@ -168,7 +168,7 @@ export default function AgentVersionTab({ projectId }: { projectId: string }) {
             <Input.Password placeholder={editing?.auth_token_set ? '已配置，留空表示不修改' : undefined} />
           </Form.Item>
 
-          <Divider orientation="left">协议配置</Divider>
+          <Divider titlePlacement="left">协议配置</Divider>
           <Form.Item name="request_template" label="请求模板 (JSON)">
             <Input.TextArea rows={4} placeholder='{"message": "{{message}}", "session_id": "{{session_id}}"}' />
           </Form.Item>
