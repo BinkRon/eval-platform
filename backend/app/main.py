@@ -8,8 +8,10 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import literal, select
 
 from app.config import settings
+from app.database import async_session
 from app.exceptions import NotFoundError, ValidationError, ConflictError
 from app.services.batch_scheduler import cleanup_stale_running_records
 from app.api.agent_versions import router as agent_versions_router
@@ -78,4 +80,9 @@ async def conflict_error_handler(request: Request, exc: ConflictError):
 
 @app.get("/api/health")
 async def health_check():
-    return {"status": "ok"}
+    try:
+        async with async_session() as session:
+            await session.execute(select(literal(1)))
+        return {"status": "ok", "database": "connected"}
+    except Exception:
+        return JSONResponse(status_code=503, content={"status": "error", "database": "disconnected"})

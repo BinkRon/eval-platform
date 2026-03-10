@@ -17,4 +17,5 @@ dist/
 
 # Environment
 .env
+.env.production
 *.log
