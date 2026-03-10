@@ -1,6 +1,10 @@
 server {
     listen 80;
 
+    # Access log (stdout for Docker)
+    access_log /dev/stdout;
+    error_log /dev/stderr;
+
     # Security headers
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-Content-Type-Options "nosniff" always;
