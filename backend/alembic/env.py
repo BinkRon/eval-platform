@@ -14,7 +14,7 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# 优先从环境变量或 .env 读取数据库 URL，兼容不同开发机
+# 从环境变量或 .env 读取数据库 URL
 db_url = os.environ.get("EVAL_DATABASE_URL")
 if not db_url:
     from dotenv import load_dotenv
@@ -22,6 +22,13 @@ if not db_url:
     db_url = os.environ.get("EVAL_DATABASE_URL")
 if db_url:
     config.set_main_option("sqlalchemy.url", db_url)
+else:
+    import warnings
+    warnings.warn(
+        "EVAL_DATABASE_URL not set, falling back to alembic.ini default. "
+        "This may fail in production.",
+        stacklevel=1,
+    )
 
 target_metadata = Base.metadata
 
