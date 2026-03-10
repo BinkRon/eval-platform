@@ -75,7 +75,30 @@
 
 ---
 
+### Phase Deploy：生产部署准备 ✅
+
+- [x] **D-1：生产化 Docker Compose** — `docker-compose.prod.yml`（密码变量化、DB 不暴露端口、restart 策略、healthcheck）
+- [x] **D-2：后端自动迁移** — `entrypoint.sh`（启动时 `alembic upgrade head`）+ Dockerfile 改造
+- [x] **D-3：Nginx 生产化** — 安全头、gzip 压缩、静态资源长缓存、API 超时配置
+- [x] **D-4：健康检查增强** — `/api/health` 增加数据库连通性检查
+- [x] **D-5：数据库备份脚本** — `deploy/backup.sh`（cron 定时备份 + 过期清理）
+- [x] **D-6：部署文档** — `deploy/README.md`（CentOS 安装 Docker、首次部署、日常运维、备份恢复、故障排查）
+- [x] **D-7：安全加固** — `.dockerignore` 排除 `.env*`/`tests/`、CORS 模板不默认 `*`、备份脚本安全解析 env
+
+**验证**：后端 24 tests passed + 前端 tsc clean + code-reviewer & architecture-guard 审查通过并修复
+
+---
+
 ## 交接备注
+
+**Session #24 (2026-03-10)**：生产部署准备全部完成。
+
+- 新增 `docker-compose.prod.yml`（生产专用，与开发 `docker-compose.yml` 分离）
+- 新增 `backend/entrypoint.sh`（启动前自动跑迁移）、`.env.production.example`（环境变量模板）
+- 新增 `deploy/backup.sh`（pg_dump 备份脚本）、`deploy/README.md`（CentOS 部署指南）
+- 改造 `backend/Dockerfile`、`frontend/nginx.conf`、`backend/app/main.py`（健康检查）、`.gitignore`、`backend/.dockerignore`
+- 代码审查修复：`text()` → `select(literal(1))`、backup.sh source 注入、CORS 模板、backend 端口不暴露、nginx assets 安全头
+- 下一步：在服务器上执行部署（参见 `deploy/README.md`）
 
 **Session #23 (2026-03-09)**：P2-2a/P2-2b/P2-2c 配置展示优化全部完成。
 

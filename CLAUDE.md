@@ -8,7 +8,7 @@
 
 ## 当前状态
 
-版本：v0.3 稳定性与体验修复（Phase BugFix + P1 + P2 全部完成）
+版本：v0.3 稳定性与体验修复（Phase BugFix + P1 + P2 + Deploy 全部完成）
 基线：v0.2 架构重构已完成（Phase 1-5 + UX 修复）
 详见：`docs/progress.md`
 
