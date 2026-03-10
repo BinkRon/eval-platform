@@ -30,6 +30,9 @@ services:
     build: ./frontend
     ports:
       - "5173:80"
+    environment:
+      BACKEND_HOST: backend
+      BACKEND_PORT: "8000"
     depends_on:
       - backend
 
