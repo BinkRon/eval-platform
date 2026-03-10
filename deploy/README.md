@@ -41,13 +41,13 @@ vim .env.production
 - `POSTGRES_PASSWORD` — 设置强密码
 
 可选修改：
-- `EVAL_CORS_ORIGINS` — 填写实际访问地址（如 `http://192.168.1.100`）
+- `EVAL_CORS_ORIGINS` — 填写实际访问地址，JSON 数组格式（如 `["http://192.168.1.100"]`）
 - `FRONTEND_PORT` — 默认 80，如有冲突可改
 
 ### 3. 启动服务
 
 ```bash
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 ```
 
 首次启动会自动：
@@ -59,13 +59,13 @@ docker compose -f docker-compose.prod.yml up -d --build
 
 ```bash
 # 检查服务状态
-docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml --env-file .env.production ps
 
 # 检查健康状态（通过容器内部访问）
-docker compose -f docker-compose.prod.yml exec backend curl -s http://localhost:8000/api/health
+docker compose -f docker-compose.prod.yml --env-file .env.production exec backend curl -s http://localhost:8000/api/health
 
 # 查看后端日志
-docker compose -f docker-compose.prod.yml logs backend
+docker compose -f docker-compose.prod.yml --env-file .env.production logs backend
 ```
 
 ### 5. 防火墙放行
@@ -85,7 +85,7 @@ sudo firewall-cmd --reload
 ```bash
 cd /opt/eval-platform
 git pull
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 ```
 
 数据库迁移会在 backend 启动时自动执行。
@@ -94,28 +94,28 @@ docker compose -f docker-compose.prod.yml up -d --build
 
 ```bash
 # 所有服务
-docker compose -f docker-compose.prod.yml logs -f
+docker compose -f docker-compose.prod.yml --env-file .env.production logs -f
 
 # 单个服务
-docker compose -f docker-compose.prod.yml logs -f backend
-docker compose -f docker-compose.prod.yml logs -f frontend
-docker compose -f docker-compose.prod.yml logs -f db
+docker compose -f docker-compose.prod.yml --env-file .env.production logs -f backend
+docker compose -f docker-compose.prod.yml --env-file .env.production logs -f frontend
+docker compose -f docker-compose.prod.yml --env-file .env.production logs -f db
 ```
 
 ### 重启服务
 
 ```bash
 # 重启所有
-docker compose -f docker-compose.prod.yml restart
+docker compose -f docker-compose.prod.yml --env-file .env.production restart
 
 # 重启单个
-docker compose -f docker-compose.prod.yml restart backend
+docker compose -f docker-compose.prod.yml --env-file .env.production restart backend
 ```
 
 ### 停止服务
 
 ```bash
-docker compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml --env-file .env.production down
 # 注意：不加 -v 参数，数据库数据会保留
 ```
 
@@ -149,7 +149,7 @@ cd /opt/eval-platform
 gunzip backup_20260310_030000.sql.gz
 
 # 恢复到数据库
-docker compose -f docker-compose.prod.yml exec -T db \
+docker compose -f docker-compose.prod.yml --env-file .env.production exec -T db \
     psql -U eval_user eval_platform < backup_20260310_030000.sql
 ```
 
