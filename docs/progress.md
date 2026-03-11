@@ -91,6 +91,15 @@
 
 ## 交接备注
 
+**Session #25 (2026-03-11)**：补充本地开发到远程 Docker 发布的标准化流程。
+
+- 在 `deploy/README.md` 新增“推荐工作流：本地开发 → 远程发布”章节
+- 新增 `deploy/release.sh` 远程发布脚本：支持拉取最新代码、重建生产容器、执行 backend 健康检查和 frontend 入口检查
+- 明确区分本地 `docker-compose.yml` 与远程 `docker-compose.prod.yml` 的用途
+- 补充 detached HEAD / 指定 commit 回滚场景的发布说明，避免默认 `git pull` 失败
+- 补充发布前检查、线上冒烟、环境变量对齐、migration 管理、禁止在线上容器手改代码、回滚策略
+- 目标：减少“本地验证通过，但远程 Docker 运行效果不一致”的问题
+
 **Session #24 (2026-03-10)**：生产部署准备全部完成。
 
 - 新增 `docker-compose.prod.yml`（生产专用，与开发 `docker-compose.yml` 分离）
