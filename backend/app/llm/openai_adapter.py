@@ -10,6 +10,10 @@ _CODE_BLOCK_RE = re.compile(r"^```(?:json)?\s*\n?([\s\S]*?)\n?\s*```\s*$")
 _CODE_BLOCK_OPEN_RE = re.compile(r"^```(?:json)?\s*\n?([\s\S]*)")  # unclosed block
 
 
+def _normalize_model_name(model: str) -> str:
+    return model.strip()
+
+
 def _extract_json_content(content: str) -> str:
     """Extract JSON from LLM output that may be wrapped in markdown code blocks.
 
@@ -36,6 +40,40 @@ def _extract_json_content(content: str) -> str:
     return content
 
 
+def _extract_message_content(message_content) -> str:
+    if isinstance(message_content, str):
+        return message_content
+    if isinstance(message_content, list):
+        parts = []
+        for item in message_content:
+            if isinstance(item, dict):
+                text = item.get("text")
+                if text:
+                    parts.append(text)
+                continue
+            text = getattr(item, "text", None)
+            if text:
+                parts.append(text)
+        return "".join(parts)
+    return ""
+
+
+def _extract_chat_content(response) -> str:
+    choices = getattr(response, "choices", None)
+    if not choices:
+        message = getattr(response, "message", None) or "LLM 返回了空 choices"
+        code = getattr(response, "code", None)
+        if code is not None:
+            raise ValueError(f"LLM API 错误(code={code}): {message}")
+        raise ValueError(f"LLM API 错误: {message}")
+
+    message = getattr(choices[0], "message", None)
+    if message is None:
+        raise ValueError("LLM 返回了空 message")
+
+    return _extract_message_content(getattr(message, "content", None))
+
+
 class OpenAIAdapter(LLMAdapter):
     def __init__(self, api_key: str, model: str, base_url: str | None = None,
                  timeout: float = 60.0, max_retries: int = 2):
@@ -58,12 +96,12 @@ class OpenAIAdapter(LLMAdapter):
         msgs.extend(messages)
 
         response = await self.client.chat.completions.create(
-            model=self.model,
+            model=_normalize_model_name(self.model),
             messages=msgs,
             temperature=temperature,
             max_tokens=max_tokens,
         )
-        content = response.choices[0].message.content or ""
+        content = _extract_chat_content(response)
         return _THINK_RE.sub("", content).strip()
 
     async def chat_json(
@@ -80,7 +118,7 @@ class OpenAIAdapter(LLMAdapter):
         msgs.extend(messages)
 
         kwargs = {
-            "model": self.model,
+            "model": _normalize_model_name(self.model),
             "messages": msgs,
             "temperature": temperature,
             "max_tokens": max_tokens,
@@ -88,7 +126,7 @@ class OpenAIAdapter(LLMAdapter):
         }
 
         response = await self.client.chat.completions.create(**kwargs)
-        content = response.choices[0].message.content or ""
+        content = _extract_chat_content(response)
         content = _THINK_RE.sub("", content).strip()
         content = _extract_json_content(content)
         try:

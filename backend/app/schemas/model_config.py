@@ -1,7 +1,14 @@
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+def _strip_optional_string(value: str | None) -> str | None:
+    if value is None:
+        return None
+    stripped = value.strip()
+    return stripped or None
 
 
 class ModelConfigUpdate(BaseModel):
@@ -15,6 +22,11 @@ class ModelConfigUpdate(BaseModel):
     judge_temperature: Decimal | None = None
     judge_max_tokens: int | None = Field(default=None, ge=1, le=32768)
     judge_system_prompt: str | None = None
+
+    @field_validator("sparring_provider", "sparring_model", "judge_provider", "judge_model", mode="before")
+    @classmethod
+    def strip_model_fields(cls, value: str | None) -> str | None:
+        return _strip_optional_string(value)
 
 
 class ModelConfigResponse(BaseModel):
