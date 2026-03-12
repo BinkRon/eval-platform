@@ -1,104 +1,220 @@
 # 评测平台 — 开发进度
 
-## v0.3 稳定性与体验修复（进行中）
+## v1.0 二期功能实现（进行中）
 
-> 修复 P0 级 bug + 核心体验问题。需求来源：`docs/backlog.md`
-
----
-
-### Phase BugFix：P0 修复（3 项）
-
-- [x] **BF-1：批测 running 状态恢复机制** `EN-04`
-  - FastAPI lifespan 启动清理：将遗留的 `running` batch → `failed`，`running` test_result → `failed`
-  - `_run_single_test` 外层包裹 `asyncio.wait_for(timeout=600)`（单用例 10 分钟上限）
-  - `_save_failed_result` 增加终态防护，避免超时与内部异常双重计数
-- [x] **BF-2：对话剧场布局与交互修复** `UX-10`
-  - 对话区改为视口自适应高度（`calc(100vh - 320px)` 替代 `maxHeight=500`）
-  - ConversationBubbles 内置自动滚动（useRef + useEffect，不再依赖外部 ref）
-  - 右侧裁判区增加空状态占位（Skeleton 卡片 + 阶段文案，排除 completed 状态）
-- [x] **BF-3：模型配置页无 Provider 引导** `UX-01`
-  - 模型下拉为空时显示 Alert + 跳转"模型管理"链接（加载中不闪烁）
-
-**验证**：重启后无残留 running 记录 → 剧场对话自适应+自动滚动 → 新用户可发现模型配置入口
+> PRD：[`docs/prd/eval-platform-phase2-spec.md`](prd/eval-platform-phase2-spec.md)
+> 核心：构建 Agent（AI 辅助配置）+ 数据模型简化 + Prompt 组装重构
+> 验证假设：H3 效率假设（配置时间缩短 50%）、H4 质量假设（AI 生成配置不低于手动）
 
 ---
 
-### Phase P1：功能补全 + 架构清理（5 项）✅
+### Phase 1：数据模型迁移
 
-- [x] **P1-1：批测记录删除功能** `FT-01`
-  - 后端 `DELETE /api/projects/:id/batch-tests/:bid`，级联删除 test_results，running 状态不可删
-  - 前端批测列表增加删除按钮（Popconfirm 二次确认）
-  - 模型层增加 `passive_deletes=True` 避免 `lazy="raise"` 冲突
-- [x] **P1-2：Service 层补全 + 异常处理统一** `AR-01` `AR-02` `AR-03`
-  - test_cases / model_configs / providers 抽取 service 层
-  - 全部路由改为 raise 领域异常（NotFoundError / ConflictError），移除直接 HTTPException
-  - ConflictError 用于 provider 重名检测
-- [x] **P1-3：Agent 版本 Token 字段体验** `UX-04`
-  - 已配置 token 时 placeholder "已配置，留空表示不修改"
-  - 后端 update 时 token 为空则跳过更新
-- [x] **P1-4：对话气泡轮次编号** `UX-05`
-  - ConversationBubbles 每轮对话增加居中的 "R1"、"R2" 编号（一轮 = user + assistant）
-- [x] **P1-5：datetime.utcnow() 替换** `EN-01`
-  - batch_scheduler.py 中 `datetime.utcnow()` → `datetime.now(timezone.utc).replace(tzinfo=None)`
+> TestCase / EvalDimension 字段重构 + 新增 ProjectFile / BuilderConversation 实体
 
-**验证**：批测可删除 → 路由层无直接 DB 操作和 HTTPException → Token 编辑体验 → 对话有轮次标记
+- [x] **1-1：Alembic 迁移脚本** `[M]`
+  - TestCase：ADD `sparring_prompt` → 数据迁移（拼接 persona_background + persona_behavior）→ NOT NULL → DROP 旧字段
+  - TestCase：`first_message` 改 nullable（default “喂？”）、`max_rounds` default 50
+  - EvalDimension：ADD `judge_prompt_segment` → 数据迁移（拼接 description + level_*_desc）→ NOT NULL → DROP 旧字段
+  - 新表：`project_files`、`builder_conversations`
+- [x] **1-2：更新 SQLAlchemy Models** `[S]`
+  - `backend/app/models/test_case.py` — 删 persona_*，加 sparring_prompt
+  - `backend/app/models/judge_config.py` — EvalDimension 删 description/level_*_desc，加 judge_prompt_segment
+  - 新建 `project_file.py`、`builder_conversation.py`
+  - `project.py` 加关系 + 级联删除；`__init__.py` 注册新模型
+- [x] **1-3：更新 Pydantic Schemas** `[S]`
+  - `backend/app/schemas/test_case.py` — 适配新字段，first_message 选填，max_rounds default 50 / max 100
+  - `backend/app/schemas/judge_config.py` — EvalDimensionData 适配新字段
+- [x] **1-4：更新 TypeScript Types** `[S]`
+  - `frontend/src/types/testCase.ts`、`judgeConfig.ts` — 适配新字段
+  - 新建 `projectFile.ts`、`builderConversation.ts`
+- [x] **1-5：更新测试 Fixtures** `[S]`
+  - `backend/tests/conftest.py` — test_case_factory 用 sparring_prompt；eval_dimension_factory 用 judge_prompt_segment
+  - 额外适配：sparring_runner / judge_runner / batch_test_service / judge_config_service + 前端 TestCaseTab / JudgeConfigTab
 
----
-
-### Phase P2：交互重设计 + 工程清理（6 项）✅
-
-> PRD：[`docs/prd/p2-interaction-redesign.md`](prd/p2-interaction-redesign.md)
-
-- [x] **P2-3：pass_threshold 类型修复** `EN-03`
-  - 后端 schema pass_threshold 改为 float，消除前端 Number() 强转
-  - 全链路 Decimal → float：schema → BatchContext → JudgeRunner → 测试
-- [x] **P2-4：chat_json json_schema 参数清理** `EN-02`
-  - 移除 LLMAdapter.chat_json() 的无用 json_schema 参数（base/openai/anthropic/mock）
-- [x] **P2-1：发起批测 Modal 多选** `FT-03`
-  - Select multiple 多选：测试用例 / Checklist 检查项 / 评判维度（默认全选）
-  - 通过阈值 InputNumber 可调
-  - 后端 BatchTestCreate 增加 test_case_ids / checklist_item_ids / eval_dimension_ids / pass_threshold
-  - batch_scheduler _load_context 从 snapshot 读取过滤后的 checklist/dimensions
-- [x] **P2-2a：裁判配置查看态** `UX-09`
-  - 查看态：Table 展示 Checklist + Card 展示评判维度（含评分标准）
-  - 编辑态：保留原有 Form.List 动态表单
-  - view/edit 切换，首次无数据自动编辑态
-- [x] **P2-2b：模型配置查看态** `UX-09`
-  - 纵向双 Card 堆叠（对练模型在上、裁判模型在下）
-  - 每个 Card 独立编辑按钮，分别 view/edit
-  - System Prompt 浅灰背景 + ellipsis 展开
-  - dirty 状态隔离（Set 追踪），scoped validateFields
-- [x] **P2-2c：Agent 版本 Modal 分组** `UX-09`
-  - Divider 三段：基础信息 / 连接配置 / 协议配置
-
-**验证**：批测 Modal 多选正常 → 裁判配置 Table/Card 查看态 → 模型纵向+分别编辑 → Agent Modal 分组
+**验证**：`alembic upgrade head` ✓ → `pytest` 通过 ✓ → `tsc --noEmit` 通过 ✓
 
 ---
 
-### Phase Deploy：生产部署准备 ✅
+### Phase 2：核心引擎适配
 
-- [x] **D-1：生产化 Docker Compose** — `docker-compose.prod.yml`（密码变量化、DB 不暴露端口、restart 策略、healthcheck）
-- [x] **D-2：后端自动迁移** — `entrypoint.sh`（启动时 `alembic upgrade head`）+ Dockerfile 改造
-- [x] **D-3：Nginx 生产化** — 安全头、gzip 压缩、静态资源长缓存、API 超时配置
-- [x] **D-4：健康检查增强** — `/api/health` 增加数据库连通性检查
-- [x] **D-5：数据库备份脚本** — `deploy/backup.sh`（cron 定时备份 + 过期清理）
-- [x] **D-6：部署文档** — `deploy/README.md`（CentOS 安装 Docker、首次部署、日常运维、备份恢复、故障排查）
-- [x] **D-7：安全加固** — `.dockerignore` 排除 `.env*`/`tests/`、CORS 模板不默认 `*`、备份脚本安全解析 env
+> Prompt 组装使用新字段 + 默认 System Prompt + 旧 snapshot 向后兼容
 
-**验证**：后端 24 tests passed + 前端 tsc clean + code-reviewer & architecture-guard 审查通过并修复
+- [ ] **2-1：SparringRunner Prompt 组装** `[S]`
+  - `sparring_runner.py` — `_build_persona_prompt` 直接注入 sparring_prompt，不再拼 persona_background + persona_behavior
+  - `run_iter` — first_message 取 `self.test_case.first_message or “喂？”`
+- [ ] **2-2：JudgeRunner Prompt 组装 + 旧 snapshot 兼容** `[S]`
+  - `judge_runner.py` — `_build_prompt` Evaluation 部分用 judge_prompt_segment
+  - 向后兼容：`hasattr(dim, 'judge_prompt_segment')` fallback 旧字段格式
+- [ ] **2-3：默认 System Prompt 常量** `[S]`
+  - 新建 `backend/app/services/prompt_defaults.py` — DEFAULT_SPARRING_SYSTEM_PROMPT + DEFAULT_JUDGE_SYSTEM_PROMPT（PRD §3.4）
+  - `batch_scheduler.py` — system_prompt 为空时使用默认值
+- [ ] **2-4：judge_config_service 适配** `[S]`
+  - `judge_config_service.py` — save 时使用 judge_prompt_segment
+- [ ] **2-5：更新核心测试** `[M]`
+  - `test_sparring_runner.py` — 验证新 prompt 格式 + first_message=None 回退
+  - `test_judge_runner.py` — 验证新 eval 格式 + 旧 snapshot 兼容
+  - 新建 `test_prompt_defaults.py` — 默认 prompt 非空 + 包含关键内容
+
+**验证**：`pytest` 全部通过 ✓
+
+---
+
+### Phase 3：P3 前端适配
+
+> 用例编辑弹窗简化 + Eval 维度编辑重构 + 默认 Prompt 展示
+
+- [ ] **3-1：TestCaseTab 改造** `[M]`
+  - 列表列：名称 + 角色描述（sparring_prompt 截取 30-40 字）+ 操作
+  - 编辑弹窗：name + sparring_prompt（大 TextArea，markdown 提示）+ 高级配置折叠面板（first_message、max_rounds）
+- [ ] **3-2：JudgeConfigTab Eval 维度改造** `[M]`
+  - 维度列表：名称 + judge_prompt_segment 前 2 行预览
+  - 维度编辑弹窗：name + judge_prompt_segment（大 TextArea，markdown 提示）
+- [ ] **3-3：ModelConfigTab 默认 Prompt** `[S]`
+  - System Prompt 为空时显示默认值 placeholder
+- [ ] **3-4：P5 对话剧场幕后信息适配** `[S]`
+  - 幕后信息展示新 prompt 结构（sparring_prompt 而非 persona_*）
+
+**验证**：`tsc --noEmit` ✓ → 配置页增删改查正常 ✓ → 批测全链路正常 ✓
+
+---
+
+### Phase 4：新增后端 API
+
+> 项目文件 + 构建对话 + 构建 Agent 聊天接口
+
+- [ ] **4-1：项目文件 API** `[M]`
+  - 新建 service/api/schema：upload（multipart）/ list / delete
+  - `config.py` 新增 `FILE_STORAGE_PATH`
+  - 支持 PDF/DOCX/TXT/MD/XLSX/CSV，上限 20MB
+- [ ] **4-2：构建对话 API** `[S]`
+  - 新建 service/api/schema：get_or_create / append_message / clear
+- [ ] **4-3：构建 Agent 聊天 API** `[M]`
+  - 新建 `builder_agent_service.py` — 加载项目上下文 + 文件 + 对话历史 → LLM 调用 → 返回响应
+  - 新建 `builder_agent.py` API — `POST .../chat` + `POST .../apply-config`
+- [ ] **4-4：文件内容解析器** `[M]`
+  - 新建 `file_parser.py` — PDF(pypdf) / DOCX(python-docx) / TXT/MD / XLSX/CSV
+  - `requirements.txt` 新增依赖
+- [ ] **4-5：API 路由注册** `[S]`
+  - `main.py` 注册 project_files / builder_conversations / builder_agent 路由
+- [ ] **4-6：后端测试** `[M]`
+  - 新建 `test_builder_agent.py` — prompt 组装 + config 解析
+  - 新建 `test_project_file.py` — 上传/删除/类型校验
+
+**验证**：`pytest` 通过 ✓ → API 手动验证 ✓
+
+---
+
+### Phase 5：构建 Agent 前端 UI
+
+> 悬浮球 + 对话面板 + 确认卡片 + 文件管理
+
+- [ ] **5-1：API 层 + Hooks** `[S]`
+  - 新建 `frontend/src/api/` — builderAgent / projectFiles / builderConversation
+  - 新建 `frontend/src/hooks/` — useBuilderAgent / useProjectFiles / useBuilderConversation
+- [ ] **5-2：悬浮球组件** `[S]`
+  - `components/builder-agent/FloatingButton.tsx` — 右下角固定定位 + 未读提示 + 展开/收起
+- [ ] **5-3：对话面板** `[L]`
+  - `components/builder-agent/ChatPanel.tsx` — 标题栏（📁 + 模型选择 + 收起）+ 消息流 + 输入区
+- [ ] **5-4：消息气泡** `[S]`
+  - `components/builder-agent/MessageBubble.tsx` — 用户/助手气泡 + markdown 渲染
+- [ ] **5-5：确认卡片组件** `[M]`
+  - GenerateConfirmCard（生成确认：摘要 + 展开详情 + 取消/修改/确认）
+  - OverwriteConfirmCard（覆盖确认：追加/替换 + 确认）
+  - ClarifyCard（澄清请求：选项按钮 + 跳过）
+- [ ] **5-6：项目文件管理浮层** `[S]`
+  - `components/builder-agent/ProjectFileManager.tsx` — 文件列表 + 上传 + 删除
+- [ ] **5-7：全局布局集成** `[M]`
+  - 新建 `layouts/ProjectLayout.tsx` — 项目级 wrapper（Outlet + FloatingButton）
+  - `App.tsx` — 项目路由嵌套在 ProjectLayout 下
+
+**验证**：`tsc --noEmit` ✓ → 悬浮球在 P2-P5 可见 ✓ → 对话收发正常 ✓ → 确认卡片交互正常 ✓
+
+---
+
+### Phase 6：构建 Agent 智能层
+
+> Skill 定义 + 结构化输出解析 + 配置写入
+
+- [ ] **6-1：Skill 定义 + System Prompt** `[M]`
+  - `builder_agent_service.py` — 完整 system prompt 含角色定义 + 用例生成 Skill（PRD §4.2）+ 裁判配置生成 Skill（PRD §4.3）
+- [ ] **6-2：结构化输出解析** `[M]`
+  - `builder_agent_service.py` — 从 LLM 响应提取 JSON 配置块 + 卡片类型检测
+  - 使用 `chat_json` 模式 + 重试
+- [ ] **6-3：配置写入逻辑** `[S]`
+  - `builder_agent_service.py` — apply_generated_config：调用现有 service 写入 DB（追加/替换）
+- [ ] **6-4：集成测试** `[M]`
+  - `test_builder_agent.py` — 完整生成流程 mock 测试 + 边界情况
+
+**验证**：`pytest` ✓ → 端到端：用户描述 → AI 生成 → 确认写入 → 配置出现在 P3 ✓
+
+---
+
+### Phase 7：文档 + Agent 守卫 + 收尾
+
+- [ ] **7-1：更新 architecture-guard.md** `[S]`
+  - 新增：Builder Agent LLM 适配层规则 + 文件存储可配置规则 + 新实体约束
+- [ ] **7-2：更新 code-reviewer.md** `[S]`
+  - 新增：LLM 响应 sanitize + 文件上传校验 + 空字段校验 + 幂等性检查
+- [ ] **7-3：更新 architecture.md** `[M]`
+  - 表结构 + API 设计 + 核心引擎 + 级联删除规则
+- [ ] **7-4：更新 testing.md** `[S]`
+  - 新增测试范围 + fixtures 说明
+- [ ] **7-5：更新 conventions.md** `[S]`
+  - builder-agent/ 组件规范 + 文件存储规范
+- [ ] **7-6：更新 backlog.md** `[S]`
+  - 二期相关条目状态流转
+- [ ] **7-7：更新 CLAUDE.md** `[S]`
+  - 版本号 + 文档索引 + 开发规则
+- [ ] **7-8：最终验证** `[S]`
+  - code-reviewer + architecture-guard 双 Agent 审查通过
+
+**验证**：双 Agent 审查通过 ✓ → 文档完整 ✓
+
+---
+
+### 自动化测试策略
+
+| 类别 | 测试文件 | 覆盖范围 | 触发 Phase |
+|------|---------|---------|-----------|
+| 更新 | `conftest.py` | fixtures 适配新字段 | 1 |
+| 更新 | `test_sparring_runner.py` | 新 prompt 格式 + first_message 回退 | 2 |
+| 更新 | `test_judge_runner.py` | 新 eval 格式 + 旧 snapshot 兼容 | 2 |
+| 新增 | `test_prompt_defaults.py` | 默认 prompt 非空 + 关键内容 | 2 |
+| 新增 | `test_project_file.py` | 上传/删除/类型校验 | 4 |
+| 新增 | `test_builder_agent.py` | prompt 组装 + 输出解析 + 配置写入 | 4+6 |
+
+原则：后端改动必须 `pytest`，前端改动必须 `tsc --noEmit`，每个 Phase 完成后跑 code-reviewer + architecture-guard。
 
 ---
 
 ## 交接备注
 
+**Session #27 (2026-03-12)**：v1.0 Phase 1 数据模型迁移完成。
+
+- Alembic 迁移脚本：TestCase/EvalDimension 字段重构 + project_files/builder_conversations 新表
+- SQLAlchemy Models、Pydantic Schemas、TypeScript Types、测试 Fixtures 全部适配
+- 额外适配 4 个 service（sparring_runner/judge_runner/batch_test_service/judge_config_service）+ 2 个前端组件
+- judge_runner 保留旧 snapshot 向后兼容（hasattr fallback）
+- 代码审查修复：迁移空值 fallback 改为有意义默认值、Schema 加 min_length 校验、judge_runner 兼容逻辑加固
+- pytest 30 passed、tsc --noEmit 通过
+- 下一步：Phase 2 核心引擎适配
+
+**Session #26 (2026-03-12)**：v1.0 二期规划完成。
+
+- 阅读二期 PRD（`docs/prd/eval-platform-phase2-spec.md`），分析变更范围
+- 设计 7 Phase 执行计划（41 个任务），按依赖关系排序
+- 更新 progress.md（v0.3 折叠 + v1.0 任务清单）、CLAUDE.md、architecture-guard.md、code-reviewer.md
+- 下一步：Phase 1 数据模型迁移
+
 **Session #25 (2026-03-11)**：补充本地开发到远程 Docker 发布的标准化流程。
 
-- 在 `deploy/README.md` 新增“推荐工作流：本地开发 → 远程发布”章节
+- 在 `deploy/README.md` 新增”推荐工作流：本地开发 → 远程发布”章节
 - 新增 `deploy/release.sh` 远程发布脚本：支持拉取最新代码、重建生产容器、执行 backend 健康检查和 frontend 入口检查
 - 明确区分本地 `docker-compose.yml` 与远程 `docker-compose.prod.yml` 的用途
 - 补充 detached HEAD / 指定 commit 回滚场景的发布说明，避免默认 `git pull` 失败
 - 补充发布前检查、线上冒烟、环境变量对齐、migration 管理、禁止在线上容器手改代码、回滚策略
-- 目标：减少“本地验证通过，但远程 Docker 运行效果不一致”的问题
+- 目标：减少”本地验证通过，但远程 Docker 运行效果不一致”的问题
 
 **Session #24 (2026-03-10)**：生产部署准备全部完成。
 
@@ -165,6 +281,18 @@
 - v0.3 Phase BugFix 排期：EN-04 + UX-10 + UX-01（3 个 P0）
 
 ---
+
+<details>
+<summary>v0.3 稳定性与体验修复（已完成） — Phase BugFix + P1 + P2 + Deploy，Session #17-#25</summary>
+
+> 修复 P0 级 bug + 核心体验问题 + 交互重设计 + 生产部署准备。
+
+- **Phase BugFix**（3 任务 ✅）：批测 running 恢复机制、对话剧场布局修复、模型配置引导
+- **Phase P1**（5 任务 ✅）：批测删除、Service 层补全、Token 编辑体验、轮次编号、datetime 修复
+- **Phase P2**（6 任务 ✅）：批测多选、裁判配置查看态、模型配置查看态、Agent Modal 分组、pass_threshold float、chat_json 清理
+- **Phase Deploy**（7 任务 ✅）：Docker Compose 生产化、自动迁移、Nginx 加固、健康检查、备份脚本、部署文档、安全加固
+
+</details>
 
 <details>
 <summary>v0.2 架构重构（已完成） — Phase 1-5 + UX 修复，Session #9-#16</summary>
