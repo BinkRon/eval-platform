@@ -8,8 +8,8 @@
 
 ## 当前状态
 
-版本：v0.3 稳定性与体验修复（Phase BugFix + P1 + P2 + Deploy 全部完成）
-基线：v0.2 架构重构已完成（Phase 1-5 + UX 修复）
+版本：v1.0 二期功能实现（Phase 5 完成，Phase 6 待开始）
+基线：v0.3 稳定性与体验修复已完成
 详见：`docs/progress.md`
 
 ## 文档索引
@@ -22,7 +22,8 @@
 | 开发参考 | `docs/conventions.md` | 代码规范、命名、Git 规范 |
 | 开发参考 | `docs/testing.md` | 测试策略、编写规范 |
 | 产品设计 | `docs/prd/` | PRD 目录，涉及界面和交互的设计方案在此对齐 |
-| 产品设计 | `docs/prd/eval-platform-mvp-spec-v2.md` | v2 产品需求（页面下钻架构、对话剧场） |
+| 产品设计 | `docs/prd/eval-platform-phase2-spec.md` | 二期产品需求（构建 Agent、数据模型简化、Prompt 重构） |
+| 归档 | `docs/prd/eval-platform-mvp-spec-v2.md` | v2 产品需求（页面下钻架构、对话剧场） |
 | 归档 | `docs/prd/eval-platform-mvp-spec.md` | v1 MVP 产品需求（已被 v2 取代） |
 | 归档 | `docs/archive/eval-platform-framework.md` | 产品完整愿景（含未纳入 MVP 的功能） |
 | 归档 | `docs/archive/project-roadmap.md` | 跨项目总规划（含编排平台） |
@@ -83,5 +84,7 @@
 - 数据库操作使用 SQLAlchemy ORM，不手写 SQL
 - 删除操作处理关联实体（级联删除或置空外键）
 - LLM 调用通过适配层统一接口，不直接调用厂商 SDK
+- 构建 Agent 模块遵循相同的 LLM 适配层规则
+- 文件存储路径通过环境变量 `FILE_STORAGE_PATH` 配置，不可硬编码
 - 详细的数据模型、API 设计、核心引擎设计见 `docs/architecture.md`
 - 详细的代码规范见 `docs/conventions.md`

@@ -118,26 +118,30 @@
 
 > 悬浮球 + 对话面板 + 确认卡片 + 文件管理
 
-- [ ] **5-1：API 层 + Hooks** `[S]`
+- [x] **5-1：API 层 + Hooks** `[S]`
   - 新建 `frontend/src/api/` — builderAgent / projectFiles / builderConversation
   - 新建 `frontend/src/hooks/` — useBuilderAgent / useProjectFiles / useBuilderConversation
-- [ ] **5-2：悬浮球组件** `[S]`
-  - `components/builder-agent/FloatingButton.tsx` — 右下角固定定位 + 未读提示 + 展开/收起
-- [ ] **5-3：对话面板** `[L]`
-  - `components/builder-agent/ChatPanel.tsx` — 标题栏（📁 + 模型选择 + 收起）+ 消息流 + 输入区
-- [ ] **5-4：消息气泡** `[S]`
-  - `components/builder-agent/MessageBubble.tsx` — 用户/助手气泡 + markdown 渲染
-- [ ] **5-5：确认卡片组件** `[M]`
-  - GenerateConfirmCard（生成确认：摘要 + 展开详情 + 取消/修改/确认）
-  - OverwriteConfirmCard（覆盖确认：追加/替换 + 确认）
+  - 新建 `frontend/src/types/builderAgent.ts` — BuilderChatRequest / BuilderChatResponse
+- [x] **5-2：悬浮球组件** `[S]`
+  - `components/builder-agent/FloatingButton.tsx` — 右下角固定定位 + 展开/收起 + projectId 变化自动收起
+- [x] **5-3：对话面板** `[L]`
+  - `components/builder-agent/ChatPanel.tsx` — 标题栏（📁 + 模型选择 + 清空确认 + 收起）+ 消息流 + 输入区
+  - Optimistic update：发送时立即显示用户消息，成功后追加助手消息，失败按 snapshot 长度回滚
+  - 后端 chat API 自动持久化消息，前端不单独调 appendMessage
+- [x] **5-4：消息气泡** `[S]`
+  - `components/builder-agent/MessageBubble.tsx` — 用户右对齐/助手左对齐 + react-markdown + rehype-sanitize（XSS 防护）
+- [x] **5-5：确认卡片组件** `[M]`
+  - GenerateConfirmCard（生成确认：摘要 + Collapse 展开详情 + 取消/修改/确认）
+  - OverwriteConfirmCard（覆盖确认：Radio.Group 追加/替换 + 确认）
   - ClarifyCard（澄清请求：选项按钮 + 跳过）
-- [ ] **5-6：项目文件管理浮层** `[S]`
-  - `components/builder-agent/ProjectFileManager.tsx` — 文件列表 + 上传 + 删除
-- [ ] **5-7：全局布局集成** `[M]`
+- [x] **5-6：项目文件管理浮层** `[S]`
+  - `components/builder-agent/ProjectFileManager.tsx` — Popover 文件列表 + Upload 上传 + Popconfirm 删除
+  - 前端校验：扩展名白名单 + 20MB 大小限制；删除 loading 按 file.id 精确匹配
+- [x] **5-7：全局布局集成** `[M]`
   - 新建 `layouts/ProjectLayout.tsx` — 项目级 wrapper（Outlet + FloatingButton）
   - `App.tsx` — 项目路由嵌套在 ProjectLayout 下
 
-**验证**：`tsc --noEmit` ✓ → 悬浮球在 P2-P5 可见 ✓ → 对话收发正常 ✓ → 确认卡片交互正常 ✓
+**验证**：`tsc --noEmit` ✓ → 双 Agent 审查通过（修复 6 项：optimistic update 冲突、XSS 防护、回滚逻辑、清空确认、删除 loading、类型位置）✓
 
 ---
 
@@ -198,6 +202,21 @@
 ---
 
 ## 交接备注
+
+**Session #30 (2026-03-12)**：v1.0 Phase 5 构建 Agent 前端 UI 完成。
+
+Phase 5 构建 Agent 前端 UI：
+- API 层 + Hooks：builderAgent（120s timeout）/ builderConversation / projectFiles，类型定义迁移到 types/builderAgent.ts
+- 悬浮球：右下角固定定位，projectId 变化自动收起面板
+- 对话面板：标题栏（📁 文件管理 + 模型选择 + 清空确认 + 收起）+ 消息流 + 输入区（Enter 发送 / Shift+Enter 换行）
+- 消息气泡：用户右对齐蓝底 / 助手左对齐绿底，react-markdown + remark-gfm + rehype-sanitize（XSS 防护）
+- Optimistic update：发送时立即显示 user 消息 → 成功追加 assistant → 失败按 snapshot 长度回滚；移除 hook 中 invalidateQueries 避免 double-update
+- 确认卡片：GenerateConfirmCard / OverwriteConfirmCard / ClarifyCard 三个 UI 组件（Phase 6 接入智能层）
+- 文件管理：Popover 浮层 + Upload 前端校验 + Popconfirm 删除 + 按 file.id 精确匹配 loading
+- 布局集成：ProjectLayout（Outlet + FloatingButton）+ App.tsx 路由嵌套
+- 新增依赖：react-markdown / remark-gfm / rehype-sanitize
+- tsc --noEmit 通过、双 Agent 审查通过（修复 6 项）
+- 下一步：Phase 6 构建 Agent 智能层
 
 **Session #29 (2026-03-12)**：v1.0 Phase 4 新增后端 API 完成。
 
