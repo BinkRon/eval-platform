@@ -1,4 +1,6 @@
 """Tests for JudgeRunner: prompt building, result parsing, pass/fail logic, full flow."""
+from types import SimpleNamespace
+
 import pytest
 
 from app.models.judge_config import ChecklistItem, EvalDimension
@@ -59,6 +61,40 @@ class TestBuildPrompt:
         assert "[对练机器人]" in prompt
         assert "[Agent]" in prompt
         assert "order #12345" in prompt
+
+    def test_old_snapshot_backward_compat(self, mock_llm):
+        """Old snapshots with description + level_*_desc should still render correctly."""
+        old_dim = SimpleNamespace(
+            name="Politeness",
+            description="How polite was the agent",
+            level_3_desc="Very polite",
+            level_2_desc="Acceptable",
+            level_1_desc="Rude",
+        )
+        runner = self._make_runner([], [old_dim], mock_llm)
+        prompt = runner._build_prompt([{"role": "user", "content": "hi"}])
+
+        assert "Politeness" in prompt
+        assert "说明：How polite was the agent" in prompt
+        assert "3 分：Very polite" in prompt
+        assert "2 分：Acceptable" in prompt
+        assert "1 分：Rude" in prompt
+
+    def test_new_judge_prompt_segment_preferred(self, mock_llm):
+        """When judge_prompt_segment is present, old fields should be ignored."""
+        dim = SimpleNamespace(
+            name="Quality",
+            judge_prompt_segment="Custom evaluation guidance here",
+            description="This should be ignored",
+            level_3_desc="Ignored",
+            level_2_desc="Ignored",
+            level_1_desc="Ignored",
+        )
+        runner = self._make_runner([], [dim], mock_llm)
+        prompt = runner._build_prompt([{"role": "user", "content": "hi"}])
+
+        assert "Custom evaluation guidance here" in prompt
+        assert "This should be ignored" not in prompt
 
     def test_includes_json_output_format(self, mock_llm):
         runner = self._make_runner([], [], mock_llm)
@@ -241,31 +277,15 @@ class TestJudgeFlow:
         items = [checklist_item_factory(content="Greeted", level="must")]
         dims = [eval_dimension_factory(name="Quality")]
 
-        # First response raises ValueError during parse (missing fields triggers fallback),
-        # but we need chat_json itself to raise. We'll make first response raise ValueError.
+        # First response raises ValueError, second succeeds
         mock_llm.chat_json_responses = [
-            ValueError("invalid json"),  # Will be raised
+            ValueError("invalid json"),
             {
                 "checklist": [{"index": 1, "passed": True, "reason": "ok"}],
                 "evaluation": [{"dimension": "Quality", "score": 3, "reason": "good"}],
                 "summary": "Retry success.",
             },
         ]
-
-        # Override chat_json to raise on ValueError sentinel
-        original_chat_json = mock_llm.chat_json
-
-        async def patched_chat_json(**kwargs):
-            mock_llm.chat_json_call_count += 1
-            mock_llm.chat_json_call_args.append(kwargs)
-            if not mock_llm.chat_json_responses:
-                raise ValueError("MockLLMAdapter: chat_json_responses exhausted")
-            resp = mock_llm.chat_json_responses.pop(0)
-            if isinstance(resp, Exception):
-                raise resp
-            return resp
-
-        mock_llm.chat_json = patched_chat_json
 
         runner = JudgeRunner(
             llm=mock_llm,
@@ -291,18 +311,6 @@ class TestJudgeFlow:
             ValueError("bad json 1"),
             ValueError("bad json 2"),
         ]
-
-        async def patched_chat_json(**kwargs):
-            mock_llm.chat_json_call_count += 1
-            mock_llm.chat_json_call_args.append(kwargs)
-            if not mock_llm.chat_json_responses:
-                raise ValueError("MockLLMAdapter: chat_json_responses exhausted")
-            resp = mock_llm.chat_json_responses.pop(0)
-            if isinstance(resp, Exception):
-                raise resp
-            return resp
-
-        mock_llm.chat_json = patched_chat_json
 
         runner = JudgeRunner(
             llm=mock_llm,

@@ -17,6 +17,7 @@ from app.models.provider_config import ProviderConfig
 from app.models.test_case import TestCase
 from app.services.agent_client import AgentClient
 from app.services.judge_runner import JudgeRunner
+from app.services.prompt_defaults import DEFAULT_JUDGE_SYSTEM_PROMPT, DEFAULT_SPARRING_SYSTEM_PROMPT
 from app.services.sparring_runner import SparringRunner
 from app.utils.error_sanitizer import sanitize_error
 
@@ -147,12 +148,12 @@ async def _load_context(db: AsyncSession, batch: BatchTest) -> BatchContext | No
         sparring_api_key=sparring_p.api_key,
         sparring_model=model_config.sparring_model,
         sparring_base_url=sparring_p.base_url,
-        sparring_system_prompt=model_config.sparring_system_prompt or "",
+        sparring_system_prompt=model_config.sparring_system_prompt or DEFAULT_SPARRING_SYSTEM_PROMPT,
         judge_provider_name=model_config.judge_provider,
         judge_api_key=judge_p.api_key,
         judge_model=model_config.judge_model,
         judge_base_url=judge_p.base_url,
-        judge_system_prompt=model_config.judge_system_prompt or "",
+        judge_system_prompt=model_config.judge_system_prompt or DEFAULT_JUDGE_SYSTEM_PROMPT,
         pass_threshold=pass_threshold,
         concurrency=batch.concurrency or 3,
         sparring_temperature=float(model_config.sparring_temperature) if model_config.sparring_temperature is not None else None,

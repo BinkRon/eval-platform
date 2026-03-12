@@ -1,9 +1,44 @@
-"""Tests for SparringRunner: termination conditions and conversation flow."""
+"""Tests for SparringRunner: prompt building, termination conditions, and conversation flow."""
 from unittest.mock import AsyncMock
 
 import pytest
 
 from app.services.sparring_runner import SparringRunner, END_MARKER
+
+
+# ---------------------------------------------------------------------------
+# TestPromptBuilding
+# ---------------------------------------------------------------------------
+
+
+class TestPromptBuilding:
+    """Verify _build_persona_prompt assembles the correct prompt text."""
+
+    def test_sparring_prompt_injected_directly(self, mock_llm, test_case_factory):
+        """sparring_prompt should appear directly in persona prompt without splitting."""
+        test_case = test_case_factory(
+            sparring_prompt="## 角色\n一个急性子的老客户\n\n## 行为\n说话简短，容易发火",
+            first_message="你好",
+        )
+        runner = SparringRunner(
+            agent_client=AsyncMock(), llm=mock_llm, test_case=test_case,
+            system_prompt="System prompt here",
+        )
+        prompt = runner.persona_prompt
+        assert "System prompt here" in prompt
+        assert "一个急性子的老客户" in prompt
+        assert "说话简短，容易发火" in prompt
+        assert "首轮发言：你好" in prompt
+        assert END_MARKER in prompt
+
+    def test_first_message_none_shows_default_in_prompt(self, mock_llm, test_case_factory):
+        """When first_message is None, prompt should show default '喂？'."""
+        test_case = test_case_factory(first_message=None)
+        runner = SparringRunner(
+            agent_client=AsyncMock(), llm=mock_llm, test_case=test_case,
+            system_prompt="SP",
+        )
+        assert "首轮发言：喂？" in runner.persona_prompt
 
 
 # ---------------------------------------------------------------------------
@@ -150,6 +185,26 @@ class TestConversationFlow:
         assert conversation[2]["content"] == "User follow-up"
         assert conversation[3]["role"] == "assistant"
         assert conversation[3]["content"] == "Agent says bye"
+
+    @pytest.mark.asyncio
+    async def test_first_message_none_fallback(self, mock_llm, test_case_factory):
+        """When first_message is None, should fall back to '喂？'."""
+        test_case = test_case_factory(first_message=None, max_rounds=1)
+
+        agent_client = AsyncMock()
+        agent_client.send_message = AsyncMock(return_value=("Reply", False))
+
+        runner = SparringRunner(
+            agent_client=agent_client,
+            llm=mock_llm,
+            test_case=test_case,
+            system_prompt="System prompt",
+        )
+
+        conversation, reason, rounds = await runner.run()
+
+        assert conversation[0]["content"] == "喂？"
+        agent_client.send_message.assert_called_with("喂？")
 
     @pytest.mark.asyncio
     async def test_correct_round_count(self, mock_llm, test_case_factory):

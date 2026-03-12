@@ -23,7 +23,7 @@ class MockLLMAdapter(LLMAdapter):
         self.max_retries = 2
 
         self.chat_responses: list[str] = []
-        self.chat_json_responses: list[dict] = []
+        self.chat_json_responses: list[dict | Exception] = []
         self.chat_call_count = 0
         self.chat_json_call_count = 0
         self.chat_call_args: list[dict] = []
@@ -52,7 +52,10 @@ class MockLLMAdapter(LLMAdapter):
         })
         if not self.chat_json_responses:
             raise ValueError("MockLLMAdapter: chat_json_responses exhausted")
-        return self.chat_json_responses.pop(0)
+        resp = self.chat_json_responses.pop(0)
+        if isinstance(resp, Exception):
+            raise resp
+        return resp
 
 
 @pytest.fixture
