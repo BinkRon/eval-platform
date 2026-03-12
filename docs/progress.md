@@ -40,21 +40,23 @@
 
 > Prompt 组装使用新字段 + 默认 System Prompt + 旧 snapshot 向后兼容
 
-- [ ] **2-1：SparringRunner Prompt 组装** `[S]`
+- [x] **2-1：SparringRunner Prompt 组装** `[S]`（Phase 1 已完成）
   - `sparring_runner.py` — `_build_persona_prompt` 直接注入 sparring_prompt，不再拼 persona_background + persona_behavior
   - `run_iter` — first_message 取 `self.test_case.first_message or “喂？”`
-- [ ] **2-2：JudgeRunner Prompt 组装 + 旧 snapshot 兼容** `[S]`
+- [x] **2-2：JudgeRunner Prompt 组装 + 旧 snapshot 兼容** `[S]`（Phase 1 已完成）
   - `judge_runner.py` — `_build_prompt` Evaluation 部分用 judge_prompt_segment
-  - 向后兼容：`hasattr(dim, 'judge_prompt_segment')` fallback 旧字段格式
-- [ ] **2-3：默认 System Prompt 常量** `[S]`
+  - 向后兼容：`getattr(dim, 'judge_prompt_segment', None)` fallback 旧字段格式
+- [x] **2-3：默认 System Prompt 常量** `[S]`
   - 新建 `backend/app/services/prompt_defaults.py` — DEFAULT_SPARRING_SYSTEM_PROMPT + DEFAULT_JUDGE_SYSTEM_PROMPT（PRD §3.4）
   - `batch_scheduler.py` — system_prompt 为空时使用默认值
-- [ ] **2-4：judge_config_service 适配** `[S]`
+  - 注意：[END] 标记由 `_build_persona_prompt` 动态追加，默认 prompt 不含以避免重复
+- [x] **2-4：judge_config_service 适配** `[S]`（Phase 1 已完成）
   - `judge_config_service.py` — save 时使用 judge_prompt_segment
-- [ ] **2-5：更新核心测试** `[M]`
-  - `test_sparring_runner.py` — 验证新 prompt 格式 + first_message=None 回退
-  - `test_judge_runner.py` — 验证新 eval 格式 + 旧 snapshot 兼容
-  - 新建 `test_prompt_defaults.py` — 默认 prompt 非空 + 包含关键内容
+- [x] **2-5：更新核心测试** `[M]`
+  - `test_sparring_runner.py` — 新增 TestPromptBuilding（prompt 注入 + first_message=None 回退）
+  - `test_judge_runner.py` — 新增旧 snapshot 兼容 + judge_prompt_segment 优先测试
+  - 新建 `test_prompt_defaults.py` — 默认 prompt 非空 + 关键内容 + END 不重复
+  - 重构 `conftest.py` MockLLMAdapter — chat_json_responses 原生支持 Exception，消除测试中 monkey-patch
 
 **验证**：`pytest` 全部通过 ✓
 
@@ -189,6 +191,16 @@
 ---
 
 ## 交接备注
+
+**Session #28 (2026-03-12)**：v1.0 Phase 2 核心引擎适配完成。
+
+- 2-1/2-2/2-4 已在 Phase 1 额外适配中完成（sparring_prompt 注入、judge_prompt_segment + 旧 snapshot 兼容、judge_config_service）
+- 新建 `prompt_defaults.py`：对练/裁判默认 System Prompt（PRD §3.4），[END] 由 `_build_persona_prompt` 追加避免重复
+- `batch_scheduler.py`：system_prompt 为空时 fallback 默认值
+- 新增 6 个测试：prompt 注入格式、first_message=None 回退、旧 snapshot 兼容、judge_prompt_segment 优先、默认 prompt 内容
+- 重构 MockLLMAdapter.chat_json 原生支持 Exception，消除 2 处 monkey-patch 重复
+- pytest 46 passed、tsc --noEmit 通过、双 Agent 审查通过
+- 下一步：Phase 3 前端适配
 
 **Session #27 (2026-03-12)**：v1.0 Phase 1 数据模型迁移完成。
 
