@@ -66,16 +66,19 @@
 
 > 用例编辑弹窗简化 + Eval 维度编辑重构 + 默认 Prompt 展示
 
-- [ ] **3-1：TestCaseTab 改造** `[M]`
-  - 列表列：名称 + 角色描述（sparring_prompt 截取 30-40 字）+ 操作
-  - 编辑弹窗：name + sparring_prompt（大 TextArea，markdown 提示）+ 高级配置折叠面板（first_message、max_rounds）
-- [ ] **3-2：JudgeConfigTab Eval 维度改造** `[M]`
-  - 维度列表：名称 + judge_prompt_segment 前 2 行预览
-  - 维度编辑弹窗：name + judge_prompt_segment（大 TextArea，markdown 提示）
-- [ ] **3-3：ModelConfigTab 默认 Prompt** `[S]`
-  - System Prompt 为空时显示默认值 placeholder
-- [ ] **3-4：P5 对话剧场幕后信息适配** `[S]`
-  - 幕后信息展示新 prompt 结构（sparring_prompt 而非 persona_*）
+- [x] **3-1：TestCaseTab 改造** `[M]`
+  - 列表列：名称 + sparring_prompt 截取 40 字 + 操作（Phase 1 已适配）
+  - 编辑弹窗：sparring_prompt TextArea 增大（rows=8）+ 高级配置折叠面板（first_message、max_rounds、sort_order）
+  - Collapse destroyInactivePanel={false} 防止字段值丢失
+- [x] **3-2：JudgeConfigTab Eval 维度改造** `[M]`（Phase 1 已适配）
+  - 查看态 DimensionCard：名称 + judge_prompt_segment 前 2 行预览
+  - 编辑态：name + judge_prompt_segment TextArea + markdown 提示
+- [x] **3-3：ModelConfigTab 默认 Prompt** `[S]`
+  - 查看态：System Prompt 为空时显示默认值 +「系统默认」标签 + 降低透明度
+  - 编辑态：placeholder 提示"留空将使用系统内置 Prompt"
+  - 前端默认 Prompt 常量与后端 prompt_defaults.py 严格对齐
+- [x] **3-4：P5 对话剧场幕后信息适配** `[S]`（Phase 1 已适配）
+  - sparring_prompt_snapshot 直接展示新 prompt 结构
 
 **验证**：`tsc --noEmit` ✓ → 配置页增删改查正常 ✓ → 批测全链路正常 ✓
 
@@ -192,7 +195,17 @@
 
 ## 交接备注
 
-**Session #28 (2026-03-12)**：v1.0 Phase 2 核心引擎适配完成。
+**Session #28 (2026-03-12)**：v1.0 Phase 2 + Phase 3 完成。
+
+Phase 3 前端适配：
+- TestCaseTab：sparring_prompt TextArea 增大 + 高级配置折叠面板（Collapse destroyInactivePanel={false}）
+- ModelConfigTab：查看态显示默认 Prompt +「系统默认」标签；编辑态简短 placeholder 提示
+- 前端默认 Prompt 常量与后端 prompt_defaults.py 严格对齐（含 markdown 粗体、完整文本）
+- JudgeConfigTab + DialogTheater 已在 Phase 1 适配完成
+- tsc --noEmit 通过、pytest 46 passed、双 Agent 审查通过（修复前后端不一致问题）
+- 下一步：Phase 4 新增后端 API
+
+Phase 2 核心引擎适配：
 
 - 2-1/2-2/2-4 已在 Phase 1 额外适配中完成（sparring_prompt 注入、judge_prompt_segment + 旧 snapshot 兼容、judge_config_service）
 - 新建 `prompt_defaults.py`：对练/裁判默认 System Prompt（PRD §3.4），[END] 由 `_build_persona_prompt` 追加避免重复
