@@ -2,9 +2,8 @@ export interface TestCase {
   id: string
   project_id: string
   name: string
-  first_message: string
-  persona_background: string | null
-  persona_behavior: string | null
+  sparring_prompt: string
+  first_message: string | null
   max_rounds: number
   sort_order: number
   created_at: string
@@ -14,9 +13,8 @@ export interface TestCase {
 
 export interface TestCaseCreate {
   name: string
-  first_message: string
-  persona_background?: string
-  persona_behavior?: string
+  sparring_prompt: string
+  first_message?: string | null
   max_rounds?: number
   sort_order?: number
 }

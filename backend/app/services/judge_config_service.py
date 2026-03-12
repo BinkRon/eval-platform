@@ -40,10 +40,7 @@ async def save_judge_config(db: AsyncSession, project_id: UUID, data: JudgeConfi
         db.add(EvalDimension(
             judge_config_id=config.id,
             name=dim_data.name,
-            description=dim_data.description,
-            level_3_desc=dim_data.level_3_desc,
-            level_2_desc=dim_data.level_2_desc,
-            level_1_desc=dim_data.level_1_desc,
+            judge_prompt_segment=dim_data.judge_prompt_segment,
             sort_order=dim_data.sort_order,
         ))
 

@@ -27,13 +27,11 @@ class SparringRunner:
         self.persona_prompt: str = self._build_persona_prompt()
 
     def _build_persona_prompt(self) -> str:
+        first_message = self.test_case.first_message or "喂？"
         prompt = self.system_prompt + "\n\n"
-        prompt += f"--- 当前用例的角色卡 ---\n"
-        prompt += f"首轮发言：{self.test_case.first_message}\n"
-        if self.test_case.persona_background:
-            prompt += f"角色背景：{self.test_case.persona_background}\n"
-        if self.test_case.persona_behavior:
-            prompt += f"行为特征：{self.test_case.persona_behavior}\n"
+        prompt += f"--- 当前用例的角色信息 ---\n"
+        prompt += self.test_case.sparring_prompt + "\n\n"
+        prompt += f"首轮发言：{first_message}\n"
         prompt += f"\n当对话可以自然结束时，请在回复末尾加上 {END_MARKER} 标记。"
         return prompt
 
@@ -45,8 +43,8 @@ class SparringRunner:
             - termination_reason is None while the conversation is ongoing
             - termination_reason is set on the final yield
         """
-        user_message = self.test_case.first_message
-        max_rounds = self.test_case.max_rounds or 20
+        user_message = self.test_case.first_message or "喂？"
+        max_rounds = self.test_case.max_rounds or 50
         actual_rounds = 0
 
         for round_num in range(1, max_rounds + 1):

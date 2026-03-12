@@ -39,10 +39,7 @@ class TestBuildPrompt:
         dims = [
             eval_dimension_factory(
                 name="Helpfulness",
-                description="How helpful",
-                level_3_desc="Excellent",
-                level_2_desc="OK",
-                level_1_desc="Poor",
+                judge_prompt_segment="How helpful was the agent\n\n## 评分标准\n- 3分（优秀）：Excellent\n- 2分（合格）：OK\n- 1分（不合格）：Poor",
             ),
         ]
         runner = self._make_runner([], dims, mock_llm)

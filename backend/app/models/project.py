@@ -15,3 +15,5 @@ class Project(UUIDPrimaryKey, TimestampMixin, Base):
     judge_config = relationship("JudgeConfig", back_populates="project", uselist=False, cascade="all, delete-orphan", lazy="raise")
     model_config_ = relationship("ModelConfig", back_populates="project", uselist=False, cascade="all, delete-orphan", lazy="raise")
     batch_tests = relationship("BatchTest", back_populates="project", cascade="all, delete-orphan", lazy="raise")
+    project_files = relationship("ProjectFile", back_populates="project", cascade="all, delete-orphan", lazy="raise")
+    builder_conversation = relationship("BuilderConversation", back_populates="project", uselist=False, cascade="all, delete-orphan", lazy="raise")

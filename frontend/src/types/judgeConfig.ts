@@ -8,10 +8,7 @@ export interface ChecklistItem {
 export interface EvalDimension {
   id?: string
   name: string
-  description?: string
-  level_3_desc?: string
-  level_2_desc?: string
-  level_1_desc?: string
+  judge_prompt_segment: string
   sort_order: number
 }
 

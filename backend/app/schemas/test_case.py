@@ -6,19 +6,17 @@ from pydantic import BaseModel, Field
 
 class TestCaseCreate(BaseModel):
     name: str = Field(max_length=100)
-    first_message: str
-    persona_background: str | None = None
-    persona_behavior: str | None = None
-    max_rounds: int = Field(default=20, ge=3, le=50)
+    sparring_prompt: str = Field(min_length=1)
+    first_message: str | None = None
+    max_rounds: int = Field(default=50, ge=3, le=100)
     sort_order: int = 0
 
 
 class TestCaseUpdate(BaseModel):
     name: str | None = Field(default=None, max_length=100)
+    sparring_prompt: str | None = Field(default=None, min_length=1)
     first_message: str | None = None
-    persona_background: str | None = None
-    persona_behavior: str | None = None
-    max_rounds: int | None = Field(default=None, ge=3, le=50)
+    max_rounds: int | None = Field(default=None, ge=3, le=100)
     sort_order: int | None = None
 
 
@@ -26,9 +24,8 @@ class TestCaseResponse(BaseModel):
     id: UUID
     project_id: UUID
     name: str
-    first_message: str
-    persona_background: str | None
-    persona_behavior: str | None
+    sparring_prompt: str
+    first_message: str | None
     max_rounds: int
     sort_order: int
     last_result: str | None = None

@@ -86,17 +86,23 @@ class JudgeRunner:
         # Evaluation section
         if self.eval_dimensions:
             parts.append("\n--- Evaluation ---")
-            parts.append("请对以下维度打分（1-3 分）：")
+            parts.append("请按以下维度评分（1-3分），附评分理由：")
             for dim in self.eval_dimensions:
-                parts.append(f"\n维度：{dim.name}")
-                if dim.description:
-                    parts.append(f"说明：{dim.description}")
-                if dim.level_3_desc:
-                    parts.append(f"3 分：{dim.level_3_desc}")
-                if dim.level_2_desc:
-                    parts.append(f"2 分：{dim.level_2_desc}")
-                if dim.level_1_desc:
-                    parts.append(f"1 分：{dim.level_1_desc}")
+                parts.append(f"\n维度「{dim.name}」：")
+                if getattr(dim, 'judge_prompt_segment', None):
+                    parts.append(dim.judge_prompt_segment)
+                elif getattr(dim, 'description', None) or any(
+                    getattr(dim, f'level_{n}_desc', None) for n in (3, 2, 1)
+                ):
+                    # Backward compatibility with old snapshots
+                    if getattr(dim, 'description', None):
+                        parts.append(f"说明：{dim.description}")
+                    if getattr(dim, 'level_3_desc', None):
+                        parts.append(f"3 分：{dim.level_3_desc}")
+                    if getattr(dim, 'level_2_desc', None):
+                        parts.append(f"2 分：{dim.level_2_desc}")
+                    if getattr(dim, 'level_1_desc', None):
+                        parts.append(f"1 分：{dim.level_1_desc}")
 
         # Conversation
         parts.append("\n--- 对话记录 ---")

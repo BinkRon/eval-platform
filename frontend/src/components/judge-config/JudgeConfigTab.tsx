@@ -40,34 +40,19 @@ const checklistColumns = [
 /* ── 查看态：评判维度 Card ── */
 
 function DimensionCard({ dim }: { dim: EvalDimension }) {
-  const scores = [
-    { score: '3 分', desc: dim.level_3_desc },
-    { score: '2 分', desc: dim.level_2_desc },
-    { score: '1 分', desc: dim.level_1_desc },
-  ].filter(s => s.desc)
+  const previewLines = dim.judge_prompt_segment
+    ? dim.judge_prompt_segment.split('\n').slice(0, 2).join('\n')
+    : ''
 
   return (
     <Card size="small" style={{ marginBottom: 12 }}>
       <div style={{ marginBottom: 8 }}>
         <Text strong>{dim.name}</Text>
-        {dim.description && (
-          <Paragraph type="secondary" style={{ margin: '4px 0 0' }}>
-            {dim.description}
-          </Paragraph>
-        )}
       </div>
-      {scores.length > 0 && (
-        <Table
-          size="small"
-          dataSource={scores}
-          columns={[
-            { title: '评分', dataIndex: 'score', key: 'score', width: 60 },
-            { title: '标准', dataIndex: 'desc', key: 'desc' },
-          ]}
-          pagination={false}
-          rowKey="score"
-          showHeader={false}
-        />
+      {previewLines && (
+        <Paragraph type="secondary" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+          {previewLines}{dim.judge_prompt_segment.split('\n').length > 2 ? '\n…' : ''}
+        </Paragraph>
       )}
     </Card>
   )
@@ -178,17 +163,10 @@ function JudgeConfigEdit({
                   <Form.Item {...rest} name={[name, 'name']} label="维度名称" rules={[{ required: true }]}>
                     <Input placeholder="如：专业度" />
                   </Form.Item>
-                  <Form.Item {...rest} name={[name, 'description']} label="维度描述">
-                    <Input.TextArea rows={1} />
-                  </Form.Item>
-                  <Form.Item {...rest} name={[name, 'level_3_desc']} label="3 分标准">
-                    <Input.TextArea rows={1} />
-                  </Form.Item>
-                  <Form.Item {...rest} name={[name, 'level_2_desc']} label="2 分标准">
-                    <Input.TextArea rows={1} />
-                  </Form.Item>
-                  <Form.Item {...rest} name={[name, 'level_1_desc']} label="1 分标准">
-                    <Input.TextArea rows={1} />
+                  <Form.Item {...rest} name={[name, 'judge_prompt_segment']} label="评判指引"
+                    rules={[{ required: true, message: '请输入评判指引' }]}
+                    extra="支持 markdown 格式。可包含评分等级定义、边界情况说明、正反例等。">
+                    <Input.TextArea rows={4} placeholder="评判该维度的指引内容，包含评分标准等" />
                   </Form.Item>
                 </Card>
               ))}

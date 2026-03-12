@@ -41,10 +41,7 @@ class EvalDimension(UUIDPrimaryKey, Base):
         UUID(as_uuid=True), ForeignKey("judge_configs.id", ondelete="CASCADE")
     )
     name: Mapped[str] = mapped_column(String(50))
-    description: Mapped[str | None] = mapped_column(Text)
-    level_3_desc: Mapped[str | None] = mapped_column(Text)
-    level_2_desc: Mapped[str | None] = mapped_column(Text)
-    level_1_desc: Mapped[str | None] = mapped_column(Text)
+    judge_prompt_segment: Mapped[str] = mapped_column(Text)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
 
     judge_config = relationship("JudgeConfig", back_populates="eval_dimensions", lazy="raise")

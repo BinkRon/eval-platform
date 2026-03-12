@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Form, Input, InputNumber, Modal, Space, Table, Tag, message } from 'antd'
+import { Button, Form, Input, InputNumber, Modal, Space, Table, message } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import type { TestCase } from '../../api/testCases'
 import { useTestCases, useCreateTestCase, useUpdateTestCase, useDeleteTestCase } from '../../hooks/useTestCases'
@@ -24,9 +24,8 @@ export default function TestCaseTab({ projectId }: { projectId: string }) {
     setEditing(record)
     form.setFieldsValue({
       name: record.name,
+      sparring_prompt: record.sparring_prompt,
       first_message: record.first_message,
-      persona_background: record.persona_background,
-      persona_behavior: record.persona_behavior,
       max_rounds: record.max_rounds,
       sort_order: record.sort_order,
     })
@@ -65,16 +64,12 @@ export default function TestCaseTab({ projectId }: { projectId: string }) {
 
   const columns = [
     { title: '用例名称', dataIndex: 'name', key: 'name' },
-    { title: '首条消息', dataIndex: 'first_message', key: 'first_message', ellipsis: true },
-    { title: '最大轮数', dataIndex: 'max_rounds', key: 'max_rounds', width: 100 },
     {
-      title: '上次结果',
-      key: 'last_result',
-      width: 100,
-      render: (_: unknown, r: TestCase) =>
-        r.last_result === 'passed' ? <Tag color="green">通过</Tag>
-        : r.last_result === 'failed' ? <Tag color="red">未通过</Tag>
-        : '—',
+      title: '角色描述',
+      dataIndex: 'sparring_prompt',
+      key: 'sparring_prompt',
+      ellipsis: true,
+      render: (text: string) => text ? text.slice(0, 40) + (text.length > 40 ? '…' : '') : '—',
     },
     {
       title: '操作',
@@ -104,21 +99,21 @@ export default function TestCaseTab({ projectId }: { projectId: string }) {
         width={640}
         confirmLoading={createMutation.isPending || updateMutation.isPending}
       >
-        <Form form={form} layout="vertical" initialValues={{ max_rounds: 20, sort_order: 0 }}>
+        <Form form={form} layout="vertical" initialValues={{ max_rounds: 50, sort_order: 0 }}>
           <Form.Item name="name" label="用例名称" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="first_message" label="首条消息" rules={[{ required: true }]}>
-            <Input.TextArea rows={3} placeholder="对练机器人发给 Agent 的第一条消息" />
+          <Form.Item name="sparring_prompt" label="角色描述" rules={[{ required: true }]}
+            extra="支持 markdown 格式。此内容将作为对练模型的角色扮演指令。">
+            <Input.TextArea rows={6} placeholder="描述对练机器人的角色身份、性格、行为规则等" />
           </Form.Item>
-          <Form.Item name="persona_background" label="用户画像背景">
-            <Input.TextArea rows={2} placeholder="模拟用户的背景信息" />
+          <Form.Item name="first_message" label="首轮发言"
+            extra="对练机器人的开场白，默认为"喂？"">
+            <Input placeholder="喂？" />
           </Form.Item>
-          <Form.Item name="persona_behavior" label="用户行为特征">
-            <Input.TextArea rows={2} placeholder="模拟用户的行为偏好" />
-          </Form.Item>
-          <Form.Item name="max_rounds" label="最大对话轮数">
-            <InputNumber min={3} max={50} />
+          <Form.Item name="max_rounds" label="最大轮次（兜底）"
+            extra="系统默认 50 轮，仅在特殊场景需要调整">
+            <InputNumber min={3} max={100} />
           </Form.Item>
           <Form.Item name="sort_order" label="排序">
             <InputNumber min={0} />

@@ -14,10 +14,7 @@ class ChecklistItemData(BaseModel):
 class EvalDimensionData(BaseModel):
     id: UUID | None = None
     name: str = Field(max_length=100)
-    description: str | None = None
-    level_3_desc: str | None = None
-    level_2_desc: str | None = None
-    level_1_desc: str | None = None
+    judge_prompt_segment: str = Field(min_length=1)
     sort_order: int = 0
 
 
@@ -39,10 +36,7 @@ class ChecklistItemResponse(BaseModel):
 class EvalDimensionResponse(BaseModel):
     id: UUID
     name: str
-    description: str | None
-    level_3_desc: str | None
-    level_2_desc: str | None
-    level_1_desc: str | None
+    judge_prompt_segment: str
     sort_order: int
 
     model_config = {"from_attributes": True}

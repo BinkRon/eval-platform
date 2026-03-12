@@ -78,9 +78,8 @@ async def validate_and_create(db: AsyncSession, project_id: UUID, data: BatchTes
             {
                 "id": str(tc.id),
                 "name": tc.name,
+                "sparring_prompt": tc.sparring_prompt,
                 "first_message": tc.first_message,
-                "persona_background": tc.persona_background,
-                "persona_behavior": tc.persona_behavior,
                 "max_rounds": tc.max_rounds,
             }
             for tc in test_cases
@@ -94,10 +93,7 @@ async def validate_and_create(db: AsyncSession, project_id: UUID, data: BatchTes
             "eval_dimensions": [
                 {
                     "name": ed.name,
-                    "description": ed.description,
-                    "level_3_desc": ed.level_3_desc,
-                    "level_2_desc": ed.level_2_desc,
-                    "level_1_desc": ed.level_1_desc,
+                    "judge_prompt_segment": ed.judge_prompt_segment,
                 }
                 for ed in eval_dimensions
             ],

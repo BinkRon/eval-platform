@@ -111,9 +111,8 @@ def test_case_factory(project_factory):
         defaults = {
             "id": uuid.uuid4(),
             "name": "Test Case 1",
+            "sparring_prompt": "## 角色背景\nA customer with a pending order\n\n## 行为特征\nPolite but impatient",
             "first_message": "Hello, I need help with my order.",
-            "persona_background": "A customer with a pending order",
-            "persona_behavior": "Polite but impatient",
             "max_rounds": 5,
             "sort_order": 0,
         }
@@ -144,10 +143,7 @@ def eval_dimension_factory():
             "id": uuid.uuid4(),
             "judge_config_id": uuid.uuid4(),
             "name": "Helpfulness",
-            "description": "How helpful was the agent",
-            "level_3_desc": "Very helpful",
-            "level_2_desc": "Somewhat helpful",
-            "level_1_desc": "Not helpful",
+            "judge_prompt_segment": "How helpful was the agent\n\n## 评分标准\n- 3分（优秀）：Very helpful\n- 2分（合格）：Somewhat helpful\n- 1分（不合格）：Not helpful",
             "sort_order": 0,
         }
         defaults.update(kwargs)
