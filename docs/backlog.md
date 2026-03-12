@@ -71,10 +71,10 @@
 | AR 架构 | 0 | 0 | 0 | 0 | 0 |
 | DM 数据模型 | 0 | 0 | 1 | 0 | 1 |
 | SE 安全 | 0 | 1 | 0 | 0 | 1 |
-| EN 工程质量 | 0 | 0 | 2 | 0 | 2 |
+| EN 工程质量 | 0 | 1 | 2 | 0 | 3 |
 | PF 性能 | 0 | 0 | 0 | 0 | 0 |
 | FT 新功能 | 0 | 0 | 4 | 0 | 4 |
-| **合计** | **0** | **1** | **11** | **1** | **13** |
+| **合计** | **0** | **2** | **11** | **1** | **14** |
 
 ---
 
@@ -303,6 +303,24 @@
 - **描述**：后端 Pydantic 的 `Numeric` 类型序列化为字符串，前端 TypeScript 类型标注为 `number`，组件中用 `Number(config.pass_threshold)` 显式转换。类型声明与运行时行为不一致。
 - **涉及文件**：`frontend/src/types/judgeConfig.ts`、`frontend/src/components/judge-config/JudgeConfigTab.tsx`
 - **建议方案**：后端 schema 中对 `pass_threshold` 使用 `float` 类型（或添加 validator 转为 float），确保 JSON 序列化为数字而非字符串。
+
+### EN-05 存量代码 Agent-Friendly 自描述补全
+
+- **优先级**：P1
+- **复杂度**：M
+- **状态**：Open
+- **来源**：架构评审 2026-03-12
+- **描述**：项目已建立 Agent-Friendly API 设计规范（`docs/conventions.md`），但存量代码尚未符合。具体缺失：
+  1. **Pydantic Schema**：所有 Field() 缺少 `description` 参数（约 60+ 个字段），无 `example`，Schema 类无 docstring
+  2. **FastAPI 路由**：所有路由函数缺少 docstring（约 25+ 个端点）
+  3. **SQLAlchemy Model**：类无 docstring，字段无 `comment`
+  4. **错误码**：`DomainError.error_code` 已定义但全部传 None，未实际使用
+- **涉及文件**：`backend/app/schemas/*.py`、`backend/app/api/*.py`、`backend/app/models/*.py`、`backend/app/exceptions.py`
+- **建议方案**：按层分步补全——
+  - Step 1：Pydantic Schema（影响最大，直接决定 OpenAPI 文档质量）
+  - Step 2：FastAPI 路由 docstring
+  - Step 3：SQLAlchemy Model docstring + column comment
+  - Step 4：启用 error_code
 
 ---
 

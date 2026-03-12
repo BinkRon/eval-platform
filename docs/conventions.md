@@ -148,6 +148,110 @@ export function useCreateProject() {
 - 不在镜像中存储敏感文件（.env、密钥文件）
 - 使用 `.dockerignore` 排除不必要文件
 
+## Agent-Friendly API 设计规范
+
+> 设计原则：API 不仅服务人类开发者，也服务 AI Agent。好的 API 自描述能力让 Agent 能直接理解系统能做什么、该怎么用，无需额外的操作手册。
+
+### Pydantic Schema — 必须自描述
+
+**每个 Field 必须包含 `description`**，说明这个字段的语义、用途和业务含义：
+
+```python
+# ✅ 正确
+sparring_prompt: str = Field(
+    min_length=1,
+    description="对练模型的角色扮演指令，支持 markdown，将注入对练模型的 system prompt"
+)
+concurrency: int = Field(
+    default=3, ge=1, le=20,
+    description="并行执行的测试用例数量"
+)
+
+# ❌ 错误 — 只有约束，没有语义
+sparring_prompt: str = Field(min_length=1)
+concurrency: int = Field(default=3, ge=1, le=20)
+```
+
+**枚举/有限值字段必须说明每个取值的含义：**
+
+```python
+level: str = Field(
+    description="检查项级别。required: 红线项，违反即不通过；important: 影响评分但不一票否决"
+)
+status: str = Field(
+    description="批测状态。pending: 等待执行；running: 执行中；completed: 已完成；failed: 执行失败"
+)
+```
+
+**关键字段提供 `example`**（尤其是自由文本字段和复杂结构）：
+
+```python
+message: str = Field(
+    min_length=1,
+    description="用户发送给构建助手的消息",
+    examples=["请生成 5 条关于理财推荐场景的测试用例"]
+)
+```
+
+**Schema 类必须有 docstring**，说明整个模型的用途：
+
+```python
+class BatchTestCreate(BaseModel):
+    """发起批测的请求参数。指定 Agent 版本和并发度，可选过滤用例和裁判配置范围。"""
+    ...
+```
+
+### FastAPI 路由 — 必须有操作描述
+
+**每个路由函数必须有 docstring**，FastAPI 会自动将其作为 OpenAPI 的 operation summary：
+
+```python
+@router.post("", response_model=ProjectResponse, status_code=201)
+async def create_project(data: ProjectCreate, db: AsyncSession = Depends(get_db)):
+    """创建评测项目。"""
+    return await project_service.create(db, data)
+
+@router.get("/{project_id}/readiness", response_model=ConfigReadiness)
+async def get_readiness(project_id: UUID, db: AsyncSession = Depends(get_db)):
+    """获取项目配置就绪状态，返回各模块的就绪情况和缺失项。"""
+    return await project_service.get_config_readiness(db, project_id)
+```
+
+### 错误响应 — 必须可编程消费
+
+**使用 error_code 区分错误类型**（已有基础设施，需启用）：
+
+```python
+# Service 层抛出时带 error_code
+raise ValidationError("缺少对练模型配置", error_code="MISSING_SPARRING_MODEL")
+raise NotFoundError("项目不存在", error_code="PROJECT_NOT_FOUND")
+```
+
+### 命名一致性 — 已有实践，继续保持
+
+- 同一概念在 Model / Schema / API / 前端 / 文档中使用同一个名字
+- 语义化命名，不使用缩写（`agent_version` 而非 `av`）
+- snake_case 贯穿后端所有层级
+
+### SQLAlchemy Model — 建议自描述
+
+**字段级 `comment` 参数**（写入数据库 column comment，增强数据库自身的可读性）：
+
+```python
+sparring_prompt: Mapped[str] = mapped_column(
+    Text, nullable=False,
+    comment="对练模型的角色扮演指令，markdown 格式"
+)
+```
+
+**类级 docstring**：
+
+```python
+class TestCase(UUIDPrimaryKey, TimestampMixin, Base):
+    """测试用例。定义对练场景的角色设定，驱动对练模型模拟特定类型的用户。"""
+    ...
+```
+
 ## 环境配置规范
 
 - 项目根目录提供 `.env.example` 模板，列出所有必需环境变量
