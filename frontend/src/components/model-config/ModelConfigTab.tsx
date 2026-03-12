@@ -12,10 +12,43 @@ interface ModelConfigTabProps {
   onDirtyChange?: (dirty: boolean) => void
 }
 
+/* ── 默认 System Prompt（与后端 prompt_defaults.py 对应） ── */
+
+// 必须与 backend/app/services/prompt_defaults.py 严格一致
+const DEFAULT_SPARRING_SYSTEM_PROMPT = `你是一个对话模拟器，负责扮演测试用例中定义的角色与客服 Agent 进行对话。
+
+## 核心规则
+1. **角色一致性**：严格按照角色描述行动，不脱离角色设定。
+2. **自然对话**：像真实用户一样说话，使用口语化表达，避免书面语。
+3. **情绪真实**：根据角色设定和对话进展自然地表达情绪变化。
+4. **不要配合**：你不是来帮 Agent 完成任务的，你是一个有自己需求和顾虑的真实用户。`
+
+// 必须与 backend/app/services/prompt_defaults.py 严格一致
+const DEFAULT_JUDGE_SYSTEM_PROMPT = `你是一个对话质量评审专家。你将收到一段客服 Agent 与客户之间的完整对话记录，
+以及一组评判标准。
+
+## 你的任务
+1. 逐条回答 Checklist 中的检查项（回答"是"或"否"，并附简短理由）
+2. 按 Evaluation 维度和评判指引给出评分（1-3 分）和评分理由
+3. 撰写整体评价总结，指出主要问题和亮点
+
+## 评判原则
+- **基于证据**：每个判断都必须引用对话中的具体内容作为依据
+- **独立评判**：每个维度独立评分，不要让某个维度的表现影响其他维度
+- **合理推断**：对于 Checklist 中的检查项，基于对话内容进行合理推断，
+  不要因为对话中没有明确提及就一律判否
+
+请严格按照提供的输出格式返回结果。`
+
+function getDefaultPrompt(prefix: 'sparring' | 'judge'): string {
+  return prefix === 'sparring' ? DEFAULT_SPARRING_SYSTEM_PROMPT : DEFAULT_JUDGE_SYSTEM_PROMPT
+}
+
 /* ── 查看态：单个模型 Card ── */
 
 function ModelCardView({
   title,
+  prefix,
   provider,
   model,
   temperature,
@@ -24,6 +57,7 @@ function ModelCardView({
   onEdit,
 }: {
   title: string
+  prefix: 'sparring' | 'judge'
   provider: string | null
   model: string | null
   temperature: number | null
@@ -32,6 +66,8 @@ function ModelCardView({
   onEdit: () => void
 }) {
   const configured = !!provider
+  const displayPrompt = systemPrompt || getDefaultPrompt(prefix)
+  const isDefault = !systemPrompt
 
   return (
     <Card size="small" title={title} extra={<Button icon={<EditOutlined />} onClick={onEdit}>编辑</Button>}>
@@ -57,16 +93,16 @@ function ModelCardView({
               <Text strong>{maxTokens ?? '—'}</Text>
             </div>
           </div>
-          {systemPrompt && (
-            <div>
-              <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>System Prompt</Text>
-              <div style={{ background: '#f5f5f5', borderRadius: 6, padding: '8px 12px' }}>
-                <Paragraph ellipsis={{ rows: 4, expandable: true, symbol: '展开' }} style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
-                  {systemPrompt}
-                </Paragraph>
-              </div>
+          <div>
+            <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
+              System Prompt{isDefault && <Text type="secondary" style={{ fontSize: 12 }}>（系统默认）</Text>}
+            </Text>
+            <div style={{ background: '#f5f5f5', borderRadius: 6, padding: '8px 12px', opacity: isDefault ? 0.7 : 1 }}>
+              <Paragraph ellipsis={{ rows: 4, expandable: true, symbol: '展开' }} style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+                {displayPrompt}
+              </Paragraph>
             </div>
-          )}
+          </div>
         </>
       )}
     </Card>
@@ -112,8 +148,9 @@ function ModelCardEdit({
       <Form.Item name={`${prefix}_max_tokens`} label="Max Tokens">
         <InputNumber min={1} max={16384} style={{ width: '100%' }} />
       </Form.Item>
-      <Form.Item name={`${prefix}_system_prompt`} label="System Prompt">
-        <Input.TextArea rows={4} />
+      <Form.Item name={`${prefix}_system_prompt`} label="System Prompt"
+        extra="留空则使用系统默认 Prompt">
+        <Input.TextArea rows={4} placeholder="留空将使用系统内置 Prompt" />
       </Form.Item>
       <Space>
         <Button type="primary" onClick={onSave} loading={saving}>保存</Button>
@@ -264,6 +301,7 @@ export default function ModelConfigTab({ projectId, onDirtyChange }: ModelConfig
         ) : (
           <ModelCardView
             title="对练模型"
+            prefix="sparring"
             provider={config?.sparring_provider ?? null}
             model={config?.sparring_model ?? null}
             temperature={config?.sparring_temperature ?? null}
@@ -287,6 +325,7 @@ export default function ModelConfigTab({ projectId, onDirtyChange }: ModelConfig
         ) : (
           <ModelCardView
             title="裁判模型"
+            prefix="judge"
             provider={config?.judge_provider ?? null}
             model={config?.judge_model ?? null}
             temperature={config?.judge_temperature ?? null}

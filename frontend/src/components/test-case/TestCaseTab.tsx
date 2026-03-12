@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Form, Input, InputNumber, Modal, Space, Table, message } from 'antd'
+import { Button, Collapse, Form, Input, InputNumber, Modal, Space, Table, message } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import type { TestCase } from '../../api/testCases'
 import { useTestCases, useCreateTestCase, useUpdateTestCase, useDeleteTestCase } from '../../hooks/useTestCases'
@@ -105,19 +105,32 @@ export default function TestCaseTab({ projectId }: { projectId: string }) {
           </Form.Item>
           <Form.Item name="sparring_prompt" label="角色描述" rules={[{ required: true }]}
             extra="支持 markdown 格式。此内容将作为对练模型的角色扮演指令。">
-            <Input.TextArea rows={6} placeholder="描述对练机器人的角色身份、性格、行为规则等" />
+            <Input.TextArea rows={8} placeholder="描述对练机器人的角色身份、性格、行为规则等&#10;&#10;示例：&#10;## 角色背景&#10;一个刚下单不久的电商客户...&#10;&#10;## 行为特征&#10;说话简短直接，容易不耐烦..." />
           </Form.Item>
-          <Form.Item name="first_message" label="首轮发言"
-            extra="对练机器人的开场白，默认为"喂？"">
-            <Input placeholder="喂？" />
-          </Form.Item>
-          <Form.Item name="max_rounds" label="最大轮次（兜底）"
-            extra="系统默认 50 轮，仅在特殊场景需要调整">
-            <InputNumber min={3} max={100} />
-          </Form.Item>
-          <Form.Item name="sort_order" label="排序">
-            <InputNumber min={0} />
-          </Form.Item>
+          <Collapse
+            ghost
+            destroyInactivePanel={false}
+            style={{ marginBottom: 16 }}
+            items={[{
+              key: 'advanced',
+              label: '高级配置',
+              children: (
+                <>
+                  <Form.Item name="first_message" label="首轮发言"
+                    extra="对练机器人的开场白，留空则默认为"喂？"">
+                    <Input placeholder="喂？" />
+                  </Form.Item>
+                  <Form.Item name="max_rounds" label="最大轮次"
+                    extra="系统默认 50 轮，仅在特殊场景需要调整">
+                    <InputNumber min={3} max={100} />
+                  </Form.Item>
+                  <Form.Item name="sort_order" label="排序">
+                    <InputNumber min={0} />
+                  </Form.Item>
+                </>
+              ),
+            }]}
+          />
         </Form>
       </Modal>
     </>
