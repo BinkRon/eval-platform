@@ -98,7 +98,8 @@ def upgrade() -> None:
         sa.Column("file_type", sa.String(20), nullable=False),
         sa.Column("file_size", sa.Integer(), nullable=False),
         sa.Column("storage_path", sa.Text(), nullable=False),
-        sa.Column("uploaded_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
+        sa.Column("created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
     )
     op.create_index("ix_project_files_project_id", "project_files", ["project_id"])
 
@@ -135,6 +136,8 @@ def downgrade() -> None:
     op.alter_column("test_cases", "max_rounds",
                     existing_type=sa.Integer(),
                     server_default=None)
+    # Fill NULLs before restoring NOT NULL constraint
+    op.execute(sa.text("UPDATE test_cases SET first_message = '喂？' WHERE first_message IS NULL"))
     op.alter_column("test_cases", "first_message", existing_type=sa.Text(), nullable=False)
     op.add_column("test_cases", sa.Column("persona_behavior", sa.Text(), nullable=True))
     op.add_column("test_cases", sa.Column("persona_background", sa.Text(), nullable=True))

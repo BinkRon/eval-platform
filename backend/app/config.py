@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     debug: bool = False
     cors_origins: list[str] = ["http://localhost:5173"]
     allow_private_urls: bool = True
+    file_storage_path: str = "/data/uploads"
 
     model_config = {"env_prefix": "EVAL_", "env_file": ".env"}
 
