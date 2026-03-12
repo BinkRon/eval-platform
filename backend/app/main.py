@@ -16,8 +16,11 @@ from app.exceptions import NotFoundError, ValidationError, ConflictError
 from app.services.batch_scheduler import cleanup_stale_running_records
 from app.api.agent_versions import router as agent_versions_router
 from app.api.batch_tests import router as batch_tests_router
+from app.api.builder_agent import router as builder_agent_router
+from app.api.builder_conversations import router as builder_conversations_router
 from app.api.judge_configs import router as judge_configs_router
 from app.api.model_configs import router as model_configs_router
+from app.api.project_files import router as project_files_router
 from app.api.projects import router as projects_router
 from app.api.providers import router as providers_router
 from app.api.test_cases import router as test_cases_router
@@ -53,6 +56,9 @@ app.include_router(test_cases_router)
 app.include_router(judge_configs_router)
 app.include_router(model_configs_router)
 app.include_router(batch_tests_router)
+app.include_router(project_files_router)
+app.include_router(builder_conversations_router)
+app.include_router(builder_agent_router)
 
 
 @app.exception_handler(Exception)
