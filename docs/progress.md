@@ -149,17 +149,19 @@
 
 > Skill 定义 + 结构化输出解析 + 配置写入
 
-- [ ] **6-1：Skill 定义 + System Prompt** `[M]`
+- [x] **6-1：Skill 定义 + System Prompt** `[M]`
   - `builder_agent_service.py` — 完整 system prompt 含角色定义 + 用例生成 Skill（PRD §4.2）+ 裁判配置生成 Skill（PRD §4.3）
-- [ ] **6-2：结构化输出解析** `[M]`
-  - `builder_agent_service.py` — 从 LLM 响应提取 JSON 配置块 + 卡片类型检测
-  - 使用 `chat_json` 模式 + 重试
-- [ ] **6-3：配置写入逻辑** `[S]`
-  - `builder_agent_service.py` — apply_generated_config：调用现有 service 写入 DB（追加/替换）
-- [ ] **6-4：集成测试** `[M]`
-  - `test_builder_agent.py` — 完整生成流程 mock 测试 + 边界情况
+- [x] **6-2：结构化输出解析** `[M]`
+  - `builder_agent_service.py` — `<generated_config>` XML 标签提取 + `chat_json` 重试 + 卡片类型检测
+  - 失败时自动清除标签残留，防止前端渲染 raw XML
+- [x] **6-3：配置写入逻辑** `[S]`
+  - `builder_agent_service.py` — apply_generated_config：直接 ORM 写入 + 单次 commit（事务一致性）
+  - level 映射：required→must, important→should，未知值安全回退
+  - 前端确认卡片 loading 态禁用按钮
+- [x] **6-4：集成测试** `[M]`
+  - `test_builder_agent.py` — 95 个测试全部通过（prompt / parse / card / chat / apply 全覆盖）
 
-**验证**：`pytest` ✓ → 端到端：用户描述 → AI 生成 → 确认写入 → 配置出现在 P3 ✓
+**验证**：`pytest` 95 passed ✓ → `tsc --noEmit` ✓ → 双 Agent 审查通过（修复 5 项）✓
 
 ---
 
@@ -202,6 +204,17 @@
 ---
 
 ## 交接备注
+
+**Session #31 (2026-03-12)**：v1.0 Phase 6 构建 Agent 智能层完成。
+
+Phase 6 构建 Agent 智能层：
+- 6-1 System Prompt：完整角色定义 + 用例生成 Skill（PRD §4.2）+ 裁判配置生成 Skill（PRD §4.3）
+- 6-2 结构化输出解析：`<generated_config>` XML 标签 regex 提取 + `chat_json` 重试 fallback + 卡片类型检测 + 标签残留清除
+- 6-3 配置写入：直接 ORM `db.add()` + 单次 `db.commit()`（避免 service 层逐条 commit 导致部分写入）；level 映射 required→must / important→should + 未知值安全回退 "should"
+- 6-4 测试：95 个测试全部通过，覆盖 prompt 内容、config block 解析（7 case）、card 构建、chat 流程（含 retry）、apply 写入（append/replace/level fallback/validation）
+- 前端联调：ChatPanel 接入 card_type/card_data → GenerateConfirmCard/OverwriteConfirmCard；确认按钮 loading 态禁用；结构化 count 字段替代字符串前缀匹配
+- 代码审查修复 5 项：事务一致性（直接 ORM）、level_map fallback 逻辑、标签残留清除、缺失字段 validation、按钮 loading
+- 下一步：Phase 7 文档 + Agent 守卫 + 收尾
 
 **Session #30 (2026-03-12)**：v1.0 Phase 5 构建 Agent 前端 UI 完成。
 
