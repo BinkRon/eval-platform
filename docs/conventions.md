@@ -28,6 +28,8 @@
 - `src/pages/` — 页面组件，对应路由
 - `src/components/` — 按模块分子目录（agent-version/, experiment/, batch-test/ 等）
 - `src/components/shared/` — 跨模块复用的纯 UI 组件（无业务逻辑依赖）
+- `src/components/builder-agent/` — 构建 Agent 组件（悬浮球、对话面板、确认卡片、文件管理）
+- `src/layouts/` — 布局组件（ProjectLayout 等，包裹 Outlet + 全局浮层）
 - `src/api/` — API 调用封装（每个资源一个文件）
 - `src/hooks/` — 自定义 hooks（TanStack Query 封装）
 - `src/types/` — TypeScript 类型定义
@@ -53,13 +55,18 @@ async def create_project(data: CreateProjectRequest, db: AsyncSession = Depends(
 
 ### 错误处理
 
+**Service 层**：抛出领域异常，由 `main.py` 全局处理器统一转换为 HTTP 响应。
+
 | 场景 | 处理方式 |
 |------|---------|
-| 资源不存在 | raise HTTPException(404, detail="Project not found") |
+| 资源不存在 | raise NotFoundError("Project not found") → 404 |
+| 参数/业务规则违反 | raise ValidationError("具体原因") → 400 |
+| 资源冲突（如重名） | raise ConflictError("供应商已存在") → 409 |
 | 参数校验失败 | Pydantic 自动处理（422） |
-| 业务规则违反 | raise HTTPException(400, detail="具体原因") |
-| 数据库异常 | 捕获 IntegrityError，返回 400 |
+| 数据库异常 | 捕获 IntegrityError，转为 ValidationError |
 | LLM 调用失败 | 服务内部处理，返回结构化错误 |
+
+**API 层**：仅做参数解析 + 调用 service，不直接 raise HTTPException。
 
 ### LLM 适配层
 
@@ -251,6 +258,23 @@ class TestCase(UUIDPrimaryKey, TimestampMixin, Base):
     """测试用例。定义对练场景的角色设定，驱动对练模型模拟特定类型的用户。"""
     ...
 ```
+
+## 文件存储规范
+
+- 存储路径通过环境变量 `FILE_STORAGE_PATH` 配置，不可硬编码
+- 上传文件类型白名单：PDF / DOCX / TXT / MD / XLSX / CSV
+- 上传文件大小上限：20MB，使用 Content-Length 前置校验
+- 文件名净化：去除路径分隔符，防止路径遍历攻击
+- API 响应中不暴露 `storage_path`（内部字段）
+- 删除操作顺序：先删 DB 记录，后删物理文件（物理删除失败仅 log 不抛异常）
+
+## 构建 Agent 组件规范
+
+- 悬浮球 `FloatingButton` 固定在右下角，projectId 变化时自动收起
+- 对话面板 `ChatPanel` 使用 Optimistic Update：发送时立即显示用户消息，成功后追加助手消息，失败按 snapshot 长度回滚
+- 消息气泡 `MessageBubble` 使用 react-markdown + rehype-sanitize 渲染（XSS 防护）
+- 确认卡片组件（GenerateConfirmCard / OverwriteConfirmCard / ClarifyCard）由后端 card_type 驱动渲染
+- 文件管理 `ProjectFileManager` 使用 Popover 浮层，前端校验扩展名和大小
 
 ## 环境配置规范
 

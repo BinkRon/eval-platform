@@ -117,7 +117,7 @@ export default function TestCaseTab({ projectId }: { projectId: string }) {
               children: (
                 <>
                   <Form.Item name="first_message" label="首轮发言"
-                    extra="对练机器人的开场白，留空则默认为"喂？"">
+                    extra="对练机器人的开场白，留空则默认为「喂？」">
                     <Input placeholder="喂？" />
                   </Form.Item>
                   <Form.Item name="max_rounds" label="最大轮次"

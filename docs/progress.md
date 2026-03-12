@@ -167,22 +167,22 @@
 
 ### Phase 7：文档 + Agent 守卫 + 收尾
 
-- [ ] **7-1：更新 architecture-guard.md** `[S]`
-  - 新增：Builder Agent LLM 适配层规则 + 文件存储可配置规则 + 新实体约束
-- [ ] **7-2：更新 code-reviewer.md** `[S]`
-  - 新增：LLM 响应 sanitize + 文件上传校验 + 空字段校验 + 幂等性检查
-- [ ] **7-3：更新 architecture.md** `[M]`
-  - 表结构 + API 设计 + 核心引擎 + 级联删除规则
-- [ ] **7-4：更新 testing.md** `[S]`
-  - 新增测试范围 + fixtures 说明
-- [ ] **7-5：更新 conventions.md** `[S]`
-  - builder-agent/ 组件规范 + 文件存储规范
-- [ ] **7-6：更新 backlog.md** `[S]`
-  - 二期相关条目状态流转
-- [ ] **7-7：更新 CLAUDE.md** `[S]`
-  - 版本号 + 文档索引 + 开发规则
-- [ ] **7-8：最终验证** `[S]`
-  - code-reviewer + architecture-guard 双 Agent 审查通过
+- [x] **7-1：更新 architecture-guard.md** `[S]`（早期 Phase 已预先完成）
+  - 规则 4（BuilderConversation/ProjectFile 约束）+ 规则 7（文件存储）+ 检查 5（Builder Agent）
+- [x] **7-2：更新 code-reviewer.md** `[S]`（早期 Phase 已预先完成）
+  - 构建 Agent 相关小节：LLM 响应 sanitize + 文件上传校验 + 空字段校验 + 幂等性 + system prompt 常量
+- [x] **7-3：更新 architecture.md** `[M]`
+  - 实体关系（+ProjectFile/BuilderConversation）+ 表结构（sparring_prompt/judge_prompt_segment/新表）+ API（文件/对话/构建Agent）+ 引擎（Builder Agent/File Parser/Prompt Defaults）+ 级联规则 + 路由（ProjectLayout）+ 目录（layouts/）
+- [x] **7-4：更新 testing.md** `[S]`
+  - 必测场景补充 3 项 + 文件位置补充 4 个新测试文件 + Fixture 说明（MockLLMAdapter + 工厂）
+- [x] **7-5：更新 conventions.md** `[S]`
+  - 前端目录补充 builder-agent/ + layouts/ + 新增文件存储规范 + 构建 Agent 组件规范
+- [x] **7-6：更新 backlog.md** `[S]`
+  - 仪表盘重算（14→11）+ Done 条目迁入归档（UX-01/04/05/09/10、AR-01/02/03、EN-01/02/03/04、FT-01/03）+ 日期更新
+- [x] **7-7：更新 CLAUDE.md** `[S]`
+  - 版本状态更新为 Phase 7 完成
+- [x] **7-8：最终验证** `[S]`
+  - 双 Agent 审查通过，修复 8 项（表结构精度 3 项 + 级联描述 2 项 + LLM 接口签名 + 测试文件名 + 错误处理规范）
 
 **验证**：双 Agent 审查通过 ✓ → 文档完整 ✓
 
@@ -196,7 +196,7 @@
 | 更新 | `test_sparring_runner.py` | 新 prompt 格式 + first_message 回退 | 2 |
 | 更新 | `test_judge_runner.py` | 新 eval 格式 + 旧 snapshot 兼容 | 2 |
 | 新增 | `test_prompt_defaults.py` | 默认 prompt 非空 + 关键内容 | 2 |
-| 新增 | `test_project_file.py` | 上传/删除/类型校验 | 4 |
+| 新增 | `test_project_file_service.py` | 上传/删除/类型校验 | 4 |
 | 新增 | `test_builder_agent.py` | prompt 组装 + 输出解析 + 配置写入 | 4+6 |
 
 原则：后端改动必须 `pytest`，前端改动必须 `tsc --noEmit`，每个 Phase 完成后跑 code-reviewer + architecture-guard。
@@ -204,6 +204,18 @@
 ---
 
 ## 交接备注
+
+**Session #32 (2026-03-12)**：v1.0 Phase 7 文档 + Agent 守卫 + 收尾完成。v1.0 二期全部 Phase 完成。
+
+Phase 7 文档收尾：
+- 7-1/7-2：architecture-guard.md / code-reviewer.md 已在早期 Phase 预先完成
+- 7-3：architecture.md 全面更新（实体关系、表结构、API、引擎、级联规则、路由、目录）
+- 7-4：testing.md 补充必测场景 + 新测试文件 + fixtures
+- 7-5：conventions.md 新增 builder-agent 组件规范 + 文件存储规范 + 错误处理规范区分 API/Service 层
+- 7-6：backlog.md 仪表盘重算 14→11 + 14 条 Done 迁入归档
+- 7-7：CLAUDE.md 版本状态更新
+- 7-8：双 Agent 审查修复 8 项（表结构精度、级联描述、LLM 接口签名、测试文件名、错误处理规范）
+- v1.0 全部完成，下一步由用户决定
 
 **Session #31 (2026-03-12)**：v1.0 Phase 6 构建 Agent 智能层完成。
 
