@@ -88,25 +88,29 @@
 
 > 项目文件 + 构建对话 + 构建 Agent 聊天接口
 
-- [ ] **4-1：项目文件 API** `[M]`
+- [x] **4-1：项目文件 API** `[M]`
   - 新建 service/api/schema：upload（multipart）/ list / delete
-  - `config.py` 新增 `FILE_STORAGE_PATH`
-  - 支持 PDF/DOCX/TXT/MD/XLSX/CSV，上限 20MB
-- [ ] **4-2：构建对话 API** `[S]`
+  - `config.py` 已有 `FILE_STORAGE_PATH`（Phase 1 配置）
+  - 支持 PDF/DOCX/TXT/MD/XLSX/CSV，上限 20MB + 前置 Content-Length 校验
+  - 文件名净化（路径遍历防护）、storage_path 不暴露在 API 响应中
+- [x] **4-2：构建对话 API** `[S]`
   - 新建 service/api/schema：get_or_create / append_message / clear
-- [ ] **4-3：构建 Agent 聊天 API** `[M]`
+  - BuilderConversationResponse.messages 使用 MessageData 类型约束
+- [x] **4-3：构建 Agent 聊天 API** `[M]`
   - 新建 `builder_agent_service.py` — 加载项目上下文 + 文件 + 对话历史 → LLM 调用 → 返回响应
-  - 新建 `builder_agent.py` API — `POST .../chat` + `POST .../apply-config`
-- [ ] **4-4：文件内容解析器** `[M]`
-  - 新建 `file_parser.py` — PDF(pypdf) / DOCX(python-docx) / TXT/MD / XLSX/CSV
-  - `requirements.txt` 新增依赖
-- [ ] **4-5：API 路由注册** `[S]`
+  - 新建 `builder_agent.py` API — `POST .../chat`
+  - LLM 调用失败不会留下孤立消息（先调用 LLM，成功后再持久化）
+- [x] **4-4：文件内容解析器** `[M]`
+  - 新建 `file_parser.py` — PDF(pypdf) / DOCX(python-docx) / TXT/MD / XLSX/CSV(openpyxl)
+  - `requirements.in` 新增 aiofiles/pypdf/python-docx/openpyxl/python-multipart
+- [x] **4-5：API 路由注册** `[S]`
   - `main.py` 注册 project_files / builder_conversations / builder_agent 路由
-- [ ] **4-6：后端测试** `[M]`
-  - 新建 `test_builder_agent.py` — prompt 组装 + config 解析
-  - 新建 `test_project_file.py` — 上传/删除/类型校验
+- [x] **4-6：后端测试** `[M]`
+  - 新建 `test_builder_agent.py` — system prompt 内容 + 上下文加载 + LLM 调用流程
+  - 新建 `test_file_parser.py` — TXT/MD/CSV/XLSX 解析 + 不支持类型 + 缺失文件
+  - 新建 `test_project_file_service.py` — 扩展名校验 + 大小校验 + 文件名净化
 
-**验证**：`pytest` 通过 ✓ → API 手动验证 ✓
+**验证**：`pytest` 73 passed ✓ → 双 Agent 审查通过（修复 6 项）✓
 
 ---
 
@@ -194,6 +198,18 @@
 ---
 
 ## 交接备注
+
+**Session #29 (2026-03-12)**：v1.0 Phase 4 新增后端 API 完成。
+
+Phase 4 新增后端 API：
+- 项目文件 API：upload/list/delete + 白名单校验 + 20MB 限制 + 路径遍历防护 + storage_path 脱敏
+- 构建对话 API：get_or_create/append_message/clear + JSONB 持久化 + MessageData 类型约束
+- 构建 Agent 聊天 API：项目上下文加载 + LLM 适配层调用 + 消息持久化（先 LLM 后写入，防孤立消息）
+- 文件解析器：PDF/DOCX/TXT/MD/XLSX/CSV 文本提取
+- 新增依赖：aiofiles/pypdf/python-docx/openpyxl/python-multipart
+- 代码审查修复 6 项：文件名净化、os.remove 异常处理、storage_path 脱敏、前置大小校验、DB 先删后物理删、LLM 失败不留孤立消息
+- pytest 73 passed、双 Agent 审查通过
+- 下一步：Phase 5 构建 Agent 前端 UI
 
 **Session #28 (2026-03-12)**：v1.0 Phase 2 + Phase 3 完成。
 
