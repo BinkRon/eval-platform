@@ -10,6 +10,7 @@ interface GenerateConfirmCardProps {
   title: string
   items: GeneratedItem[]
   impactMessage: string
+  loading?: boolean
   onConfirm: () => void
   onModify: () => void
   onCancel: () => void
@@ -19,6 +20,7 @@ export default function GenerateConfirmCard({
   title,
   items,
   impactMessage,
+  loading,
   onConfirm,
   onModify,
   onCancel,
@@ -85,7 +87,7 @@ export default function GenerateConfirmCard({
           <Button size="small" onClick={onModify}>
             修改后再写入
           </Button>
-          <Button size="small" type="primary" onClick={onConfirm}>
+          <Button size="small" type="primary" onClick={onConfirm} loading={loading}>
             确认写入
           </Button>
         </Space>

@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
-import { Button, Input, Modal, Select, Space, Spin } from 'antd'
+import { Button, Input, Modal, Select, Space, Spin, message } from 'antd'
 import { MinusOutlined, SendOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import { useBuilderConversation, useClearConversation } from '../../hooks/useBuilderConversation'
-import { useSendBuilderMessage } from '../../hooks/useBuilderAgent'
+import { useSendBuilderMessage, useApplyConfig } from '../../hooks/useBuilderAgent'
 import { useModelOptions } from '../../hooks/useModelConfig'
 import MessageBubble from './MessageBubble'
+import GenerateConfirmCard from './GenerateConfirmCard'
+import OverwriteConfirmCard from './OverwriteConfirmCard'
 import ProjectFileManager from './ProjectFileManager'
 import type { BuilderMessage } from '../../types/builderConversation'
+import type { GenerateConfirmCardData } from '../../types/builderAgent'
 
 interface ChatPanelProps {
   projectId: string
@@ -21,10 +24,13 @@ export default function ChatPanel({ projectId, open, onClose }: ChatPanelProps) 
   const { data: modelOptions = [] } = useModelOptions()
   const sendMutation = useSendBuilderMessage(projectId)
   const clearMutation = useClearConversation(projectId)
+  const applyMutation = useApplyConfig(projectId)
   const queryClient = useQueryClient()
 
   const [inputValue, setInputValue] = useState('')
   const [selectedModel, setSelectedModel] = useState<string>('')
+  const [pendingCard, setPendingCard] = useState<GenerateConfirmCardData | null>(null)
+  const [showOverwrite, setShowOverwrite] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Set default model when options load
@@ -78,6 +84,11 @@ export default function ChatPanel({ projectId, open, onClose }: ChatPanelProps) 
             (old: typeof conversation) =>
               old ? { ...old, messages: [...old.messages, assistantMsg] } : old
           )
+          // Show confirm card if config was generated
+          if (data.card_type === 'generate_confirm' && data.card_data) {
+            setPendingCard(data.card_data)
+            setShowOverwrite(false)
+          }
         },
         onError: () => {
           // Rollback to snapshot length
@@ -89,6 +100,38 @@ export default function ChatPanel({ projectId, open, onClose }: ChatPanelProps) 
         },
       }
     )
+  }
+
+  const handleConfirmWrite = (mode: 'append' | 'replace' = 'append') => {
+    if (!pendingCard) return
+    applyMutation.mutate(
+      {
+        config_type: pendingCard.config_type,
+        config_payload: pendingCard.config_payload,
+        mode,
+      },
+      {
+        onSuccess: () => {
+          message.success('配置已写入')
+          setPendingCard(null)
+          setShowOverwrite(false)
+        },
+        onError: () => {
+          message.error('写入失败，请重试')
+        },
+      }
+    )
+  }
+
+  const handleModify = () => {
+    setPendingCard(null)
+    setShowOverwrite(false)
+    setInputValue('请帮我修改上面生成的配置，')
+  }
+
+  const handleCancelCard = () => {
+    setPendingCard(null)
+    setShowOverwrite(false)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -193,6 +236,55 @@ export default function ChatPanel({ projectId, open, onClose }: ChatPanelProps) 
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
             <Spin size="small" />
             <span style={{ marginLeft: 8, fontSize: 12, color: '#999' }}>思考中...</span>
+          </div>
+        )}
+        {/* Confirm card */}
+        {pendingCard && !showOverwrite && (
+          <GenerateConfirmCard
+            title={pendingCard.title}
+            items={pendingCard.items}
+            impactMessage={pendingCard.impact_message}
+            loading={applyMutation.isPending}
+            onConfirm={() => {
+              // If existing data, show overwrite card; otherwise write directly
+              if (pendingCard.existing_count > 0) {
+                setShowOverwrite(true)
+              } else {
+                handleConfirmWrite('append')
+              }
+            }}
+            onModify={handleModify}
+            onCancel={handleCancelCard}
+          />
+        )}
+        {pendingCard && showOverwrite && (
+          <OverwriteConfirmCard
+            title={pendingCard.title}
+            loading={applyMutation.isPending}
+            existingCounts={
+              pendingCard.config_type === 'test_cases'
+                ? [{ label: '测试用例', count: pendingCard.existing_count }]
+                : [
+                    { label: 'Checklist', count: pendingCard.existing_checklist_count ?? 0 },
+                    { label: 'Evaluation 维度', count: pendingCard.existing_dimension_count ?? 0 },
+                  ]
+            }
+            newCounts={
+              pendingCard.config_type === 'test_cases'
+                ? [{ label: '测试用例', count: pendingCard.items.length }]
+                : [
+                    { label: 'Checklist', count: pendingCard.new_checklist_count ?? 0 },
+                    { label: 'Evaluation 维度', count: pendingCard.new_dimension_count ?? 0 },
+                  ]
+            }
+            onConfirm={handleConfirmWrite}
+            onCancel={handleCancelCard}
+          />
+        )}
+        {applyMutation.isPending && (
+          <div style={{ textAlign: 'center', padding: '8px 0' }}>
+            <Spin size="small" />
+            <span style={{ marginLeft: 8, fontSize: 12, color: '#999' }}>写入中...</span>
           </div>
         )}
         <div ref={messagesEndRef} />

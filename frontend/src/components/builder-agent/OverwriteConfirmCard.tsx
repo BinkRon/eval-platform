@@ -10,6 +10,7 @@ interface OverwriteConfirmCardProps {
   title: string
   existingCounts: CountItem[]
   newCounts: CountItem[]
+  loading?: boolean
   onConfirm: (mode: 'append' | 'replace') => void
   onCancel: () => void
 }
@@ -18,6 +19,7 @@ export default function OverwriteConfirmCard({
   title,
   existingCounts,
   newCounts,
+  loading,
   onConfirm,
   onCancel,
 }: OverwriteConfirmCardProps) {
@@ -64,7 +66,7 @@ export default function OverwriteConfirmCard({
           <Button size="small" onClick={onCancel}>
             取消
           </Button>
-          <Button size="small" type="primary" onClick={() => onConfirm(mode)}>
+          <Button size="small" type="primary" onClick={() => onConfirm(mode)} loading={loading}>
             确认执行
           </Button>
         </Space>
