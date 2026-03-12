@@ -51,11 +51,14 @@ model: sonnet
 - 使用 SQLAlchemy ORM，不手写原生 SQL
 - 写操作在事务中执行
 - 删除操作处理关联实体（参见 architecture.md 级联规则）
+- `BuilderConversation` 必须 project_id UNIQUE 约束（一个项目一条对话记录）
+- `ProjectFile` 删除时必须同步清理物理文件
 
 违规信号：
 - `text()` 拼接 SQL 字符串
 - 删除操作未处理关联数据
 - 多步写操作未包裹在事务中
+- ProjectFile 只删 DB 记录未清理物理文件
 
 ### 规则 5：API 响应一致性
 
@@ -71,7 +74,32 @@ model: sonnet
 
 - Python 文件 snake_case，React 组件 PascalCase
 - 每个资源对应：model + schema + api + (service)
-- 前端按模块分子目录：`components/agent-version/`、`components/batch-test/` 等
+- 前端按模块分子目录：`components/agent-version/`、`components/batch-test/`、`components/builder-agent/` 等
+
+### 规则 7：文件存储规范
+
+- 文件存储路径必须从环境变量 `FILE_STORAGE_PATH` 读取，不可硬编码
+- 上传文件的类型校验使用白名单（PDF/DOCX/TXT/MD/XLSX/CSV）
+- 上传文件有大小上限（20MB）
+
+违规信号：
+- 代码中硬编码文件存储路径（如 `"./uploads"`）
+- 未校验文件类型直接存储
+- 未限制文件大小
+
+### 规则 8：Agent-Friendly 自描述
+
+- 新增或修改的 Pydantic Schema Field **必须**包含 `description` 参数
+- 新增或修改的 FastAPI 路由函数 **必须**有 docstring
+- 枚举/有限值字段的 `description` 必须说明每个取值的含义
+
+违规信号：
+- `Field()` 调用中缺少 `description` 参数
+- `Field(default=...)` 只有约束（ge/le/min_length）但没有 `description`
+- 路由函数（`async def xxx(...)`）没有 docstring
+- 枚举字段的 description 没有解释各取值含义（如 `status` 字段只写"状态"而未说明 pending/running/completed/failed 各代表什么）
+
+参考：`docs/conventions.md` → Agent-Friendly API 设计规范
 
 ## 第二部分：设计质量检查（建议修复）
 
@@ -91,6 +119,11 @@ model: sonnet
 - LLM 调用是否有超时和重试处理
 - HTTP 调用（Agent Client）是否有合理超时
 - 异常是否被正确捕获并转化为有意义的错误信息
+
+### 检查 5：构建 Agent 模块规范
+- Builder Agent 是否通过 `app/llm/` 适配层调用 LLM（不直接 import SDK）
+- Builder Agent 生成的配置是否通过已有 service 层写入（不直接操作 DB）
+- LLM 响应展示前是否做了内容安全处理
 
 ## 输出格式
 

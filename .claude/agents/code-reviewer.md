@@ -57,11 +57,24 @@ model: sonnet
 - 表单使用受控模式
 - 删除等危险操作使用 `Modal.confirm()`
 
+### Agent-Friendly 自描述
+- 新增/修改的 Pydantic Field 是否包含 `description`（参见 `docs/conventions.md`）
+- 新增/修改的 FastAPI 路由是否有 docstring
+- 枚举/有限值字段的 description 是否说明了各取值含义
+- Schema 类是否有 docstring 说明模型用途
+
 ### 通用代码质量
 - 硬编码的魔法值是否提取为常量
 - 边界条件：空数组、空字符串、null、并发请求
 - 异步操作的错误处理是否完整
 - 命名是否准确反映语义
+
+### 构建 Agent 相关
+- Builder Agent LLM 响应展示前是否做了 sanitize（防 XSS）
+- 文件上传是否校验了类型（白名单）和大小（上限 20MB）
+- `sparring_prompt` 和 `judge_prompt_segment` 不可为空字符串（需 Pydantic min_length 或 validator）
+- 确认卡片操作（apply-config）是否幂等（防重复提交）
+- Builder Agent 的 system prompt 是否从常量/配置读取（不硬编码在 service 函数中）
 
 ## 输出格式
 
