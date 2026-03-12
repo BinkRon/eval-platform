@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { Navigate, createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { Spin } from 'antd'
 import MainLayout from './layouts/MainLayout'
+import ProjectLayout from './layouts/ProjectLayout'
 import ProjectList from './pages/ProjectList'
 import ProjectWorkbench from './pages/ProjectWorkbench'
 import ProviderSettings from './pages/ProviderSettings'
@@ -18,10 +19,15 @@ const router = createBrowserRouter([
     children: [
       { path: '/', element: <Navigate to="/projects" replace /> },
       { path: '/projects', element: <ProjectList /> },
-      { path: '/projects/:id', element: <ProjectWorkbench /> },
-      { path: '/projects/:id/config', element: <Suspense fallback={<PageLoading />}><ProjectConfig /></Suspense> },
-      { path: '/projects/:id/batch-tests/:bid', element: <Suspense fallback={<PageLoading />}><BatchTestDetail /></Suspense> },
-      { path: '/projects/:id/batch-tests/:bid/theater/:rid', element: <Suspense fallback={<PageLoading />}><DialogTheater /></Suspense> },
+      {
+        element: <ProjectLayout />,
+        children: [
+          { path: '/projects/:id', element: <ProjectWorkbench /> },
+          { path: '/projects/:id/config', element: <Suspense fallback={<PageLoading />}><ProjectConfig /></Suspense> },
+          { path: '/projects/:id/batch-tests/:bid', element: <Suspense fallback={<PageLoading />}><BatchTestDetail /></Suspense> },
+          { path: '/projects/:id/batch-tests/:bid/theater/:rid', element: <Suspense fallback={<PageLoading />}><DialogTheater /></Suspense> },
+        ],
+      },
       { path: '/settings/providers', element: <ProviderSettings /> },
     ],
   },

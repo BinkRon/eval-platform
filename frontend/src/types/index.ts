@@ -7,3 +7,4 @@ export type { ChecklistItem, EvalDimension, JudgeConfig, JudgeConfigUpdate } fro
 export type { ModelConfig, ModelConfigUpdate, ModelOption } from './modelConfig'
 export type { ProjectFile } from './projectFile'
 export type { BuilderConversation, BuilderMessage } from './builderConversation'
+export type { BuilderChatRequest, BuilderChatResponse } from './builderAgent'
