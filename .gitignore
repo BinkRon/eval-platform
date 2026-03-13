@@ -21,3 +21,6 @@ dist/
 *.log
 
 postgresql/data/
+
+# Design previews
+design-preview/
