@@ -93,9 +93,9 @@ def eval_dimension_factory():
 
 ```bash
 cd backend
-pip install -e ".[dev]"   # 安装开发依赖
-pytest                     # 运行全部测试
-pytest -v                  # 详细输出
-pytest tests/test_services/  # 只跑 service 测试
-pytest -x                  # 遇到第一个失败就停止
+uv sync                              # 安装/同步依赖（使用 uv 管理）
+.venv/bin/python -m pytest            # 运行全部测试
+.venv/bin/python -m pytest -v         # 详细输出
+.venv/bin/python -m pytest tests/test_services/  # 只跑 service 测试
+.venv/bin/python -m pytest -x         # 遇到第一个失败就停止
 ```

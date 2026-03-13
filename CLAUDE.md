@@ -8,7 +8,7 @@
 
 ## 当前状态
 
-版本：v1.0 二期功能实现（Phase 7 文档收尾完成）
+版本：v1.0 二期功能实现（全部完成），下一版本待规划
 基线：v0.3 稳定性与体验修复已完成
 详见：`docs/progress.md`
 
@@ -25,8 +25,10 @@
 | 产品设计 | `docs/prd/eval-platform-phase2-spec.md` | 二期产品需求（构建 Agent、数据模型简化、Prompt 重构） |
 | 归档 | `docs/prd/eval-platform-mvp-spec-v2.md` | v2 产品需求（页面下钻架构、对话剧场） |
 | 归档 | `docs/prd/eval-platform-mvp-spec.md` | v1 MVP 产品需求（已被 v2 取代） |
+| 归档 | `docs/archive/p2-interaction-redesign.md` | v0.3 P2 交互重设计 PRD（已完成） |
 | 归档 | `docs/archive/eval-platform-framework.md` | 产品完整愿景（含未纳入 MVP 的功能） |
 | 归档 | `docs/archive/project-roadmap.md` | 跨项目总规划（含编排平台） |
+| 运维参考 | `deploy/README.md` | 部署指南（Docker + CentOS + 备份） |
 
 ## Session 工作流程
 
@@ -79,12 +81,6 @@
 
 ## 开发规则
 
-- 后端所有接口返回统一的 JSON 格式，错误时包含 `detail` 字段
-- 前端错误提示统一用 Ant Design `message` 组件
-- 数据库操作使用 SQLAlchemy ORM，不手写 SQL
-- 删除操作处理关联实体（级联删除或置空外键）
-- LLM 调用通过适配层统一接口，不直接调用厂商 SDK
-- 构建 Agent 模块遵循相同的 LLM 适配层规则
-- 文件存储路径通过环境变量 `FILE_STORAGE_PATH` 配置，不可硬编码
-- 详细的数据模型、API 设计、核心引擎设计见 `docs/architecture.md`
-- 详细的代码规范见 `docs/conventions.md`
+- 代码规范、命名、Git 规范、安全编码等详见 `docs/conventions.md`
+- 数据模型、API 设计、核心引擎设计详见 `docs/architecture.md`
+- 部署流程详见 `deploy/README.md`

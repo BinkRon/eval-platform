@@ -14,22 +14,22 @@
 
 ## 目录职责
 
+> 完整目录树见 `docs/architecture.md`。以下仅列出各目录的放置规则。
+
 ### 后端
 
-- `app/models/` — SQLAlchemy 数据模型，每个实体一个文件
+- `app/api/` — 路由层：仅做参数校验 + 调用 service，不放业务逻辑
+- `app/services/` — 业务逻辑层：所有核心逻辑在此实现
 - `app/schemas/` — Pydantic 请求/响应模型，每个资源一个文件
-- `app/api/` — FastAPI 路由处理，每个资源一个文件（仅做参数校验 + 调用 service）
-- `app/services/` — 核心业务逻辑（对练运行器、裁判运行器、批测调度、Agent 客户端）
+- `app/models/` — SQLAlchemy 数据模型，每个实体一个文件
 - `app/llm/` — LLM 适配层（base 接口 + 各厂商实现 + 工厂方法）
 - `app/utils/` — 通用工具函数
 
 ### 前端
 
-- `src/pages/` — 页面组件，对应路由
-- `src/components/` — 按模块分子目录（agent-version/, experiment/, batch-test/ 等）
-- `src/components/shared/` — 跨模块复用的纯 UI 组件（无业务逻辑依赖）
-- `src/components/builder-agent/` — 构建 Agent 组件（悬浮球、对话面板、确认卡片、文件管理）
-- `src/layouts/` — 布局组件（ProjectLayout 等，包裹 Outlet + 全局浮层）
+- `src/pages/` — 页面组件（对应路由，负责数据获取和布局）
+- `src/components/` — 业务组件（按模块分子目录），`shared/` 放跨模块复用的纯 UI 组件
+- `src/layouts/` — 布局组件（包裹 Outlet + 全局浮层）
 - `src/api/` — API 调用封装（每个资源一个文件）
 - `src/hooks/` — 自定义 hooks（TanStack Query 封装）
 - `src/types/` — TypeScript 类型定义
@@ -118,6 +118,10 @@ export function useCreateProject() {
 ### 提交时机
 - 每完成一个任务提交一次
 - 功能关联的多模块变更合并为一个 commit
+
+### 提交前检查
+- 提交前检查 `git status` 中的未追踪文件（`??`），确认是否应纳入版本控制或加入 `.gitignore`
+- 锁文件（`uv.lock`、`package-lock.json`）、文档等应追踪；临时生成物应加入 `.gitignore`
 
 ### Commit Message 格式
 - 格式：`<类型>: <简洁中文描述>`（不超过 50 字）
@@ -281,3 +285,11 @@ class TestCase(UUIDPrimaryKey, TimestampMixin, Base):
 - 项目根目录提供 `.env.example` 模板，列出所有必需环境变量
 - 敏感配置（API Key、数据库密码）通过环境变量注入，不硬编码
 - 环境变量命名：大写 + 下划线，如 `DATABASE_URL`、`ANTHROPIC_API_KEY`
+
+## 部署规范
+
+> 完整部署流程见 `deploy/README.md`。
+
+- 本地开发用 `docker-compose.yml`，生产用 `docker-compose.prod.yml`，不混用
+- 后端通过 `entrypoint.sh` 启动前自动执行 Alembic 迁移，不手动跑
+- 发布使用 `deploy/release.sh`，禁止在线上容器内手动改代码

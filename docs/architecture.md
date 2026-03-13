@@ -241,8 +241,9 @@ POST   /api/projects/:id/builder-agent/apply-config
 
 ```python
 class LLMAdapter(ABC):
-    async def chat(self, messages, system_prompt, temperature, max_tokens) -> str
-    async def chat_json(self, messages, system_prompt, temperature, max_tokens) -> dict
+    def __init__(self, api_key, model, base_url=None, timeout=60.0, max_retries=2)
+    async def chat(self, messages, system_prompt=None, temperature=0.7, max_tokens=2048) -> str
+    async def chat_json(self, messages, system_prompt=None, temperature=0.0, max_tokens=2048) -> dict
 ```
 
 工厂方法根据 provider_name 创建适配器，从 provider_configs 读取 API Key。

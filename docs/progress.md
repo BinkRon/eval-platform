@@ -205,165 +205,38 @@
 
 ## 交接备注
 
+**Session #33 (2026-03-13)**：文档体系 review + 修复 10 项问题。
+
+- 追踪 uv.lock + 二期 PRD，design-preview 加入 .gitignore
+- conventions.md 新增提交前检查未追踪文件约定 + 部署规范段落
+- CLAUDE.md 精简开发规则（去重）、补 deploy 索引、更新当前状态
+- conventions.md 目录职责精简（指向 architecture.md）
+- architecture.md LLM 接口签名同步代码
+- testing.md 运行命令更新为 uv
+- .gitignore 补充 .pytest_cache/.mypy_cache/.coverage/htmlcov
+- p2-interaction-redesign.md 移入 archive
+- v1.0 交接备注折叠
+
 **Session #32 (2026-03-12)**：v1.0 Phase 7 文档 + Agent 守卫 + 收尾完成。v1.0 二期全部 Phase 完成。
 
-Phase 7 文档收尾：
-- 7-1/7-2：architecture-guard.md / code-reviewer.md 已在早期 Phase 预先完成
-- 7-3：architecture.md 全面更新（实体关系、表结构、API、引擎、级联规则、路由、目录）
-- 7-4：testing.md 补充必测场景 + 新测试文件 + fixtures
-- 7-5：conventions.md 新增 builder-agent 组件规范 + 文件存储规范 + 错误处理规范区分 API/Service 层
-- 7-6：backlog.md 仪表盘重算 14→11 + 14 条 Done 迁入归档
-- 7-7：CLAUDE.md 版本状态更新
-- 7-8：双 Agent 审查修复 8 项（表结构精度、级联描述、LLM 接口签名、测试文件名、错误处理规范）
-- v1.0 全部完成，下一步由用户决定
+<details>
+<summary>v1.0 交接详情（Session #26-#32）</summary>
 
-**Session #31 (2026-03-12)**：v1.0 Phase 6 构建 Agent 智能层完成。
+**Session #32**：Phase 7 文档收尾 — architecture/testing/conventions/backlog 全面更新 + 双 Agent 审查修复 8 项
 
-Phase 6 构建 Agent 智能层：
-- 6-1 System Prompt：完整角色定义 + 用例生成 Skill（PRD §4.2）+ 裁判配置生成 Skill（PRD §4.3）
-- 6-2 结构化输出解析：`<generated_config>` XML 标签 regex 提取 + `chat_json` 重试 fallback + 卡片类型检测 + 标签残留清除
-- 6-3 配置写入：直接 ORM `db.add()` + 单次 `db.commit()`（避免 service 层逐条 commit 导致部分写入）；level 映射 required→must / important→should + 未知值安全回退 "should"
-- 6-4 测试：95 个测试全部通过，覆盖 prompt 内容、config block 解析（7 case）、card 构建、chat 流程（含 retry）、apply 写入（append/replace/level fallback/validation）
-- 前端联调：ChatPanel 接入 card_type/card_data → GenerateConfirmCard/OverwriteConfirmCard；确认按钮 loading 态禁用；结构化 count 字段替代字符串前缀匹配
-- 代码审查修复 5 项：事务一致性（直接 ORM）、level_map fallback 逻辑、标签残留清除、缺失字段 validation、按钮 loading
-- 下一步：Phase 7 文档 + Agent 守卫 + 收尾
+**Session #31**：Phase 6 构建 Agent 智能层 — System Prompt + 结构化输出解析（XML 标签 + chat_json 重试）+ 配置写入（直接 ORM + 单次 commit）+ 95 个测试 + 前端确认卡片联调 + 代码审查修复 5 项
 
-**Session #30 (2026-03-12)**：v1.0 Phase 5 构建 Agent 前端 UI 完成。
+**Session #30**：Phase 5 构建 Agent 前端 UI — 悬浮球 + 对话面板（Optimistic update）+ 消息气泡（XSS 防护）+ 确认卡片 + 文件管理 + ProjectLayout 布局集成
 
-Phase 5 构建 Agent 前端 UI：
-- API 层 + Hooks：builderAgent（120s timeout）/ builderConversation / projectFiles，类型定义迁移到 types/builderAgent.ts
-- 悬浮球：右下角固定定位，projectId 变化自动收起面板
-- 对话面板：标题栏（📁 文件管理 + 模型选择 + 清空确认 + 收起）+ 消息流 + 输入区（Enter 发送 / Shift+Enter 换行）
-- 消息气泡：用户右对齐蓝底 / 助手左对齐绿底，react-markdown + remark-gfm + rehype-sanitize（XSS 防护）
-- Optimistic update：发送时立即显示 user 消息 → 成功追加 assistant → 失败按 snapshot 长度回滚；移除 hook 中 invalidateQueries 避免 double-update
-- 确认卡片：GenerateConfirmCard / OverwriteConfirmCard / ClarifyCard 三个 UI 组件（Phase 6 接入智能层）
-- 文件管理：Popover 浮层 + Upload 前端校验 + Popconfirm 删除 + 按 file.id 精确匹配 loading
-- 布局集成：ProjectLayout（Outlet + FloatingButton）+ App.tsx 路由嵌套
-- 新增依赖：react-markdown / remark-gfm / rehype-sanitize
-- tsc --noEmit 通过、双 Agent 审查通过（修复 6 项）
-- 下一步：Phase 6 构建 Agent 智能层
+**Session #29**：Phase 4 新增后端 API — 项目文件 + 构建对话 + 构建 Agent 聊天 + 文件解析器 + 代码审查修复 6 项
 
-**Session #29 (2026-03-12)**：v1.0 Phase 4 新增后端 API 完成。
+**Session #28**：Phase 2 + Phase 3 — 核心引擎适配（默认 Prompt + 新字段注入）+ 前端适配（用例折叠面板 + 默认 Prompt 展示）
 
-Phase 4 新增后端 API：
-- 项目文件 API：upload/list/delete + 白名单校验 + 20MB 限制 + 路径遍历防护 + storage_path 脱敏
-- 构建对话 API：get_or_create/append_message/clear + JSONB 持久化 + MessageData 类型约束
-- 构建 Agent 聊天 API：项目上下文加载 + LLM 适配层调用 + 消息持久化（先 LLM 后写入，防孤立消息）
-- 文件解析器：PDF/DOCX/TXT/MD/XLSX/CSV 文本提取
-- 新增依赖：aiofiles/pypdf/python-docx/openpyxl/python-multipart
-- 代码审查修复 6 项：文件名净化、os.remove 异常处理、storage_path 脱敏、前置大小校验、DB 先删后物理删、LLM 失败不留孤立消息
-- pytest 73 passed、双 Agent 审查通过
-- 下一步：Phase 5 构建 Agent 前端 UI
+**Session #27**：Phase 1 数据模型迁移 — Alembic 迁移 + Models/Schemas/Types/Fixtures 适配 + 旧 snapshot 兼容
 
-**Session #28 (2026-03-12)**：v1.0 Phase 2 + Phase 3 完成。
+**Session #26**：v1.0 二期规划 — 7 Phase 42 任务
 
-Phase 3 前端适配：
-- TestCaseTab：sparring_prompt TextArea 增大 + 高级配置折叠面板（Collapse destroyInactivePanel={false}）
-- ModelConfigTab：查看态显示默认 Prompt +「系统默认」标签；编辑态简短 placeholder 提示
-- 前端默认 Prompt 常量与后端 prompt_defaults.py 严格对齐（含 markdown 粗体、完整文本）
-- JudgeConfigTab + DialogTheater 已在 Phase 1 适配完成
-- tsc --noEmit 通过、pytest 46 passed、双 Agent 审查通过（修复前后端不一致问题）
-- 下一步：Phase 4 新增后端 API
-
-Phase 2 核心引擎适配：
-
-- 2-1/2-2/2-4 已在 Phase 1 额外适配中完成（sparring_prompt 注入、judge_prompt_segment + 旧 snapshot 兼容、judge_config_service）
-- 新建 `prompt_defaults.py`：对练/裁判默认 System Prompt（PRD §3.4），[END] 由 `_build_persona_prompt` 追加避免重复
-- `batch_scheduler.py`：system_prompt 为空时 fallback 默认值
-- 新增 6 个测试：prompt 注入格式、first_message=None 回退、旧 snapshot 兼容、judge_prompt_segment 优先、默认 prompt 内容
-- 重构 MockLLMAdapter.chat_json 原生支持 Exception，消除 2 处 monkey-patch 重复
-- pytest 46 passed、tsc --noEmit 通过、双 Agent 审查通过
-- 下一步：Phase 3 前端适配
-
-**Session #27 (2026-03-12)**：v1.0 Phase 1 数据模型迁移完成。
-
-- Alembic 迁移脚本：TestCase/EvalDimension 字段重构 + project_files/builder_conversations 新表
-- SQLAlchemy Models、Pydantic Schemas、TypeScript Types、测试 Fixtures 全部适配
-- 额外适配 4 个 service（sparring_runner/judge_runner/batch_test_service/judge_config_service）+ 2 个前端组件
-- judge_runner 保留旧 snapshot 向后兼容（hasattr fallback）
-- 代码审查修复：迁移空值 fallback 改为有意义默认值、Schema 加 min_length 校验、judge_runner 兼容逻辑加固
-- pytest 30 passed、tsc --noEmit 通过
-- 下一步：Phase 2 核心引擎适配
-
-**Session #26 (2026-03-12)**：v1.0 二期规划完成。
-
-- 阅读二期 PRD（`docs/prd/eval-platform-phase2-spec.md`），分析变更范围
-- 设计 7 Phase 执行计划（41 个任务），按依赖关系排序
-- 更新 progress.md（v0.3 折叠 + v1.0 任务清单）、CLAUDE.md、architecture-guard.md、code-reviewer.md
-- 下一步：Phase 1 数据模型迁移
-
-**Session #25 (2026-03-11)**：补充本地开发到远程 Docker 发布的标准化流程。
-
-- 在 `deploy/README.md` 新增”推荐工作流：本地开发 → 远程发布”章节
-- 新增 `deploy/release.sh` 远程发布脚本：支持拉取最新代码、重建生产容器、执行 backend 健康检查和 frontend 入口检查
-- 明确区分本地 `docker-compose.yml` 与远程 `docker-compose.prod.yml` 的用途
-- 补充 detached HEAD / 指定 commit 回滚场景的发布说明，避免默认 `git pull` 失败
-- 补充发布前检查、线上冒烟、环境变量对齐、migration 管理、禁止在线上容器手改代码、回滚策略
-- 目标：减少”本地验证通过，但远程 Docker 运行效果不一致”的问题
-
-**Session #24 (2026-03-10)**：生产部署准备全部完成。
-
-- 新增 `docker-compose.prod.yml`（生产专用，与开发 `docker-compose.yml` 分离）
-- 新增 `backend/entrypoint.sh`（启动前自动跑迁移）、`.env.production.example`（环境变量模板）
-- 新增 `deploy/backup.sh`（pg_dump 备份脚本）、`deploy/README.md`（CentOS 部署指南）
-- 改造 `backend/Dockerfile`、`frontend/nginx.conf`、`backend/app/main.py`（健康检查）、`.gitignore`、`backend/.dockerignore`
-- 代码审查修复：`text()` → `select(literal(1))`、backup.sh source 注入、CORS 模板、backend 端口不暴露、nginx assets 安全头
-- 下一步：在服务器上执行部署（参见 `deploy/README.md`）
-
-**Session #23 (2026-03-09)**：P2-2a/P2-2b/P2-2c 配置展示优化全部完成。
-
-- P2-2a：裁判配置 Table+Card 查看态，view/edit 切换，首次无数据自动编辑态
-- P2-2b：模型配置纵向双 Card 堆叠，独立 view/edit，dirty 状态隔离（Set 追踪），scoped validateFields
-- P2-2c：Agent 版本 Modal Divider 三段分组
-- 代码审查修复：enterEdit 空 config 防护、dirty 互覆盖、validateFields 跨 card 校验、syncForm 定义顺序
-- Phase P2 全部完成（6/6），UX-09 可标记 Done
-
-**Session #22 (2026-03-09)**：P2-1 发起批测 Modal 多选。
-
-- 后端 BatchTestCreate 新增 4 个可选字段（test_case_ids/checklist_item_ids/eval_dimension_ids/pass_threshold）
-- validate_and_create 按选中 ID 过滤，过滤后存入 config_snapshot
-- batch_scheduler _load_context 从 snapshot 读取测试用例 ID 和裁判配置（SimpleNamespace 替代 JudgeConfig ORM）
-- 前端 Modal 增加三个 Select multiple（默认全选）+ 通过阈值 InputNumber + 模型配置只读区
-- 全选时不传 ID（后端默认全量），部分选中传选中列表
-- 代码审查修复：snapshot 空值不回退全量、异常处理、类型标注、校验错误提示
-- 下一步：P2-2a（裁判配置查看态）→ P2-2b → P2-2c
-
-**Session #21 (2026-03-09)**：Phase P2 交互重设计 — 回退 + PRD + 工程修复。
-
-- 用户对 P2 交互设计不满意，回退 74d5760 和 4a045a1 两个 commit
-- 重新单独提交工程修复：P2-3（pass_threshold float）、P2-4（chat_json 参数清理）
-- 建立 `docs/prd/` 目录，编写 PRD：`p2-interaction-redesign.md`
-- 设计要点：发起批测保持 Modal + Select multiple 多选；裁判配置 Table+Card 查看态；模型配置纵向+分别编辑
-- 更新 CLAUDE.md 文档索引、backlog UX-09/FT-03 关联 PRD、progress.md P2 任务清单
-- P2-3/P2-4 已完成，P2-1/P2-2a/P2-2b/P2-2c 待实现
-- 下一步：按 PRD 实现 P2-1 → P2-2a → P2-2b → P2-2c
-
-**Session #19 (2026-03-09)**：Phase P1 全部完成（5/5）。
-
-- P1-1：批测删除 API + Popconfirm 前端按钮 + passive_deletes 修复
-- P1-2：test_cases/model_configs/providers 三组 service 层抽取，路由层清除 HTTPException，ConflictError 用于 provider 重名
-- P1-3：Token 编辑 placeholder + 后端空值跳过
-- P1-4：ConversationBubbles 居中轮次编号 R1/R2
-- P1-5：3 处 datetime.utcnow() → datetime.now(timezone.utc)
-- backlog 7 条标记 Done 并归档，P2 移除已完成的 P2-5（AR-03），剩余 4 项
-- 下一步：Phase P2（4 项）
-
-**Session #18 (2026-03-09)**：Phase BugFix 全部完成。
-
-- BF-1：lifespan 启动清理 + 单用例超时 + 终态防护（防重复计数）
-- BF-2：ConversationBubbles 内置自动滚动 + height prop + 裁判区空状态骨架
-- BF-3：ModelConfigTab 无 Provider 时 Alert 引导（含加载态防闪烁）
-- 代码审查修复：lifespan 逻辑下沉 service 层、超时保存异常捕获、Skeleton 排除 completed 状态
-- v0.3 Phase BugFix 3 个 P0 全部完成，待更新 backlog 状态
-
-**Session #17 (2026-03-09)**：需求管理流程建立 + v0.3 排期。
-
-- 建立 backlog ↔ progress 联动流程（CLAUDE.md 记录）
-- backlog 新增 Scheduled 状态，补充复杂度字段（S/M/L）
-- 新增 5 条 backlog 条目：UX-09（表单结构）、UX-10（剧场布局）、EN-04（running 卡死）、FT-03（用例选取）、FT-04（连通性测试）
-- FT-01 优先级 P2→P1 提升
-- 全部 15 条存量 Open 条目经代码验证仍存在
-- v0.3 Phase BugFix 排期：EN-04 + UX-10 + UX-01（3 个 P0）
+</details>
 
 ---
 
