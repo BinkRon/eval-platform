@@ -77,6 +77,7 @@ export const SEMANTIC_COLORS = {
 
   // Border & background
   borderDefault: '#e5e3dc',
+  pageBg: '#f3f1ec',
   codeBg: '#f5f4f1',
 
   // Text

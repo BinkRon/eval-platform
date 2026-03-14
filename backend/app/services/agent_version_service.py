@@ -89,10 +89,14 @@ async def test_connection(db: AsyncSession, project_id: UUID, version_id: UUID) 
         raise ValidationError("Agent endpoint not configured")
 
     try:
-        # Decrypt auth_token for the connection test
-        if version.auth_token:
-            version.auth_token = decrypt(version.auth_token)
-        client = AgentClient(version)
+        # Decrypt auth_token into a detached copy to avoid writing plaintext back to DB
+        decrypted_token = decrypt(version.auth_token) if version.auth_token else None
+        # Use SimpleNamespace as a lightweight proxy for AgentClient
+        from types import SimpleNamespace
+        agent_proxy = SimpleNamespace(**{c.key: getattr(version, c.key) for c in AgentVersion.__table__.columns})
+        agent_proxy.auth_token = decrypted_token
+
+        client = AgentClient(agent_proxy)
         reply, _ = await client.send_message("你好")
         version.connection_status = "success"
         await db.commit()

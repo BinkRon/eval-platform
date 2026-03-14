@@ -10,7 +10,6 @@ class Settings(BaseSettings):
     encryption_key: str = ""
     jwt_secret: str = ""
     jwt_expire_minutes: int = 1440
-    admin_password: str = "admin123"
 
     model_config = {"env_prefix": "EVAL_", "env_file": ".env"}
 

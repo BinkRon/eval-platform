@@ -1,13 +1,18 @@
 import { Navigate } from 'react-router-dom'
 import { Spin } from 'antd'
-import { getToken } from '../../utils/auth'
+import { getToken, removeToken } from '../../utils/auth'
 import { useCurrentUser } from '../../hooks/useAuth'
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = getToken()
-  const { isLoading } = useCurrentUser()
+  const { isLoading, isError } = useCurrentUser()
 
   if (!token) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (isError) {
+    removeToken()
     return <Navigate to="/login" replace />
   }
 

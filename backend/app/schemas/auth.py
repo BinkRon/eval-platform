@@ -32,6 +32,6 @@ class UserResponse(BaseModel):
 
     id: UUID = Field(description="用户 ID")
     username: str = Field(description="用户名")
-    email: str | None = Field(description="邮箱地址")
+    email: str | None = Field(default=None, description="邮箱地址")
     is_active: bool = Field(description="账号是否启用")
     role: str = Field(description="用户角色。admin: 管理员；user: 普通用户")

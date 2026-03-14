@@ -85,7 +85,7 @@ export default function MainLayout() {
                 justifyContent: 'space-between',
               }}
             >
-              <span style={{ fontSize: 13, color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 13, color: SEMANTIC_COLORS.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {user.username}
               </span>
               <Button

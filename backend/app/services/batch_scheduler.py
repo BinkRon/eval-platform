@@ -140,14 +140,16 @@ async def _load_context(db: AsyncSession, batch: BatchTest) -> BatchContext | No
         logger.error("Provider API key not configured for sparring or judge")
         return None
 
-    # Decrypt API keys and auth token
+    # Decrypt API keys and auth token into local variables (don't mutate ORM objects)
     sparring_api_key = decrypt(sparring_p.api_key)
     judge_api_key = decrypt(judge_p.api_key)
-    if agent_version.auth_token:
-        agent_version.auth_token = decrypt(agent_version.auth_token)
+
+    # Create a lightweight proxy with decrypted auth_token for AgentClient
+    agent_proxy = SimpleNamespace(**{c.key: getattr(agent_version, c.key) for c in AgentVersion.__table__.columns})
+    agent_proxy.auth_token = decrypt(agent_version.auth_token) if agent_version.auth_token else None
 
     return BatchContext(
-        agent_version=agent_version,
+        agent_version=agent_proxy,
         test_cases=test_cases,
         checklist_items=checklist_items,
         eval_dimensions=eval_dimensions,

@@ -32,11 +32,13 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize encryption if key is configured
-    if settings.encryption_key:
-        init_fernet(settings.encryption_key)
-    else:
-        logger.warning("EVAL_ENCRYPTION_KEY not set — sensitive data encryption disabled")
+    # Validate required security settings
+    if not settings.encryption_key:
+        raise RuntimeError("EVAL_ENCRYPTION_KEY must be set. Generate with: python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'")
+    init_fernet(settings.encryption_key)
+
+    if not settings.jwt_secret:
+        raise RuntimeError("EVAL_JWT_SECRET must be set to a non-empty secret string")
 
     stale_batches, stale_results = await cleanup_stale_running_records()
     if stale_batches or stale_results:

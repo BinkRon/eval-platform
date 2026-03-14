@@ -27,7 +27,7 @@ def upgrade() -> None:
     # Step 1: Create users table
     op.create_table(
         "users",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
+        sa.Column("id", UUID(as_uuid=True), primary_key=True),
         sa.Column("username", sa.String(50), unique=True, nullable=False),
         sa.Column("email", sa.String(200), unique=True, nullable=True),
         sa.Column("password_hash", sa.String(200), nullable=False),
@@ -40,7 +40,9 @@ def upgrade() -> None:
     # Step 2: Insert admin seed user
     import bcrypt as _bcrypt
 
-    admin_password = os.environ.get("EVAL_ADMIN_PASSWORD", "admin123")
+    admin_password = os.environ.get("EVAL_ADMIN_PASSWORD")
+    if not admin_password:
+        raise RuntimeError("EVAL_ADMIN_PASSWORD environment variable must be set for migration")
     admin_id = uuid.uuid4()
     password_hash = _bcrypt.hashpw(admin_password.encode(), _bcrypt.gensalt()).decode()
 

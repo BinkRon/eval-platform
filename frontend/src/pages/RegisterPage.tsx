@@ -25,7 +25,7 @@ export default function RegisterPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#f3f1ec',
+        background: SEMANTIC_COLORS.pageBg,
       }}
     >
       <Card style={{ width: 400 }}>

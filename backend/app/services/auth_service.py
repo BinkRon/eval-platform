@@ -6,6 +6,7 @@ from uuid import UUID
 import bcrypt as _bcrypt
 import jwt
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -31,7 +32,11 @@ async def register(db: AsyncSession, username: str, password: str, email: str | 
         email=email,
     )
     db.add(user)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise ConflictError("用户名或邮箱已被占用")
     await db.refresh(user)
     return _to_response(user)
 
