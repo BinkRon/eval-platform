@@ -19,10 +19,16 @@ dist/
 .vscode/
 .idea/
 
+# Claude Code
+.claude/settings.local.json
+
 # Environment
 .env
 .env.production
 *.log
+
+# Test fixtures
+mock_agent.py
 
 postgresql/data/
 
