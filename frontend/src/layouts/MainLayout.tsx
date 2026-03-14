@@ -23,54 +23,54 @@ export default function MainLayout() {
           top: 0,
           height: '100vh',
           borderRight: `1px solid ${SEMANTIC_COLORS.borderDefault}`,
-          overflow: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
+          overflowY: 'auto',
         }}
       >
-        {/* Logo */}
-        <div
-          style={{
-            padding: '20px 16px 12px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            cursor: 'pointer',
-          }}
-          onClick={() => navigate('/projects')}
-        >
+        <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+          {/* Logo */}
           <div
             style={{
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              background: SEMANTIC_COLORS.brandPrimary,
+              padding: '20px 16px 12px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
-              fontSize: 16,
-              fontWeight: 700,
-              flexShrink: 0,
+              gap: 10,
+              cursor: 'pointer',
             }}
+            onClick={() => navigate('/projects')}
           >
-            A
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                background: SEMANTIC_COLORS.brandPrimary,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#fff',
+                fontSize: 16,
+                fontWeight: 700,
+                flexShrink: 0,
+              }}
+            >
+              A
+            </div>
+            <span style={{ fontSize: 15, fontWeight: 600 }}>
+              Agent 评测平台
+            </span>
           </div>
-          <span style={{ fontSize: 15, fontWeight: 600, color: '#1c1c1a' }}>
-            Agent 评测平台
-          </span>
-        </div>
 
-        <Menu
-          mode="inline"
-          selectedKeys={[selectedKey]}
-          onClick={({ key }) => navigate(key)}
-          items={[
-            { key: '/projects', icon: <ProjectOutlined />, label: '项目列表' },
-            { key: '/settings/providers', icon: <SettingOutlined />, label: '模型管理' },
-          ]}
-          style={{ border: 'none', flex: 1 }}
-        />
+          <Menu
+            mode="inline"
+            selectedKeys={[selectedKey]}
+            onClick={({ key }) => navigate(key)}
+            items={[
+              { key: '/projects', icon: <ProjectOutlined />, label: '项目列表' },
+              { key: '/settings/providers', icon: <SettingOutlined />, label: '模型管理' },
+            ]}
+            style={{ border: 'none', flex: 1 }}
+          />
+        </div>
       </Sider>
 
       <Layout style={{ marginLeft: SIDER_WIDTH }}>
