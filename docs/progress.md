@@ -205,6 +205,16 @@
 
 ## 交接备注
 
+**Session #34 (2026-03-14)**：暖绿主题迁移（Humanloop 风格）。
+
+- 新建 `frontend/src/theme/themeConfig.ts` — 集中定义 Ant Design token + SEMANTIC_COLORS 语义色常量
+- 布局从顶部深色 Header 迁移至左侧固定 Sider（232px，暖奶油底色）
+- 全局色彩：森林绿主色 `#2d7a4e` + 暖奶油底色 `#f3f1ec`，无紫色元素
+- 17 个文件（1 新建 + 16 修改），涉及 theme/layouts/pages/components
+- 修复 Sider flex+overflow 冲突（分离到内层 div）
+- 修复 Tag 标签对比度（显式指定 colorSuccessBg/colorErrorBg map token）
+- conventions.md 新增前端样式规范（颜色集中管理）
+
 **Session #33 (2026-03-13)**：文档体系 review + 修复 10 项问题。
 
 - 追踪 uv.lock + 二期 PRD，design-preview 加入 .gitignore

@@ -99,6 +99,13 @@ export function useCreateProject() {
 }
 ```
 
+### 样式与主题
+
+- 所有颜色统一从 `src/theme/themeConfig.ts` 引用，**禁止硬编码色值**
+- Ant Design 组件颜色通过 `warmTheme` token 覆盖（`ConfigProvider theme={warmTheme}`）
+- 自定义 UI 元素（气泡、卡片、状态色等）使用 `SEMANTIC_COLORS` 常量
+- 新增颜色需求先在 `themeConfig.ts` 中定义常量，再在组件中引用
+
 ### 组件原则
 
 - 页面组件负责数据获取和布局，不包含复杂业务逻辑
