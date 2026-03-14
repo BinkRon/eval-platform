@@ -6,6 +6,7 @@ import { useProject } from '../hooks/useProjects'
 import BreadcrumbNav from '../components/shared/BreadcrumbNav'
 import ConversationBubbles from '../components/shared/ConversationBubbles'
 import type { TestResult } from '../types/batchTest'
+import { SEMANTIC_COLORS } from '../theme/themeConfig'
 
 const TERM_REASON_MAP: Record<string, string> = {
   agent_hangup: 'Agent 挂断',
@@ -62,7 +63,7 @@ function CaseSwitcher({ results, activeId, onSwitch }: { results: TestResult[]; 
             return (
               <Tag
                 key={r.id}
-                color={isActive ? 'blue' : undefined}
+                color={isActive ? SEMANTIC_COLORS.brandPrimary : undefined}
                 style={{
                   cursor: 'pointer',
                   fontWeight: isActive ? 'bold' : 'normal',
@@ -227,7 +228,7 @@ export default function DialogTheater() {
                   <div key={i} style={{ marginBottom: 8 }}>
                     <div>
                       <Tag color={isMust ? 'red' : 'orange'}>{isMust ? '🔴 必过' : '🟡 重要'}</Tag>
-                      <span style={{ fontWeight: failed && isMust ? 'bold' : 'normal', color: failed && isMust ? '#ff4d4f' : undefined }}>
+                      <span style={{ fontWeight: failed && isMust ? 'bold' : 'normal', color: failed && isMust ? SEMANTIC_COLORS.passRateDown : undefined }}>
                         {c.passed ? '✅' : '❌'} {c.content}
                       </span>
                     </div>

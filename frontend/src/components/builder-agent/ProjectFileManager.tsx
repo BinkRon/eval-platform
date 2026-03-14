@@ -1,6 +1,7 @@
 import { Button, List, Popconfirm, Popover, Upload, Empty, message } from 'antd'
 import { UploadOutlined, DeleteOutlined, FolderOutlined } from '@ant-design/icons'
 import { useProjectFiles, useUploadFile, useDeleteFile } from '../../hooks/useProjectFiles'
+import { SEMANTIC_COLORS } from '../../theme/themeConfig'
 import type { RcFile } from 'antd/es/upload'
 
 const ALLOWED_EXTENSIONS = ['.pdf', '.docx', '.txt', '.md', '.xlsx', '.csv']
@@ -92,7 +93,7 @@ export default function ProjectFileManager({ projectId }: ProjectFileManagerProp
                   </span>
                 }
                 description={
-                  <span style={{ fontSize: 12, color: '#999' }}>
+                  <span style={{ fontSize: 12, color: SEMANTIC_COLORS.textMuted }}>
                     {formatSize(file.file_size)} · {formatDate(file.created_at)}
                   </span>
                 }

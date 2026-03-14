@@ -6,6 +6,7 @@ import type { TestResult } from '../types/batchTest'
 import { useBatchTestDetail } from '../hooks/useBatchTests'
 import { useProject } from '../hooks/useProjects'
 import BreadcrumbNav from '../components/shared/BreadcrumbNav'
+import { SEMANTIC_COLORS } from '../theme/themeConfig'
 
 const BATCH_STATUS_MAP: Record<string, { color: string; label: string }> = {
   completed: { color: 'success', label: '已完成' },
@@ -177,7 +178,7 @@ export default function BatchTestDetail() {
               title="通过率"
               value={passRate}
               suffix="%"
-              valueStyle={{ color: passRate >= 80 ? '#3f8600' : '#cf1322' }}
+              valueStyle={{ color: passRate >= 80 ? SEMANTIC_COLORS.passRateUp : SEMANTIC_COLORS.passRateDown }}
             />
           </Card>
         </Col>
@@ -209,7 +210,7 @@ export default function BatchTestDetail() {
                     <Tag color={isFullPass ? 'green' : 'red'}>
                       {stat.passed}/{stat.total} {pct}%
                     </Tag>
-                    <span style={{ color: isMust && !isFullPass ? '#ff4d4f' : undefined, fontWeight: isMust && !isFullPass ? 'bold' : undefined }}>
+                    <span style={{ color: isMust && !isFullPass ? SEMANTIC_COLORS.passRateDown : undefined, fontWeight: isMust && !isFullPass ? 'bold' : undefined }}>
                       {content}
                     </span>
                   </div>

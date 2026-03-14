@@ -4,6 +4,7 @@ import { Button, Card, Col, Form, Input, Modal, Row, Typography, message } from 
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import type { Project } from '../api/projects'
 import { useProjects, useCreateProject, useUpdateProject, useDeleteProject } from '../hooks/useProjects'
+import { SEMANTIC_COLORS } from '../theme/themeConfig'
 
 export default function ProjectList() {
   const navigate = useNavigate()
@@ -84,13 +85,13 @@ export default function ProjectList() {
                 title={p.name}
                 description={p.description || '暂无描述'}
               />
-              <div style={{ marginTop: 12, fontSize: 13, color: '#666', lineHeight: 1.8 }}>
+              <div style={{ marginTop: 12, fontSize: 13, color: SEMANTIC_COLORS.textSecondary, lineHeight: 1.8 }}>
                 <div>Agent 版本数：{p.agent_version_count}</div>
                 {p.latest_batch ? (
                   <div>
                     最近批测：{new Date(p.latest_batch.created_at).toLocaleDateString()} · {p.latest_batch.agent_version_name} · 通过率 {Math.round(p.latest_batch.pass_rate * 100)}%
                     {p.latest_batch.pass_rate_change != null && p.latest_batch.pass_rate_change !== 0 && (
-                      <span style={{ color: p.latest_batch.pass_rate_change > 0 ? '#52c41a' : '#ff4d4f', marginLeft: 4 }}>
+                      <span style={{ color: p.latest_batch.pass_rate_change > 0 ? SEMANTIC_COLORS.passRateUp : SEMANTIC_COLORS.passRateDown, marginLeft: 4 }}>
                         {p.latest_batch.pass_rate_change > 0 ? '↑' : '↓'}{Math.abs(p.latest_batch.pass_rate_change)}%
                       </span>
                     )}

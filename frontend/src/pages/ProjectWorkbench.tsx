@@ -17,6 +17,7 @@ import { useBatchTests, useDeleteBatchTest } from '../hooks/useBatchTests'
 import CreateBatchModal from '../components/batch-test/CreateBatchModal'
 import BreadcrumbNav from '../components/shared/BreadcrumbNav'
 import type { BatchTest } from '../types/batchTest'
+import { SEMANTIC_COLORS } from '../theme/themeConfig'
 
 const STATUS_MAP: Record<string, { color: string; label: string }> = {
   pending: { color: 'default', label: '等待中' },
@@ -68,9 +69,9 @@ function ReadinessCard({ title, icon, ready, message, onClick }: ReadinessCardPr
         </Space>
         <Space size={4}>
           {ready ? (
-            <CheckCircleFilled style={{ color: '#52c41a' }} />
+            <CheckCircleFilled style={{ color: SEMANTIC_COLORS.passRateUp }} />
           ) : (
-            <ExclamationCircleFilled style={{ color: '#faad14' }} />
+            <ExclamationCircleFilled style={{ color: SEMANTIC_COLORS.colorWarning }} />
           )}
           <Typography.Text type="secondary" style={{ fontSize: 13 }}>{message}</Typography.Text>
         </Space>

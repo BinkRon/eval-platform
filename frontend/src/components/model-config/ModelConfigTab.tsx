@@ -4,6 +4,7 @@ import { Alert, Button, Card, Form, Input, InputNumber, Select, Space, Typograph
 import { EditOutlined } from '@ant-design/icons'
 import { useModelConfig, useUpdateModelConfig, useModelOptions } from '../../hooks/useModelConfig'
 import type { ModelConfig, ModelConfigUpdate } from '../../types/modelConfig'
+import { SEMANTIC_COLORS } from '../../theme/themeConfig'
 
 const { Text, Paragraph } = Typography
 
@@ -97,7 +98,7 @@ function ModelCardView({
             <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
               System Prompt{isDefault && <Text type="secondary" style={{ fontSize: 12 }}>（系统默认）</Text>}
             </Text>
-            <div style={{ background: '#f5f5f5', borderRadius: 6, padding: '8px 12px', opacity: isDefault ? 0.7 : 1 }}>
+            <div style={{ background: SEMANTIC_COLORS.codeBg, borderRadius: 6, padding: '8px 12px', opacity: isDefault ? 0.7 : 1 }}>
               <Paragraph ellipsis={{ rows: 4, expandable: true, symbol: '展开' }} style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
                 {displayPrompt}
               </Paragraph>

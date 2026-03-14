@@ -31,7 +31,7 @@ export default function FloatingButton({ projectId }: FloatingButtonProps) {
             zIndex: 999,
             width: 48,
             height: 48,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            boxShadow: '0 4px 12px rgba(45,122,78,0.3)',
           }}
         />
       )}

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Avatar } from 'antd'
 import { UserOutlined, RobotOutlined } from '@ant-design/icons'
+import { SEMANTIC_COLORS } from '../../theme/themeConfig'
 
 export interface ConversationMessage {
   role: string
@@ -50,7 +51,7 @@ export default function ConversationBubbles({ messages, height, maxHeight = 400 
                 textAlign: 'center',
                 margin: i === 0 ? '0 0 8px' : '16px 0 8px',
                 fontSize: 12,
-                color: '#999',
+                color: SEMANTIC_COLORS.textMuted,
               }}>
                 R{roundNumbers[i]}
               </div>
@@ -67,13 +68,13 @@ export default function ConversationBubbles({ messages, height, maxHeight = 400 
               <Avatar
                 size="small"
                 icon={isUser ? <UserOutlined /> : <RobotOutlined />}
-                style={{ backgroundColor: isUser ? '#1677ff' : '#52c41a', flexShrink: 0 }}
+                style={{ backgroundColor: isUser ? SEMANTIC_COLORS.userAvatarBg : SEMANTIC_COLORS.botAvatarBg, flexShrink: 0 }}
               />
               <div style={{
                 maxWidth: '70%',
                 padding: '8px 12px',
                 borderRadius: 8,
-                background: isUser ? '#e6f4ff' : '#f6ffed',
+                background: isUser ? SEMANTIC_COLORS.userBubbleBg : SEMANTIC_COLORS.botBubbleBg,
                 textAlign: 'left',
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word',

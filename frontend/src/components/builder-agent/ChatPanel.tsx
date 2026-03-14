@@ -11,6 +11,7 @@ import OverwriteConfirmCard from './OverwriteConfirmCard'
 import ProjectFileManager from './ProjectFileManager'
 import type { BuilderMessage } from '../../types/builderConversation'
 import type { GenerateConfirmCardData } from '../../types/builderAgent'
+import { SEMANTIC_COLORS } from '../../theme/themeConfig'
 
 interface ChatPanelProps {
   projectId: string
@@ -169,7 +170,7 @@ export default function ChatPanel({ projectId, open, onClose }: ChatPanelProps) 
       <div
         style={{
           padding: '12px 16px',
-          borderBottom: '1px solid #f0f0f0',
+          borderBottom: `1px solid ${SEMANTIC_COLORS.borderDefault}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -220,7 +221,7 @@ export default function ChatPanel({ projectId, open, onClose }: ChatPanelProps) 
             <Spin />
           </div>
         ) : messages.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px 20px', color: '#999' }}>
+          <div style={{ textAlign: 'center', padding: '40px 20px', color: SEMANTIC_COLORS.textMuted }}>
             <div style={{ fontSize: 32, marginBottom: 12 }}>🤖</div>
             <div>你好！我是构建助手。</div>
             <div style={{ fontSize: 13, marginTop: 4 }}>
@@ -235,7 +236,7 @@ export default function ChatPanel({ projectId, open, onClose }: ChatPanelProps) 
         {sendMutation.isPending && (
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
             <Spin size="small" />
-            <span style={{ marginLeft: 8, fontSize: 12, color: '#999' }}>思考中...</span>
+            <span style={{ marginLeft: 8, fontSize: 12, color: SEMANTIC_COLORS.textMuted }}>思考中...</span>
           </div>
         )}
         {/* Confirm card */}
@@ -284,7 +285,7 @@ export default function ChatPanel({ projectId, open, onClose }: ChatPanelProps) 
         {applyMutation.isPending && (
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
             <Spin size="small" />
-            <span style={{ marginLeft: 8, fontSize: 12, color: '#999' }}>写入中...</span>
+            <span style={{ marginLeft: 8, fontSize: 12, color: SEMANTIC_COLORS.textMuted }}>写入中...</span>
           </div>
         )}
         <div ref={messagesEndRef} />
@@ -294,7 +295,7 @@ export default function ChatPanel({ projectId, open, onClose }: ChatPanelProps) 
       <div
         style={{
           padding: '12px 16px',
-          borderTop: '1px solid #f0f0f0',
+          borderTop: `1px solid ${SEMANTIC_COLORS.borderDefault}`,
           flexShrink: 0,
         }}
       >

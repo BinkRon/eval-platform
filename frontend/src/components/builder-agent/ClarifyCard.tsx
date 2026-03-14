@@ -1,4 +1,5 @@
 import { Button, Card, Space } from 'antd'
+import { SEMANTIC_COLORS } from '../../theme/themeConfig'
 
 export interface ClarifyOption {
   key: string
@@ -22,11 +23,11 @@ export default function ClarifyCard({
   return (
     <Card
       size="small"
-      style={{ marginBottom: 12, background: '#e6f7ff', border: '1px solid #91caff' }}
+      style={{ marginBottom: 12, background: SEMANTIC_COLORS.clarifyCardBg, border: `1px solid ${SEMANTIC_COLORS.clarifyCardBorder}` }}
     >
       <div style={{ fontWeight: 600, marginBottom: 8 }}>📋 需要确认</div>
 
-      <div style={{ marginBottom: 12, fontSize: 13, color: '#333' }}>{question}</div>
+      <div style={{ marginBottom: 12, fontSize: 13 }}>{question}</div>
 
       <div style={{ marginBottom: 8 }}>
         <Space wrap>
@@ -34,7 +35,7 @@ export default function ClarifyCard({
             <Button key={opt.key} size="small" onClick={() => onSelect(opt.key)}>
               {opt.label}
               {opt.description && (
-                <span style={{ color: '#888', marginLeft: 4, fontSize: 12 }}>
+                <span style={{ color: SEMANTIC_COLORS.textMuted, marginLeft: 4, fontSize: 12 }}>
                   — {opt.description}
                 </span>
               )}
@@ -44,7 +45,7 @@ export default function ClarifyCard({
       </div>
 
       <div style={{ textAlign: 'center' }}>
-        <Button type="text" size="small" style={{ color: '#999' }} onClick={onSkip}>
+        <Button type="text" size="small" style={{ color: SEMANTIC_COLORS.textMuted }} onClick={onSkip}>
           跳过，按你的理解生成
         </Button>
       </div>

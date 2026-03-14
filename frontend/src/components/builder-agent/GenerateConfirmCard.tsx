@@ -1,4 +1,5 @@
 import { Button, Card, Collapse, Space, Alert } from 'antd'
+import { SEMANTIC_COLORS } from '../../theme/themeConfig'
 
 export interface GeneratedItem {
   name: string
@@ -28,7 +29,7 @@ export default function GenerateConfirmCard({
   return (
     <Card
       size="small"
-      style={{ marginBottom: 12, background: '#fffbe6', border: '1px solid #ffe58f' }}
+      style={{ marginBottom: 12, background: SEMANTIC_COLORS.generateCardBg, border: `1px solid ${SEMANTIC_COLORS.generateCardBorder}` }}
     >
       <div style={{ fontWeight: 600, marginBottom: 8 }}>
         ✨ 生成完成 — {title}
@@ -37,10 +38,10 @@ export default function GenerateConfirmCard({
       <div style={{ marginBottom: 8 }}>
         {items.map((item, i) => (
           <div key={i} style={{ marginBottom: 4, fontSize: 13 }}>
-            <span style={{ color: '#666' }}>{i + 1}. </span>
+            <span style={{ color: SEMANTIC_COLORS.textSecondary }}>{i + 1}. </span>
             <span style={{ fontWeight: 500 }}>{item.name}</span>
             {item.summary && (
-              <span style={{ color: '#888', marginLeft: 4 }}>{item.summary}</span>
+              <span style={{ color: SEMANTIC_COLORS.textMuted, marginLeft: 4 }}>{item.summary}</span>
             )}
           </div>
         ))}
@@ -62,7 +63,7 @@ export default function GenerateConfirmCard({
               key: 'detail',
               label: '展开查看完整配置',
               children: (
-                <div style={{ fontSize: 12, whiteSpace: 'pre-wrap', color: '#555' }}>
+                <div style={{ fontSize: 12, whiteSpace: 'pre-wrap', color: SEMANTIC_COLORS.textSecondary }}>
                   {items
                     .filter((item) => item.fullContent)
                     .map((item, i) => (

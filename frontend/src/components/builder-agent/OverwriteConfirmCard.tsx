@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Button, Card, Radio, Space } from 'antd'
+import { SEMANTIC_COLORS } from '../../theme/themeConfig'
 
 interface CountItem {
   label: string
@@ -28,14 +29,14 @@ export default function OverwriteConfirmCard({
   return (
     <Card
       size="small"
-      style={{ marginBottom: 12, background: '#fff7e6', border: '1px solid #ffd591' }}
+      style={{ marginBottom: 12, background: SEMANTIC_COLORS.overwriteCardBg, border: `1px solid ${SEMANTIC_COLORS.overwriteCardBorder}` }}
     >
       <div style={{ fontWeight: 600, marginBottom: 8 }}>
         ⚠️ 覆盖确认 — {title}
       </div>
 
       <div style={{ marginBottom: 8, fontSize: 13 }}>
-        <div style={{ color: '#666', marginBottom: 4 }}>目标区块已有配置：</div>
+        <div style={{ color: SEMANTIC_COLORS.textSecondary, marginBottom: 4 }}>目标区块已有配置：</div>
         {existingCounts.map((item, i) => (
           <div key={i} style={{ paddingLeft: 12 }}>
             · {item.label}: {item.count} 条
@@ -44,7 +45,7 @@ export default function OverwriteConfirmCard({
       </div>
 
       <div style={{ marginBottom: 8, fontSize: 13 }}>
-        <div style={{ color: '#666', marginBottom: 4 }}>本次生成：</div>
+        <div style={{ color: SEMANTIC_COLORS.textSecondary, marginBottom: 4 }}>本次生成：</div>
         {newCounts.map((item, i) => (
           <div key={i} style={{ paddingLeft: 12 }}>
             · {item.label}: {item.count} 条

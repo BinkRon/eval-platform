@@ -3,6 +3,7 @@ import { UserOutlined, RobotOutlined } from '@ant-design/icons'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeSanitize from 'rehype-sanitize'
+import { SEMANTIC_COLORS } from '../../theme/themeConfig'
 
 interface MessageBubbleProps {
   role: 'user' | 'assistant'
@@ -25,14 +26,14 @@ export default function MessageBubble({ role, content }: MessageBubbleProps) {
       <Avatar
         size="small"
         icon={isUser ? <UserOutlined /> : <RobotOutlined />}
-        style={{ backgroundColor: isUser ? '#1677ff' : '#52c41a', flexShrink: 0 }}
+        style={{ backgroundColor: isUser ? SEMANTIC_COLORS.userAvatarBg : SEMANTIC_COLORS.botAvatarBg, flexShrink: 0 }}
       />
       <div
         style={{
           maxWidth: '75%',
           padding: '8px 12px',
           borderRadius: 8,
-          background: isUser ? '#e6f4ff' : '#f6ffed',
+          background: isUser ? SEMANTIC_COLORS.userBubbleBg : SEMANTIC_COLORS.botBubbleBg,
           textAlign: 'left',
           wordBreak: 'break-word',
         }}
