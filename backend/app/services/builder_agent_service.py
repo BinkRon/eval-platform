@@ -26,6 +26,7 @@ from app.schemas.judge_config import ChecklistItemData, EvalDimensionData, Judge
 from app.services import judge_config_service
 from app.services.builder_conversation_service import append_message, get_or_create
 from app.services.file_parser import parse_file
+from app.utils.crypto import decrypt
 
 logger = logging.getLogger(__name__)
 
@@ -191,7 +192,7 @@ async def _get_llm_adapter(db: AsyncSession, provider_name: str, model_name: str
         raise ValidationError(f"LLM 供应商 '{provider_name}' 未配置 API Key")
     return create_llm_adapter(
         provider_name=provider.provider_name,
-        api_key=provider.api_key,
+        api_key=decrypt(provider.api_key),
         model=model_name,
         base_url=provider.base_url,
     )

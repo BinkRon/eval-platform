@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions import ConflictError, NotFoundError
 from app.models.provider_config import ProviderConfig
+from app.utils.crypto import decrypt, encrypt
 from app.schemas.provider import ModelOption, ProviderCreate, ProviderResponse, ProviderUpdate
 
 
@@ -53,7 +54,7 @@ async def create_provider(db: AsyncSession, data: ProviderCreate) -> ProviderRes
 
     provider = ProviderConfig(
         provider_name=data.provider_name,
-        api_key=data.api_key,
+        api_key=encrypt(data.api_key) if data.api_key else data.api_key,
         base_url=data.base_url,
         available_models=_clean_available_models(data.available_models),
         is_active=data.is_active,
@@ -71,6 +72,8 @@ async def update_provider(db: AsyncSession, provider_id: UUID, data: ProviderUpd
     for key, value in data.model_dump(exclude_unset=True).items():
         if key == "available_models":
             value = _clean_available_models(value)
+        elif key == "api_key" and value:
+            value = encrypt(value)
         setattr(provider, key, value)
     await db.commit()
     await db.refresh(provider)

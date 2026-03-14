@@ -26,3 +26,8 @@ class ValidationError(DomainError):
 class ConflictError(DomainError):
     """Raised when an operation conflicts with current state."""
     pass
+
+
+class AuthenticationError(DomainError):
+    """Raised when authentication fails (missing/invalid/expired token)."""
+    pass

@@ -12,7 +12,8 @@ from sqlalchemy import literal, select
 
 from app.config import settings
 from app.database import async_session
-from app.exceptions import NotFoundError, ValidationError, ConflictError
+from app.exceptions import AuthenticationError, NotFoundError, ValidationError, ConflictError
+from app.utils.crypto import init_fernet
 from app.services.batch_scheduler import cleanup_stale_running_records
 from app.api.agent_versions import router as agent_versions_router
 from app.api.batch_tests import router as batch_tests_router
@@ -30,6 +31,12 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Initialize encryption if key is configured
+    if settings.encryption_key:
+        init_fernet(settings.encryption_key)
+    else:
+        logger.warning("EVAL_ENCRYPTION_KEY not set — sensitive data encryption disabled")
+
     stale_batches, stale_results = await cleanup_stale_running_records()
     if stale_batches or stale_results:
         logger.warning(
@@ -82,6 +89,11 @@ async def validation_error_handler(request: Request, exc: ValidationError):
 @app.exception_handler(ConflictError)
 async def conflict_error_handler(request: Request, exc: ConflictError):
     return JSONResponse(status_code=409, content={"detail": exc.message})
+
+
+@app.exception_handler(AuthenticationError)
+async def authentication_error_handler(request: Request, exc: AuthenticationError):
+    return JSONResponse(status_code=401, content={"detail": exc.message})
 
 
 @app.get("/api/health")

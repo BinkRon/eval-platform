@@ -13,6 +13,7 @@ from app.schemas.agent_version import (
     AgentVersionUpdate,
 )
 from app.services.agent_client import AgentClient
+from app.utils.crypto import decrypt, encrypt
 from app.utils.error_sanitizer import sanitize_error
 
 
@@ -39,7 +40,10 @@ async def list_versions(db: AsyncSession, project_id: UUID) -> list[AgentVersion
 
 async def create_version(db: AsyncSession, project_id: UUID, data: AgentVersionCreate) -> AgentVersionResponse:
     await _get_project(db, project_id)
-    version = AgentVersion(project_id=project_id, **data.model_dump())
+    dump = data.model_dump()
+    if dump.get("auth_token"):
+        dump["auth_token"] = encrypt(dump["auth_token"])
+    version = AgentVersion(project_id=project_id, **dump)
     db.add(version)
     await db.commit()
     await db.refresh(version)
@@ -57,6 +61,8 @@ async def update_version(
     # 空 token 表示不修改，跳过更新
     if "auth_token" in update_data and not update_data["auth_token"]:
         del update_data["auth_token"]
+    elif "auth_token" in update_data and update_data["auth_token"]:
+        update_data["auth_token"] = encrypt(update_data["auth_token"])
     for key, value in update_data.items():
         setattr(version, key, value)
 
@@ -83,6 +89,9 @@ async def test_connection(db: AsyncSession, project_id: UUID, version_id: UUID) 
         raise ValidationError("Agent endpoint not configured")
 
     try:
+        # Decrypt auth_token for the connection test
+        if version.auth_token:
+            version.auth_token = decrypt(version.auth_token)
         client = AgentClient(version)
         reply, _ = await client.send_message("你好")
         version.connection_status = "success"

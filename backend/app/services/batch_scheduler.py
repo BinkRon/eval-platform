@@ -17,6 +17,7 @@ from app.models.provider_config import ProviderConfig
 from app.models.test_case import TestCase
 from app.services.agent_client import AgentClient
 from app.services.judge_runner import JudgeRunner
+from app.utils.crypto import decrypt
 from app.services.prompt_defaults import DEFAULT_JUDGE_SYSTEM_PROMPT, DEFAULT_SPARRING_SYSTEM_PROMPT
 from app.services.sparring_runner import SparringRunner
 from app.utils.error_sanitizer import sanitize_error
@@ -139,18 +140,24 @@ async def _load_context(db: AsyncSession, batch: BatchTest) -> BatchContext | No
         logger.error("Provider API key not configured for sparring or judge")
         return None
 
+    # Decrypt API keys and auth token
+    sparring_api_key = decrypt(sparring_p.api_key)
+    judge_api_key = decrypt(judge_p.api_key)
+    if agent_version.auth_token:
+        agent_version.auth_token = decrypt(agent_version.auth_token)
+
     return BatchContext(
         agent_version=agent_version,
         test_cases=test_cases,
         checklist_items=checklist_items,
         eval_dimensions=eval_dimensions,
         sparring_provider_name=model_config.sparring_provider,
-        sparring_api_key=sparring_p.api_key,
+        sparring_api_key=sparring_api_key,
         sparring_model=model_config.sparring_model,
         sparring_base_url=sparring_p.base_url,
         sparring_system_prompt=model_config.sparring_system_prompt or DEFAULT_SPARRING_SYSTEM_PROMPT,
         judge_provider_name=model_config.judge_provider,
-        judge_api_key=judge_p.api_key,
+        judge_api_key=judge_api_key,
         judge_model=model_config.judge_model,
         judge_base_url=judge_p.base_url,
         judge_system_prompt=model_config.judge_system_prompt or DEFAULT_JUDGE_SYSTEM_PROMPT,
