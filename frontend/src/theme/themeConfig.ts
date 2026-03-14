@@ -3,7 +3,7 @@ import type { ThemeConfig } from 'antd'
 export const warmTheme: ThemeConfig = {
   token: {
     colorPrimary: '#2d7a4e',
-    colorSuccess: '#22633f',
+    colorSuccess: '#2d7a4e',
     colorWarning: '#8b7a2e',
     colorError: '#c2452d',
     colorInfo: '#2d6b96',
@@ -11,6 +11,10 @@ export const warmTheme: ThemeConfig = {
     colorBgContainer: '#ffffff',
     colorBgLayout: '#f3f1ec',
     colorTextBase: '#1c1c1a',
+    colorSuccessBg: '#e8f5ee',
+    colorSuccessBorder: '#b7dfca',
+    colorErrorBg: '#fce8e4',
+    colorErrorBorder: '#f0bdb3',
     colorBorder: '#e5e3dc',
     colorBorderSecondary: '#eeedea',
     borderRadius: 10,
