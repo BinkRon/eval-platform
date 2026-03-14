@@ -1,4 +1,5 @@
 from app.models.base import Base
+from app.models.user import User
 from app.models.project import Project
 from app.models.agent_version import AgentVersion
 from app.models.test_case import TestCase
@@ -11,6 +12,7 @@ from app.models.builder_conversation import BuilderConversation
 
 __all__ = [
     "Base",
+    "User",
     "Project",
     "AgentVersion",
     "TestCase",

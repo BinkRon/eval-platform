@@ -4,7 +4,9 @@ from fastapi import APIRouter, Depends, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.dependencies import get_current_user
 from app.exceptions import ValidationError
+from app.models.user import User
 from app.schemas.project_file import ProjectFileResponse
 from app.services import project_file_service
 from app.services.project_file_service import MAX_FILE_SIZE
@@ -15,7 +17,7 @@ router = APIRouter(
 
 
 @router.get("", response_model=list[ProjectFileResponse])
-async def list_files(project_id: UUID, db: AsyncSession = Depends(get_db)):
+async def list_files(project_id: UUID, db: AsyncSession = Depends(get_db), _: User = Depends(get_current_user)):
     return await project_file_service.list_files(db, project_id)
 
 
@@ -24,6 +26,7 @@ async def upload_file(
     project_id: UUID,
     file: UploadFile,
     db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
 ):
     if not file.filename:
         raise ValidationError("文件名不能为空")
@@ -36,6 +39,6 @@ async def upload_file(
 
 @router.delete("/{file_id}", status_code=204)
 async def delete_file(
-    project_id: UUID, file_id: UUID, db: AsyncSession = Depends(get_db)
+    project_id: UUID, file_id: UUID, db: AsyncSession = Depends(get_db), _: User = Depends(get_current_user)
 ):
     await project_file_service.delete_file(db, project_id, file_id)

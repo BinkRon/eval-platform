@@ -5,8 +5,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.dependencies import get_current_user
 from app.models.batch_test import BatchTest
 from app.models.project import Project
+from app.models.user import User
 from app.schemas.batch_test import BatchTestCreate, BatchTestDetail, BatchTestProgress, BatchTestResponse
 from app.services.batch_scheduler import run_batch_test
 from app.services import batch_test_service
@@ -17,7 +19,7 @@ _background_tasks: set[asyncio.Task] = set()
 
 
 @router.get("", response_model=list[BatchTestResponse])
-async def list_batch_tests(project_id: UUID, db: AsyncSession = Depends(get_db)):
+async def list_batch_tests(project_id: UUID, db: AsyncSession = Depends(get_db), _: User = Depends(get_current_user)):
     project = await db.get(Project, project_id)
     if not project:
         raise HTTPException(404, detail="Project not found")
@@ -25,7 +27,7 @@ async def list_batch_tests(project_id: UUID, db: AsyncSession = Depends(get_db))
 
 
 @router.post("", response_model=BatchTestResponse, status_code=201)
-async def create_batch_test(project_id: UUID, data: BatchTestCreate, db: AsyncSession = Depends(get_db)):
+async def create_batch_test(project_id: UUID, data: BatchTestCreate, db: AsyncSession = Depends(get_db), _: User = Depends(get_current_user)):
     project = await db.get(Project, project_id)
     if not project:
         raise HTTPException(404, detail="Project not found")
@@ -43,7 +45,7 @@ async def create_batch_test(project_id: UUID, data: BatchTestCreate, db: AsyncSe
 
 
 @router.delete("/{batch_id}", status_code=204)
-async def delete_batch_test(project_id: UUID, batch_id: UUID, db: AsyncSession = Depends(get_db)):
+async def delete_batch_test(project_id: UUID, batch_id: UUID, db: AsyncSession = Depends(get_db), _: User = Depends(get_current_user)):
     project = await db.get(Project, project_id)
     if not project:
         raise HTTPException(404, detail="Project not found")
@@ -51,7 +53,7 @@ async def delete_batch_test(project_id: UUID, batch_id: UUID, db: AsyncSession =
 
 
 @router.get("/{batch_id}", response_model=BatchTestDetail)
-async def get_batch_test(project_id: UUID, batch_id: UUID, db: AsyncSession = Depends(get_db)):
+async def get_batch_test(project_id: UUID, batch_id: UUID, db: AsyncSession = Depends(get_db), _: User = Depends(get_current_user)):
     detail = await batch_test_service.get_batch_test_detail(db, project_id, batch_id)
     if not detail:
         raise HTTPException(404, detail="Batch test not found")
@@ -59,7 +61,7 @@ async def get_batch_test(project_id: UUID, batch_id: UUID, db: AsyncSession = De
 
 
 @router.get("/{batch_id}/progress", response_model=BatchTestProgress)
-async def get_batch_progress(project_id: UUID, batch_id: UUID, db: AsyncSession = Depends(get_db)):
+async def get_batch_progress(project_id: UUID, batch_id: UUID, db: AsyncSession = Depends(get_db), _: User = Depends(get_current_user)):
     batch = await db.get(BatchTest, batch_id)
     if not batch or batch.project_id != project_id:
         raise HTTPException(404, detail="Batch test not found")

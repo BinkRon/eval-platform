@@ -15,6 +15,7 @@ from app.database import async_session
 from app.exceptions import AuthenticationError, NotFoundError, ValidationError, ConflictError
 from app.utils.crypto import init_fernet
 from app.services.batch_scheduler import cleanup_stale_running_records
+from app.api.auth import router as auth_router
 from app.api.agent_versions import router as agent_versions_router
 from app.api.batch_tests import router as batch_tests_router
 from app.api.builder_agent import router as builder_agent_router
@@ -56,6 +57,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router)
 app.include_router(providers_router)
 app.include_router(projects_router)
 app.include_router(agent_versions_router)

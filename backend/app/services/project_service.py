@@ -21,8 +21,18 @@ from app.schemas.project import (
 )
 
 
-async def list_projects(db: AsyncSession) -> list[ProjectResponse]:
-    result = await db.execute(select(Project).order_by(Project.created_at.desc()))
+async def _get_owned_project(db: AsyncSession, project_id: UUID, owner_id: UUID) -> Project:
+    """Get a project and verify ownership. Raises NotFoundError if not found or not owned."""
+    project = await db.get(Project, project_id)
+    if not project or project.owner_id != owner_id:
+        raise NotFoundError("Project not found")
+    return project
+
+
+async def list_projects(db: AsyncSession, owner_id: UUID) -> list[ProjectResponse]:
+    result = await db.execute(
+        select(Project).where(Project.owner_id == owner_id).order_by(Project.created_at.desc())
+    )
     projects = list(result.scalars().all())
 
     if not projects:
@@ -116,8 +126,8 @@ async def list_projects(db: AsyncSession) -> list[ProjectResponse]:
     return responses
 
 
-async def create_project(db: AsyncSession, data: ProjectCreate) -> ProjectResponse:
-    project = Project(name=data.name, description=data.description)
+async def create_project(db: AsyncSession, data: ProjectCreate, owner_id: UUID) -> ProjectResponse:
+    project = Project(name=data.name, description=data.description, owner_id=owner_id)
     db.add(project)
     await db.commit()
     await db.refresh(project)
@@ -130,10 +140,8 @@ async def create_project(db: AsyncSession, data: ProjectCreate) -> ProjectRespon
     )
 
 
-async def get_project(db: AsyncSession, project_id: UUID) -> ProjectResponse:
-    project = await db.get(Project, project_id)
-    if not project:
-        raise NotFoundError("Project not found")
+async def get_project(db: AsyncSession, project_id: UUID, owner_id: UUID) -> ProjectResponse:
+    project = await _get_owned_project(db, project_id, owner_id)
     return ProjectResponse(
         id=project.id,
         name=project.name,
@@ -143,10 +151,8 @@ async def get_project(db: AsyncSession, project_id: UUID) -> ProjectResponse:
     )
 
 
-async def update_project(db: AsyncSession, project_id: UUID, data: ProjectUpdate) -> ProjectResponse:
-    project = await db.get(Project, project_id)
-    if not project:
-        raise NotFoundError("Project not found")
+async def update_project(db: AsyncSession, project_id: UUID, data: ProjectUpdate, owner_id: UUID) -> ProjectResponse:
+    project = await _get_owned_project(db, project_id, owner_id)
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -163,19 +169,14 @@ async def update_project(db: AsyncSession, project_id: UUID, data: ProjectUpdate
     )
 
 
-async def delete_project(db: AsyncSession, project_id: UUID) -> None:
-    project = await db.get(Project, project_id)
-    if not project:
-        raise NotFoundError("Project not found")
-
+async def delete_project(db: AsyncSession, project_id: UUID, owner_id: UUID) -> None:
+    project = await _get_owned_project(db, project_id, owner_id)
     await db.delete(project)
     await db.commit()
 
 
-async def get_config_readiness(db: AsyncSession, project_id: UUID) -> ConfigReadiness:
-    project = await db.get(Project, project_id)
-    if not project:
-        raise NotFoundError("Project not found")
+async def get_config_readiness(db: AsyncSession, project_id: UUID, owner_id: UUID) -> ConfigReadiness:
+    await _get_owned_project(db, project_id, owner_id)
 
     # 1. Agent Version: at least 1 with connection_status == "success"
     av_result = await db.execute(

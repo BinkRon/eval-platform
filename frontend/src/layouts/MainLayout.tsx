@@ -1,7 +1,8 @@
-import { Layout, Menu } from 'antd'
-import { ProjectOutlined, SettingOutlined } from '@ant-design/icons'
+import { Button, Layout, Menu } from 'antd'
+import { LogoutOutlined, ProjectOutlined, SettingOutlined } from '@ant-design/icons'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { SEMANTIC_COLORS } from '../theme/themeConfig'
+import { useCurrentUser, useLogout } from '../hooks/useAuth'
 
 const { Sider, Content } = Layout
 
@@ -10,6 +11,8 @@ const SIDER_WIDTH = 232
 export default function MainLayout() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { data: user } = useCurrentUser()
+  const logout = useLogout()
 
   const selectedKey = location.pathname.startsWith('/settings') ? '/settings/providers' : '/projects'
 
@@ -70,6 +73,30 @@ export default function MainLayout() {
             ]}
             style={{ border: 'none', flex: 1 }}
           />
+
+          {/* User info + logout */}
+          {user && (
+            <div
+              style={{
+                padding: '12px 16px',
+                borderTop: `1px solid ${SEMANTIC_COLORS.borderDefault}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span style={{ fontSize: 13, color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {user.username}
+              </span>
+              <Button
+                type="text"
+                size="small"
+                icon={<LogoutOutlined />}
+                onClick={logout}
+                title="退出登录"
+              />
+            </div>
+          )}
         </div>
       </Sider>
 

@@ -3,9 +3,12 @@ import { Navigate, createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { Spin } from 'antd'
 import MainLayout from './layouts/MainLayout'
 import ProjectLayout from './layouts/ProjectLayout'
+import AuthGuard from './components/shared/AuthGuard'
 import ProjectList from './pages/ProjectList'
 import ProjectWorkbench from './pages/ProjectWorkbench'
 import ProviderSettings from './pages/ProviderSettings'
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
 const BatchTestDetail = lazy(() => import('./pages/BatchTestDetail'))
 
 const ProjectConfig = lazy(() => import('./pages/ProjectConfig'))
@@ -14,8 +17,14 @@ const DialogTheater = lazy(() => import('./pages/DialogTheater'))
 const PageLoading = () => <Spin style={{ display: 'block', margin: '100px auto' }} />
 
 const router = createBrowserRouter([
+  { path: '/login', element: <LoginPage /> },
+  { path: '/register', element: <RegisterPage /> },
   {
-    element: <MainLayout />,
+    element: (
+      <AuthGuard>
+        <MainLayout />
+      </AuthGuard>
+    ),
     children: [
       { path: '/', element: <Navigate to="/projects" replace /> },
       { path: '/projects', element: <ProjectList /> },
