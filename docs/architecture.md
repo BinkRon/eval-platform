@@ -1,7 +1,7 @@
 # 评测平台 — 架构设计
 
 > 本文档描述项目的技术架构。随开发过程持续更新。
-> 最后更新：2026-03-12
+> 最后更新：2026-03-14
 
 ---
 
@@ -75,7 +75,11 @@ eval-platform/
 ### 实体关系
 
 ```
+User（用户）
+  └─ has many → Project（owner_id）
+
 Project（项目）
+  ├─ belongs to → User（owner_id FK）
   ├─ has many → AgentVersion（Agent 版本）
   ├─ has many → TestCase（测试用例）
   ├─ has one  → JudgeConfig（裁判配置）
@@ -93,8 +97,12 @@ ProviderConfig（LLM 厂商配置）— 全局，不属于任何项目
 ### 表结构
 
 ```
+users
+  id UUID PK, username VARCHAR(50)(UNIQUE), email VARCHAR(200),
+  password_hash VARCHAR(200), is_active BOOLEAN, role VARCHAR(20),
+  created_at TIMESTAMP, updated_at TIMESTAMP
 projects
-  id UUID PK, name VARCHAR(100), description TEXT,
+  id UUID PK, owner_id FK→users, name VARCHAR(100), description TEXT,
   created_at TIMESTAMP, updated_at TIMESTAMP
 
 agent_versions
@@ -175,11 +183,17 @@ builder_conversations  -- 一个项目一条
 ## API 设计
 
 ```
+# 认证
+POST   /api/auth/register             # 用户注册
+POST   /api/auth/login                # 登录（返回 JWT）
+GET    /api/auth/me                   # 当前用户信息
+
 # 全局模型管理
 GET    /api/providers
 POST   /api/providers
 PUT    /api/providers/:pid
 DELETE /api/providers/:pid
+POST   /api/providers/:pid/test       # 测试 API Key 连通性
 GET    /api/providers/models          # 所有可用模型（供下拉框）
 
 # 项目
@@ -195,6 +209,7 @@ GET    /api/projects/:id/agent-versions
 POST   /api/projects/:id/agent-versions
 PUT    /api/projects/:id/agent-versions/:vid
 DELETE /api/projects/:id/agent-versions/:vid
+POST   /api/projects/:id/agent-versions/test-unsaved  # 未保存表单数据测试
 POST   /api/projects/:id/agent-versions/:vid/test
 
 # 测试用例
@@ -307,6 +322,7 @@ class LLMAdapter(ABC):
 | 任务队列 | asyncio.Semaphore | Celery + Redis | MVP 用户量小，无额外依赖 |
 | 批测进度 | 前端轮询 | WebSocket / SSE | 实现简单，体验够用 |
 | 裁判输出 | LLM JSON mode + 重试 | 正则提取 | 更可靠 |
-| 用户认证 | MVP 暂不做 | JWT / OAuth | 小团队试用不需要 |
+| 用户认证 | JWT + bcrypt | OAuth / Session | 轻量、无状态、适合 API 场景 |
+| 敏感数据 | Fernet 对称加密 | AES / Vault | 标准库级别，密钥通过环境变量注入 |
 | 对话存储 | JSONB 字段 | 独立对话表 | MVP 查询需求简单 |
 | 前端状态 | TanStack Query | Redux / Zustand | 主要是服务端状态 |

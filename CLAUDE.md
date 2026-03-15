@@ -8,7 +8,7 @@
 
 ## 当前状态
 
-版本：v1.1 安全 + 认证 + 体验打磨（进行中，Phase 1-2 完成，Phase 3 待开始）
+版本：v1.1 安全 + 认证 + 体验打磨（已完成）
 基线：v1.0 二期功能实现（全部完成）
 详见：`docs/progress.md`
 
@@ -78,6 +78,21 @@
 3. 如有新的架构决策 → 更新 `docs/architecture.md`
 4. 如有新的代码约定 → 更新 `docs/conventions.md`
 5. 如有新发现的问题/需求 → 录入 `docs/backlog.md`（状态 `Open`）
+
+## 验证命令
+
+| 场景 | 命令 | 工作目录 |
+|------|------|---------|
+| 后端测试 | `uv run pytest` | `backend/` |
+| 前端类型检查 | `npx tsc --noEmit` | `frontend/` |
+| 前端开发服务器 | `npm run dev` | `frontend/` |
+| 后端开发服务器 | `uv run uvicorn app.main:app --reload` | `backend/` |
+
+后端改动必须 pytest 通过，前端改动必须 tsc --noEmit 通过。
+
+## Hooks 行为
+
+- **Stop hook（auto-commit）**：Session 结束时自动执行 `.claude/hooks/auto-commit.sh`，会将未提交的改动自动 commit。如果已手动 `/commit`，则 hook 不会重复提交。
 
 ## 开发规则
 

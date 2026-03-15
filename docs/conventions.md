@@ -157,8 +157,18 @@ export function useCreateProject() {
 - 使用正则替换敏感信息为通用提示
 
 ### 敏感数据处理
-- API 响应中不返回 auth_token 原文，仅返回 `auth_token_set: bool`
-- 密码、API Key 等敏感字段使用 `SecretStr` 或在 schema 中排除
+- API 响应中不返回 auth_token / api_key 原文，仅返回 `*_set: bool` 标记
+- 数据库中敏感字段使用 Fernet 加密存储（`app/utils/crypto.py`）
+- 加密密钥通过环境变量 `EVAL_ENCRYPTION_KEY` 注入，启动时校验
+- 写入路径调用 `encrypt()`，读取路径在需要明文的位置调用 `decrypt()`
+- 密码使用 bcrypt 单向哈希（`app/services/auth_service.py`）
+
+### 认证与鉴权
+- 所有 API 路由强制 JWT 认证（`Depends(get_current_user)` 或 `Depends(verify_project_access)`）
+- JWT 密钥通过环境变量 `EVAL_JWT_SECRET` 注入，有效期通过 `EVAL_JWT_EXPIRE_MINUTES` 配置
+- 项目级路由使用 `verify_project_access` 同时验证身份和 owner_id 归属
+- 前端 `api/client.ts` 请求拦截器自动附加 Bearer token，401 自动跳转 /login
+- 管理员种子账号通过 Alembic 迁移创建，密码通过 `EVAL_ADMIN_PASSWORD` 环境变量设置
 
 ## 容器安全规范
 

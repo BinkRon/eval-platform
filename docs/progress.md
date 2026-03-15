@@ -1,6 +1,6 @@
 # 评测平台 — 开发进度
 
-## v1.1 安全 + 认证 + 体验打磨（进行中）
+## v1.1 安全 + 认证 + 体验打磨（已完成）
 
 > 核心目标：**部署到公司服务器的前提**（加密 + 认证）+ **API 专业度**（自描述）+ **体验打磨**
 > 覆盖需求：SE-01 / FT-05 / EN-05 / UX-13 / UX-11 / FT-04
@@ -69,12 +69,12 @@
 
 > Schema descriptions + 路由 docstrings → OpenAPI 文档完整
 
-- [ ] **3-1：Pydantic Schema descriptions** `[M]`
+- [x] **3-1：Pydantic Schema descriptions** `[M]`
   - 9 个 schema 文件：所有 Field 加 description + Schema 类加 docstring + 关键字段加 examples
-- [ ] **3-2：FastAPI 路由 docstrings** `[M]`
+- [x] **3-2：FastAPI 路由 docstrings** `[M]`
   - 10 个 API 路由文件：每个路由函数加中文 docstring
 
-**验证**：pytest 通过 + tsc --noEmit 通过 + `/docs` 描述完整
+**验证**：pytest 115 passed ✓ + tsc --noEmit ✓
 
 ---
 
@@ -82,31 +82,38 @@
 
 > 4 个独立修复点
 
-- [ ] **4-1：UX-13 System Prompt 展开/收起** `[S]`
+- [x] **4-1：UX-13 System Prompt 展开/收起** `[S]`
   - `ModelConfigTab.tsx` — expandable collapsible + 展开/收起 symbol
-- [ ] **4-2：UX-11 添加按钮移到标题区** `[S]`
+- [x] **4-2：UX-11 添加按钮移到标题区** `[S]`
   - `AgentVersionTab.tsx` + `TestCaseTab.tsx` — flex 标题行（左标题 + 右按钮）
-- [ ] **4-3：FT-04 Provider 连通性测试** `[M]`
+- [x] **4-3：FT-04 Provider 连通性测试** `[M]`
   - 后端 `provider_service.test_connection` + `POST /api/providers/{id}/test` + ProviderTestResult
   - 前端 ProviderSettings 操作列加"测试连接"
-- [ ] **4-4：FT-04 Agent 版本 Modal 内测试** `[S]`
+- [x] **4-4：FT-04 Agent 版本 Modal 内测试** `[S]`
   - 后端 `POST .../agent-versions/test-unsaved` + test_connection_unsaved
   - 前端 AgentVersionTab Modal footer 加"测试连接"
 
-**验证**：tsc --noEmit 通过 + pytest 通过
+**验证**：pytest 115 passed ✓ + tsc --noEmit ✓
 
 ---
 
 ### Phase 5：文档收尾
 
-- [ ] 更新 `docs/architecture.md` — User 模型 / auth API / 加密方案
-- [ ] 更新 `docs/conventions.md` — auth / 加密约定
-- [ ] 更新 `docs/backlog.md` — 6 条标记 Done + 归档
-- [ ] 更新 `CLAUDE.md` — 版本号 v1.1
+- [x] 更新 `docs/architecture.md` — User 模型 / auth API / 加密方案
+- [x] 更新 `docs/conventions.md` — auth / 加密约定
+- [x] 更新 `docs/backlog.md` — 6 条标记 Done + 归档
+- [x] 更新 `CLAUDE.md` — 版本号 v1.1
 
 ---
 
 ## 交接备注
+
+**Session #37 (2026-03-14)**：v1.1 Phase 3-5 全部完成，v1.1 收尾。
+
+- Phase 3：9 个 schema 文件补全 Field description + docstring + examples；9 个 route 文件补全中文 docstring
+- Phase 4：UX-13 System Prompt collapsible；UX-11 添加按钮移到 flex 标题行；FT-04 Provider 连通性测试（后端 test_connection + 前端按钮）；FT-04 Agent 版本 Modal 内 test-unsaved（后端新 API + 前端 Modal footer 按钮）
+- Phase 5：architecture.md 补 User 模型/auth API/加密决策；conventions.md 补 auth + 加密约定；backlog 4 条标记 Done 归档；CLAUDE.md 版本号更新
+- v1.1 全部 5 个 Phase 已完成，backlog 剩余 5 条（均 P2/P3）
 
 **Session #36 (2026-03-14)**：Phase 1-2 审查修复 + 部署配置 + 文档整理。
 

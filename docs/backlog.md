@@ -67,14 +67,14 @@
 
 | 分类 | P0 | P1 | P2 | P3 | 总计 |
 |------|----|----|----|----|------|
-| UX 产品与体验 | 0 | 0 | 2 | 1 | 3 |
+| UX 产品与体验 | 0 | 0 | 1 | 1 | 2 |
 | AR 架构 | 0 | 0 | 1 | 0 | 1 |
 | DM 数据模型 | 0 | 0 | 1 | 0 | 1 |
 | SE 安全 | 0 | 0 | 0 | 0 | 0 |
 | EN 工程质量 | 0 | 0 | 0 | 0 | 0 |
 | PF 性能 | 0 | 0 | 0 | 0 | 0 |
 | FT 新功能 | 0 | 0 | 1 | 0 | 1 |
-| **合计** | **0** | **0** | **5** | **1** | **6** |
+| **合计** | **0** | **0** | **4** | **1** | **5** |
 
 ---
 
@@ -103,7 +103,7 @@
 
 - **优先级**：P2
 - **复杂度**：S
-- **状态**：Scheduled → v1.1 Phase 4
+- **状态**：Done
 - **来源**：用户反馈 2026-03-09
 - **描述**：Agent 版本和测试用例集区域的「添加版本」「添加用例」按钮单独占一行，浪费纵向空间。
 - **涉及文件**：`frontend/src/components/agent-version/AgentVersionTab.tsx`、`frontend/src/pages/ProjectConfig.tsx`
@@ -123,7 +123,7 @@
 
 - **优先级**：P2
 - **复杂度**：S
-- **状态**：Scheduled → v1.1 Phase 4
+- **状态**：Done
 - **来源**：用户反馈 2026-03-09
 - **描述**：模型配置查看态中，System Prompt 使用 `Typography.Paragraph ellipsis` 显示，有「展开」按钮但展开后没有「收起」按钮。
 - **涉及文件**：`frontend/src/components/model-config/ModelConfigTab.tsx`
@@ -179,7 +179,7 @@
 
 - **优先级**：P1
 - **复杂度**：M
-- **状态**：Scheduled → v1.1 Phase 3
+- **状态**：Done
 - **来源**：架构评审 2026-03-12
 - **描述**：项目已建立 Agent-Friendly API 设计规范（`docs/conventions.md`），但存量代码尚未符合。具体缺失：
   1. **Pydantic Schema**：所有 Field() 缺少 `description` 参数（约 60+ 个字段），无 `example`，Schema 类无 docstring
@@ -216,7 +216,7 @@
 
 - **优先级**：P2
 - **复杂度**：M
-- **状态**：Scheduled → v1.1 Phase 4
+- **状态**：Done
 - **来源**：用户反馈 2026-03-09
 - **描述**：两个连通性测试体验问题：
   1. **模型管理（ProviderSettings）无连通性测试**：配置完 Provider 的 API Key 后无法验证是否有效，要到批测失败才发现
@@ -266,4 +266,8 @@
 | UX-10 | 对话剧场布局与交互 bug | 2026-03-09 | v0.3 BugFix：自适应高度 + 内置自动滚动 + 裁判区 Skeleton |
 | EN-04 | running 状态无超时恢复 | 2026-03-09 | v0.3 BugFix：lifespan 启动清理 + 单用例超时 + 终态防护 |
 | SE-01 | 敏感数据明文存储 | 2026-03-14 | v1.1 Phase 1：Fernet 加密 + 写入加密 + 读取解密 + 数据迁移 0005 |
+| EN-05 | API 自描述补全 | 2026-03-14 | v1.1 Phase 3：9 schema descriptions + 9 route docstrings |
+| UX-11 | 添加按钮移到标题区 | 2026-03-14 | v1.1 Phase 4：AgentVersionTab + TestCaseTab flex 标题行 |
+| UX-13 | System Prompt 展开/收起 | 2026-03-14 | v1.1 Phase 4：expandable collapsible |
+| FT-04 | Provider 连通性测试 + Modal 内测试 | 2026-03-14 | v1.1 Phase 4：后端 test_connection + 前端按钮 |
 | FT-05 | 账号系统 | 2026-03-14 | v1.1 Phase 2：User 模型 + JWT 认证 + 路由守卫 + 数据隔离 + 前端登录注册 |
