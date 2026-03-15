@@ -108,12 +108,18 @@
 
 ## 交接备注
 
-**Session #35 (2026-03-14)**：v1.1 Phase 1-2 完成。
+**Session #36 (2026-03-14)**：Phase 1-2 审查修复 + 部署配置 + 文档整理。
+
+- 审查修复：8 个子资源路由统一用 `verify_project_access`；ORM 解密用 SimpleNamespace 代理；启动校验 encryption_key/jwt_secret；迁移要求 EVAL_ADMIN_PASSWORD；register 兜底 IntegrityError；AuthGuard 处理 isError；前端硬编码颜色替换为 SEMANTIC_COLORS
+- 部署配置：docker-compose 补 3 个安全变量；创建本地 `.env`；跑完 0005+0006 迁移；后端重启验证通过
+- 文档整理：`deploy/README.md` 精简（460→150 行），补管理员账号机制说明；backlog 状态同步
+- 下一步：Phase 3（EN-05 API 自描述补全）
+
+**Session #35 (2026-03-14)**：v1.1 Phase 1-2 编码。
 
 - Phase 1：Fernet 加密工具 + 写入/读取路径 + 数据迁移 `0005` + 10 个测试
 - Phase 2：User 模型 + JWT auth + 10 路由保护 + project 数据隔离 + 前端登录/注册/守卫
 - 依赖变更：+cryptography +pyjwt +bcrypt，弃用 passlib（与新版 bcrypt 不兼容）
-- Phase 3 刚开始（已读取 9 个 schema 文件），待继续
 
 **Session #34 (2026-03-14)**：暖绿主题迁移（Humanloop 风格）。
 
