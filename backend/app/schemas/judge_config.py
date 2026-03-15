@@ -37,7 +37,7 @@ class ChecklistItemResponse(BaseModel):
 
     id: UUID = Field(description="检查项 ID")
     content: str = Field(description="检查项内容")
-    level: str = Field(description="重要性级别")
+    level: str = Field(description="重要性级别：must 必须通过；should 建议通过")
     sort_order: int = Field(description="排序序号")
 
     model_config = {"from_attributes": True}

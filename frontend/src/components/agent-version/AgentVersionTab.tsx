@@ -97,8 +97,9 @@ export default function AgentVersionTab({ projectId }: { projectId: string }) {
       } else {
         message.error(`连接失败：${result.error}`)
       }
-    } catch {
-      // validation error or network error
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'errorFields' in err) return
+      message.error('连接测试失败')
     } finally {
       setTestingUnsaved(false)
     }

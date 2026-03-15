@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from uuid import UUID
 
 from sqlalchemy import select
@@ -92,7 +93,6 @@ async def test_connection(db: AsyncSession, project_id: UUID, version_id: UUID) 
         # Decrypt auth_token into a detached copy to avoid writing plaintext back to DB
         decrypted_token = decrypt(version.auth_token) if version.auth_token else None
         # Use SimpleNamespace as a lightweight proxy for AgentClient
-        from types import SimpleNamespace
         agent_proxy = SimpleNamespace(**{c.key: getattr(version, c.key) for c in AgentVersion.__table__.columns})
         agent_proxy.auth_token = decrypted_token
 
@@ -112,7 +112,6 @@ async def test_connection_unsaved(data: AgentVersionCreate) -> AgentTestResult:
         raise ValidationError("Agent endpoint not configured")
 
     try:
-        from types import SimpleNamespace
         agent_proxy = SimpleNamespace(**data.model_dump())
         client = AgentClient(agent_proxy)
         reply, _ = await client.send_message("你好")

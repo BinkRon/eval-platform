@@ -39,7 +39,7 @@ class BatchTestResponse(BaseModel):
 class BatchTestProgress(BaseModel):
     """批量测试实时进度。"""
 
-    status: str = Field(description="批测状态")
+    status: str = Field(description="批测状态：pending / running / completed / failed")
     total_cases: int = Field(description="总用例数")
     completed_cases: int = Field(description="已完成用例数")
     passed_cases: int = Field(description="通过用例数")
@@ -54,7 +54,7 @@ class TestResultResponse(BaseModel):
     test_case_name: str | None = Field(default=None, description="测试用例名称")
     status: str = Field(description="状态：pending / running / completed / error")
     conversation: list[dict] | None = Field(description="对话记录（role + content）")
-    termination_reason: str | None = Field(description="对话终止原因")
+    termination_reason: str | None = Field(description="对话终止原因：max_rounds 达到最大轮次 / agent_end_signal Agent 结束信号 / error 异常")
     actual_rounds: int | None = Field(description="实际对话轮次")
     checklist_results: list[dict] | None = Field(description="Checklist 检查结果")
     eval_scores: list[dict] | None = Field(description="维度评分结果")
