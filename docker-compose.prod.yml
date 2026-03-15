@@ -25,6 +25,9 @@ services:
       EVAL_DEBUG: ${EVAL_DEBUG}
       EVAL_CORS_ORIGINS: ${EVAL_CORS_ORIGINS}
       EVAL_ALLOW_PRIVATE_URLS: ${EVAL_ALLOW_PRIVATE_URLS}
+      EVAL_ENCRYPTION_KEY: ${EVAL_ENCRYPTION_KEY}
+      EVAL_JWT_SECRET: ${EVAL_JWT_SECRET}
+      EVAL_ADMIN_PASSWORD: ${EVAL_ADMIN_PASSWORD}
     depends_on:
       db:
         condition: service_healthy

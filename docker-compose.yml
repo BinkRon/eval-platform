@@ -22,6 +22,9 @@ services:
     environment:
       EVAL_DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/eval_platform
       EVAL_DEBUG: "false"
+      EVAL_ENCRYPTION_KEY: ${EVAL_ENCRYPTION_KEY:-}
+      EVAL_JWT_SECRET: ${EVAL_JWT_SECRET:-}
+      EVAL_ADMIN_PASSWORD: ${EVAL_ADMIN_PASSWORD:-}
     depends_on:
       db:
         condition: service_healthy

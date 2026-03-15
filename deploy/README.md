@@ -39,6 +39,11 @@ vim .env.production
 
 必须修改：
 - `POSTGRES_PASSWORD` — 设置强密码
+- `EVAL_ENCRYPTION_KEY` — Fernet 对称加密密钥，用于加密 API Key 和 Auth Token
+- `EVAL_JWT_SECRET` — JWT 签名密钥，用于用户认证
+- `EVAL_ADMIN_PASSWORD` — 管理员初始密码（仅首次迁移时使用）
+
+生成密钥的方法见 `.env.production.example` 中的注释。
 
 可选修改：
 - `EVAL_CORS_ORIGINS` — 填写实际访问地址，JSON 数组格式（如 `["http://192.168.1.100"]`）
@@ -52,8 +57,10 @@ docker compose -f docker-compose.prod.yml --env-file .env.production up -d --bui
 
 首次启动会自动：
 - 创建 PostgreSQL 数据库
-- 运行 Alembic 迁移
+- 运行 Alembic 迁移（创建表结构、管理员账号等）
 - 启动后端和前端
+
+启动后使用管理员账号登录：用户名 `admin`，密码为 `EVAL_ADMIN_PASSWORD` 中设置的值。
 
 ### 4. 验证
 
@@ -280,7 +287,55 @@ git pull
 docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 ```
 
-数据库迁移会在 backend 启动时自动执行。
+数据库迁移会在 backend 启动时自动执行。数据库数据存储在 Docker 命名卷 `pgdata` 中，`git pull` 和容器重建不会影响数据。
+
+> **重要**：如果更新引入了新的必填环境变量，需先更新 `.env.production`，否则后端会启动失败。
+> 对照 `.env.production.example` 检查是否有新增变量。
+
+---
+
+## 版本升级说明
+
+### v1.0 → v1.1（账号系统 + 数据加密）
+
+此版本引入了用户认证和敏感数据加密，需要额外配置：
+
+**1. 新增 3 个必填环境变量**
+
+在 `.env.production` 中添加：
+
+```bash
+# Fernet 加密密钥（加密 API Key / Auth Token）
+# 生成: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+EVAL_ENCRYPTION_KEY=<生成后填入>
+
+# JWT 签名密钥（用户登录认证）
+# 生成: python -c "import secrets; print(secrets.token_urlsafe(32))"
+EVAL_JWT_SECRET=<生成后填入>
+
+# 管理员初始密码（仅首次迁移使用，迁移完成后可删除）
+EVAL_ADMIN_PASSWORD=<设置强密码>
+```
+
+不设置这些变量，后端会启动失败并报 RuntimeError。
+
+**2. 重启容器**
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+```
+
+启动时 Alembic 会自动执行两个迁移：
+- `0005`：将数据库中现有的明文 API Key / Auth Token 加密
+- `0006`：创建 users 表、插入 admin 种子账号、给 projects 表添加 owner_id 列
+
+**3. 登录**
+
+迁移完成后，使用管理员账号登录：
+- 用户名：`admin`
+- 密码：`EVAL_ADMIN_PASSWORD` 中设置的值
+
+所有现有项目会自动归到 admin 账号名下，数据完全保留。
 
 更推荐使用脚本化发布：
 
