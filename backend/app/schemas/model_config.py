@@ -1,3 +1,5 @@
+"""模型配置相关的请求/响应模型。"""
+
 from decimal import Decimal
 from uuid import UUID
 
@@ -12,16 +14,18 @@ def _strip_optional_string(value: str | None) -> str | None:
 
 
 class ModelConfigUpdate(BaseModel):
-    sparring_provider: str | None = Field(default=None, max_length=50)
-    sparring_model: str | None = Field(default=None, max_length=100)
-    sparring_temperature: Decimal | None = None
-    sparring_max_tokens: int | None = Field(default=None, ge=1, le=32768)
-    sparring_system_prompt: str | None = None
-    judge_provider: str | None = Field(default=None, max_length=50)
-    judge_model: str | None = Field(default=None, max_length=100)
-    judge_temperature: Decimal | None = None
-    judge_max_tokens: int | None = Field(default=None, ge=1, le=32768)
-    judge_system_prompt: str | None = None
+    """更新模型配置（对练机器人 + 裁判机器人）。"""
+
+    sparring_provider: str | None = Field(default=None, max_length=50, description="对练机器人供应商", examples=["openai"])
+    sparring_model: str | None = Field(default=None, max_length=100, description="对练机器人模型", examples=["gpt-4o"])
+    sparring_temperature: Decimal | None = Field(default=None, description="对练机器人温度", examples=[0.7])
+    sparring_max_tokens: int | None = Field(default=None, ge=1, le=32768, description="对练机器人最大 Token 数")
+    sparring_system_prompt: str | None = Field(default=None, description="对练机器人 System Prompt（空值使用默认）")
+    judge_provider: str | None = Field(default=None, max_length=50, description="裁判机器人供应商")
+    judge_model: str | None = Field(default=None, max_length=100, description="裁判机器人模型")
+    judge_temperature: Decimal | None = Field(default=None, description="裁判机器人温度")
+    judge_max_tokens: int | None = Field(default=None, ge=1, le=32768, description="裁判机器人最大 Token 数")
+    judge_system_prompt: str | None = Field(default=None, description="裁判机器人 System Prompt（空值使用默认）")
 
     @field_validator("sparring_provider", "sparring_model", "judge_provider", "judge_model", mode="before")
     @classmethod
@@ -30,17 +34,19 @@ class ModelConfigUpdate(BaseModel):
 
 
 class ModelConfigResponse(BaseModel):
-    id: UUID
-    project_id: UUID
-    sparring_provider: str | None
-    sparring_model: str | None
-    sparring_temperature: Decimal | None
-    sparring_max_tokens: int | None
-    sparring_system_prompt: str | None
-    judge_provider: str | None
-    judge_model: str | None
-    judge_temperature: Decimal | None
-    judge_max_tokens: int | None
-    judge_system_prompt: str | None
+    """模型配置详情。"""
+
+    id: UUID = Field(description="配置 ID")
+    project_id: UUID = Field(description="所属项目 ID")
+    sparring_provider: str | None = Field(description="对练机器人供应商")
+    sparring_model: str | None = Field(description="对练机器人模型")
+    sparring_temperature: Decimal | None = Field(description="对练机器人温度")
+    sparring_max_tokens: int | None = Field(description="对练机器人最大 Token 数")
+    sparring_system_prompt: str | None = Field(description="对练机器人 System Prompt")
+    judge_provider: str | None = Field(description="裁判机器人供应商")
+    judge_model: str | None = Field(description="裁判机器人模型")
+    judge_temperature: Decimal | None = Field(description="裁判机器人温度")
+    judge_max_tokens: int | None = Field(description="裁判机器人最大 Token 数")
+    judge_system_prompt: str | None = Field(description="裁判机器人 System Prompt")
 
     model_config = {"from_attributes": True}

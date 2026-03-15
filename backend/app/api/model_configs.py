@@ -14,9 +14,11 @@ router = APIRouter(prefix="/api/projects/{project_id}/model-config", tags=["mode
 
 @router.get("", response_model=ModelConfigResponse | None)
 async def get_model_config(project_id: UUID, db: AsyncSession = Depends(get_db), _: Project = Depends(verify_project_access)):
+    """获取项目的模型配置（对练 + 裁判）。"""
     return await model_config_service.get_model_config(db, project_id)
 
 
 @router.put("", response_model=ModelConfigResponse)
 async def update_model_config(project_id: UUID, data: ModelConfigUpdate, db: AsyncSession = Depends(get_db), _: Project = Depends(verify_project_access)):
+    """更新模型配置（不存在则自动创建）。"""
     return await model_config_service.upsert_model_config(db, project_id, data)

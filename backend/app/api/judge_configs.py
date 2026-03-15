@@ -17,6 +17,7 @@ router = APIRouter(prefix="/api/projects/{project_id}/judge-config", tags=["judg
 
 @router.get("", response_model=JudgeConfigResponse | None)
 async def get_judge_config(project_id: UUID, db: AsyncSession = Depends(get_db), _: Project = Depends(verify_project_access)):
+    """获取项目的裁判配置（含 Checklist 和评判维度）。"""
     result = await db.execute(
         select(JudgeConfig)
         .where(JudgeConfig.project_id == project_id)
@@ -27,6 +28,7 @@ async def get_judge_config(project_id: UUID, db: AsyncSession = Depends(get_db),
 
 @router.put("", response_model=JudgeConfigResponse)
 async def update_judge_config(project_id: UUID, data: JudgeConfigUpdate, db: AsyncSession = Depends(get_db), _: Project = Depends(verify_project_access)):
+    """更新裁判配置（整体替换 Checklist 和评判维度）。"""
     config = await judge_config_service.save_judge_config(db, project_id, data)
     await db.commit()
 

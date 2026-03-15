@@ -22,6 +22,7 @@ router = APIRouter(
 async def get_conversation(
     project_id: UUID, db: AsyncSession = Depends(get_db), _: Project = Depends(verify_project_access)
 ):
+    """获取项目的构建助手对话（不存在则自动创建）。"""
     return await builder_conversation_service.get_or_create(db, project_id)
 
 
@@ -32,6 +33,7 @@ async def append_message(
     db: AsyncSession = Depends(get_db),
     _: Project = Depends(verify_project_access),
 ):
+    """追加一条消息到构建助手对话。"""
     return await builder_conversation_service.append_message(
         db, project_id, data.message.role, data.message.content
     )
@@ -41,4 +43,5 @@ async def append_message(
 async def clear_messages(
     project_id: UUID, db: AsyncSession = Depends(get_db), _: Project = Depends(verify_project_access)
 ):
+    """清空构建助手对话的所有消息。"""
     return await builder_conversation_service.clear(db, project_id)

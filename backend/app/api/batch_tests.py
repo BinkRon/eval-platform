@@ -19,11 +19,13 @@ _background_tasks: set[asyncio.Task] = set()
 
 @router.get("", response_model=list[BatchTestResponse])
 async def list_batch_tests(project_id: UUID, db: AsyncSession = Depends(get_db), _: Project = Depends(verify_project_access)):
+    """获取项目下所有批量测试记录。"""
     return await batch_test_service.list_batch_tests(db, project_id)
 
 
 @router.post("", response_model=BatchTestResponse, status_code=201)
 async def create_batch_test(project_id: UUID, data: BatchTestCreate, db: AsyncSession = Depends(get_db), _: Project = Depends(verify_project_access)):
+    """发起新的批量测试，后台异步执行。"""
     batch = await batch_test_service.validate_and_create(db, project_id, data)
     await db.commit()
     await db.refresh(batch)
@@ -38,11 +40,13 @@ async def create_batch_test(project_id: UUID, data: BatchTestCreate, db: AsyncSe
 
 @router.delete("/{batch_id}", status_code=204)
 async def delete_batch_test(project_id: UUID, batch_id: UUID, db: AsyncSession = Depends(get_db), _: Project = Depends(verify_project_access)):
+    """删除指定批量测试记录及其所有用例结果。"""
     await batch_test_service.delete_batch_test(db, project_id, batch_id)
 
 
 @router.get("/{batch_id}", response_model=BatchTestDetail)
 async def get_batch_test(project_id: UUID, batch_id: UUID, db: AsyncSession = Depends(get_db), _: Project = Depends(verify_project_access)):
+    """获取批量测试详情，包含所有用例结果。"""
     detail = await batch_test_service.get_batch_test_detail(db, project_id, batch_id)
     if not detail:
         raise HTTPException(404, detail="Batch test not found")
@@ -51,6 +55,7 @@ async def get_batch_test(project_id: UUID, batch_id: UUID, db: AsyncSession = De
 
 @router.get("/{batch_id}/progress", response_model=BatchTestProgress)
 async def get_batch_progress(project_id: UUID, batch_id: UUID, db: AsyncSession = Depends(get_db), _: Project = Depends(verify_project_access)):
+    """查询批量测试的实时进度（前端轮询用）。"""
     batch = await db.get(BatchTest, batch_id)
     if not batch or batch.project_id != project_id:
         raise HTTPException(404, detail="Batch test not found")

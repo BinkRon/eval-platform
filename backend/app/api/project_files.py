@@ -18,6 +18,7 @@ router = APIRouter(
 
 @router.get("", response_model=list[ProjectFileResponse])
 async def list_files(project_id: UUID, db: AsyncSession = Depends(get_db), _: Project = Depends(verify_project_access)):
+    """获取项目下所有已上传的文件列表。"""
     return await project_file_service.list_files(db, project_id)
 
 
@@ -28,6 +29,7 @@ async def upload_file(
     db: AsyncSession = Depends(get_db),
     _: Project = Depends(verify_project_access),
 ):
+    """上传文件到项目（用于构建助手的知识参考）。"""
     if not file.filename:
         raise ValidationError("文件名不能为空")
     # Reject oversized files before reading full content into memory
@@ -41,4 +43,5 @@ async def upload_file(
 async def delete_file(
     project_id: UUID, file_id: UUID, db: AsyncSession = Depends(get_db), _: Project = Depends(verify_project_access)
 ):
+    """删除项目中的指定文件。"""
     await project_file_service.delete_file(db, project_id, file_id)
