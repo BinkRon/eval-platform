@@ -14,4 +14,6 @@ export const agentVersionApi = {
     client.delete(`/projects/${projectId}/agent-versions/${id}`),
   test: (projectId: string, id: string) =>
     client.post<{ status: string; reply?: string; error?: string }>(`/projects/${projectId}/agent-versions/${id}/test`).then((r) => r.data),
+  testUnsaved: (projectId: string, data: AgentVersionCreate) =>
+    client.post<{ status: string; reply?: string; error?: string }>(`/projects/${projectId}/agent-versions/test-unsaved`, data).then((r) => r.data),
 }

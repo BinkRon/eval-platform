@@ -86,7 +86,8 @@ export default function TestCaseTab({ projectId }: { projectId: string }) {
 
   return (
     <>
-      <div style={{ marginBottom: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <span style={{ fontWeight: 500 }}>测试用例</span>
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>添加用例</Button>
       </div>
       <Table columns={columns} dataSource={cases} rowKey="id" loading={isLoading} pagination={false} />

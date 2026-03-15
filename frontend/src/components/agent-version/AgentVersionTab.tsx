@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Divider, Form, Input, Modal, Select, Space, Switch, Table, Tag, message } from 'antd'
+import { Button, Col, Divider, Form, Input, Modal, Row, Select, Space, Switch, Table, Tag, message } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, ApiOutlined } from '@ant-design/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import { agentVersionApi, type AgentVersion } from '../../api/agentVersions'
@@ -24,6 +24,7 @@ export default function AgentVersionTab({ projectId }: { projectId: string }) {
   const deleteMutation = useDeleteAgentVersion(projectId)
 
   const [testing, setTesting] = useState<string | null>(null)
+  const [testingUnsaved, setTestingUnsaved] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<AgentVersion | null>(null)
   const [form] = Form.useForm()
@@ -86,6 +87,23 @@ export default function AgentVersionTab({ projectId }: { projectId: string }) {
     }
   }
 
+  const handleTestUnsaved = async () => {
+    try {
+      const values = await form.validateFields()
+      setTestingUnsaved(true)
+      const result = await agentVersionApi.testUnsaved(projectId, values)
+      if (result.status === 'success') {
+        message.success(`连接成功：${result.reply?.slice(0, 50)}`)
+      } else {
+        message.error(`连接失败：${result.error}`)
+      }
+    } catch {
+      // validation error or network error
+    } finally {
+      setTestingUnsaved(false)
+    }
+  }
+
   const handleDelete = (record: AgentVersion) => {
     Modal.confirm({
       title: `确认删除「${record.name}」？`,
@@ -129,7 +147,8 @@ export default function AgentVersionTab({ projectId }: { projectId: string }) {
 
   return (
     <>
-      <div style={{ marginBottom: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <span style={{ fontWeight: 500 }}>Agent 版本</span>
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>添加版本</Button>
       </div>
       <Table columns={columns} dataSource={versions} rowKey="id" loading={isLoading} pagination={false} />
@@ -137,52 +156,83 @@ export default function AgentVersionTab({ projectId }: { projectId: string }) {
       <Modal
         title={editing ? '编辑 Agent 版本' : '添加 Agent 版本'}
         open={modalOpen}
-        onOk={handleSubmit}
         onCancel={() => setModalOpen(false)}
         width={640}
-        confirmLoading={createMutation.isPending || updateMutation.isPending}
+        footer={
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Button icon={<ApiOutlined />} onClick={handleTestUnsaved} loading={testingUnsaved}>测试连接</Button>
+            <Space>
+              <Button onClick={() => setModalOpen(false)}>取消</Button>
+              <Button type="primary" onClick={handleSubmit} loading={createMutation.isPending || updateMutation.isPending}>确定</Button>
+            </Space>
+          </div>
+        }
       >
         <Form form={form} layout="vertical" initialValues={{ method: 'POST', response_format: 'json', has_end_signal: false }}>
           <Divider titlePlacement="left" style={{ marginTop: 0 }}>基础信息</Divider>
-          <Form.Item name="name" label="版本名称" rules={[{ required: true }]}>
-            <Input />
+          <Form.Item name="name" label="版本名称" rules={[{ required: true, message: '请输入版本名称' }]}>
+            <Input placeholder="如：v1.0、生产环境" />
           </Form.Item>
           <Form.Item name="description" label="描述">
-            <Input.TextArea rows={2} />
+            <Input.TextArea rows={2} placeholder="版本说明，便于区分不同版本" />
           </Form.Item>
 
           <Divider titlePlacement="left">连接配置</Divider>
-          <Form.Item name="endpoint" label="API Endpoint">
+          <Form.Item name="endpoint" label="API Endpoint" rules={[{ required: true, message: '请输入 API 地址' }]}>
             <Input placeholder="https://your-agent.com/api/chat" />
           </Form.Item>
-          <Form.Item name="method" label="请求方法">
-            <Select options={[{ value: 'POST' }, { value: 'GET' }]} />
-          </Form.Item>
-          <Form.Item name="response_format" label="响应格式">
-            <Select options={[{ value: 'json', label: 'JSON' }, { value: 'sse', label: 'SSE (Server-Sent Events)' }]} />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="method" label="请求方法">
+                <Select options={[{ value: 'POST' }, { value: 'GET' }]} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="response_format" label="响应格式">
+                <Select options={[{ value: 'json', label: 'JSON' }, { value: 'sse', label: 'SSE (流式)' }]} />
+              </Form.Item>
+            </Col>
+          </Row>
           <Form.Item name="auth_type" label="认证方式">
-            <Select allowClear options={[{ value: 'bearer', label: 'Bearer Token' }, { value: 'header', label: '自定义 Header' }]} />
+            <Select allowClear placeholder="无需认证" options={[{ value: 'bearer', label: 'Bearer Token' }, { value: 'header', label: '自定义 Header' }]} />
           </Form.Item>
-          <Form.Item name="auth_token" label="认证令牌">
-            <Input.Password placeholder={editing?.auth_token_set ? '已配置，留空表示不修改' : undefined} />
+          <Form.Item noStyle shouldUpdate={(prev, cur) => prev.auth_type !== cur.auth_type}>
+            {({ getFieldValue }) =>
+              getFieldValue('auth_type') ? (
+                <Form.Item name="auth_token" label={getFieldValue('auth_type') === 'bearer' ? 'Token' : 'Header 值'}>
+                  <Input.Password placeholder={editing?.auth_token_set ? '已配置，留空表示不修改' : undefined} />
+                </Form.Item>
+              ) : null
+            }
           </Form.Item>
 
           <Divider titlePlacement="left">协议配置</Divider>
-          <Form.Item name="request_template" label="请求模板 (JSON)">
-            <Input.TextArea rows={4} placeholder='{"message": "{{message}}", "session_id": "{{session_id}}"}' />
+          <Form.Item name="request_template" label="请求模板 (JSON)" tooltip="使用 {{message}} 和 {{session_id}} 作为占位符">
+            <Input.TextArea rows={3} placeholder='{"message": "{{message}}", "session_id": "{{session_id}}"}' />
           </Form.Item>
-          <Form.Item name="response_path" label="响应解析路径 (JSONPath)">
+          <Form.Item name="response_path" label="响应解析路径 (JSONPath)" tooltip="从响应 JSON 中提取回复文本的路径">
             <Input placeholder="$.data.reply" />
           </Form.Item>
-          <Form.Item name="has_end_signal" label="结束信号" valuePropName="checked">
+          <Form.Item name="has_end_signal" label="结束信号" valuePropName="checked" tooltip="Agent 是否通过特定字段标记对话结束">
             <Switch />
           </Form.Item>
-          <Form.Item name="end_signal_path" label="结束信号路径">
-            <Input placeholder="$.data.is_end" />
-          </Form.Item>
-          <Form.Item name="end_signal_value" label="结束信号值">
-            <Input placeholder="true" />
+          <Form.Item noStyle shouldUpdate={(prev, cur) => prev.has_end_signal !== cur.has_end_signal}>
+            {({ getFieldValue }) =>
+              getFieldValue('has_end_signal') ? (
+                <Row gutter={16}>
+                  <Col span={14}>
+                    <Form.Item name="end_signal_path" label="信号路径" rules={[{ required: true, message: '请输入信号路径' }]}>
+                      <Input placeholder="$.data.is_end" />
+                    </Form.Item>
+                  </Col>
+                  <Col span={10}>
+                    <Form.Item name="end_signal_value" label="信号值" rules={[{ required: true, message: '请输入信号值' }]}>
+                      <Input placeholder="true" />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              ) : null
+            }
           </Form.Item>
         </Form>
       </Modal>

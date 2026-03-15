@@ -99,7 +99,7 @@ function ModelCardView({
               System Prompt{isDefault && <Text type="secondary" style={{ fontSize: 12 }}>（系统默认）</Text>}
             </Text>
             <div style={{ background: SEMANTIC_COLORS.codeBg, borderRadius: 6, padding: '8px 12px', opacity: isDefault ? 0.7 : 1 }}>
-              <Paragraph ellipsis={{ rows: 4, expandable: true, symbol: '展开' }} style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+              <Paragraph ellipsis={{ rows: 4, expandable: 'collapsible', symbol: (expanded: boolean) => expanded ? '收起' : '展开' }} style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
                 {displayPrompt}
               </Paragraph>
             </div>

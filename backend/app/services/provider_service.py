@@ -3,10 +3,12 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.exceptions import ConflictError, NotFoundError
+from app.exceptions import ConflictError, NotFoundError, ValidationError
+from app.llm.factory import create_llm_adapter
 from app.models.provider_config import ProviderConfig
 from app.utils.crypto import decrypt, encrypt
-from app.schemas.provider import ModelOption, ProviderCreate, ProviderResponse, ProviderUpdate
+from app.utils.error_sanitizer import sanitize_error
+from app.schemas.provider import ModelOption, ProviderCreate, ProviderResponse, ProviderTestResult, ProviderUpdate
 
 
 def _clean_available_models(models: list[str] | None) -> list[str] | None:
@@ -78,6 +80,35 @@ async def update_provider(db: AsyncSession, provider_id: UUID, data: ProviderUpd
     await db.commit()
     await db.refresh(provider)
     return _to_response(provider)
+
+
+async def test_connection(db: AsyncSession, provider_id: UUID) -> ProviderTestResult:
+    provider = await db.get(ProviderConfig, provider_id)
+    if not provider:
+        raise NotFoundError("供应商不存在")
+
+    if not provider.api_key:
+        raise ValidationError("未配置 API Key")
+
+    models = _clean_available_models(provider.available_models)
+    if not models:
+        raise ValidationError("未配置可用模型")
+
+    try:
+        api_key = decrypt(provider.api_key)
+        adapter = create_llm_adapter(
+            provider_name=provider.provider_name,
+            api_key=api_key,
+            model=models[0],
+            base_url=provider.base_url,
+        )
+        await adapter.chat(
+            messages=[{"role": "user", "content": "Hi"}],
+            max_tokens=16,
+        )
+        return ProviderTestResult(status="success")
+    except Exception as e:
+        return ProviderTestResult(status="failed", error=sanitize_error(str(e)))
 
 
 async def delete_provider(db: AsyncSession, provider_id: UUID) -> None:

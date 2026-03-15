@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Button, Card, Form, Input, Modal, Select, Space, Switch, Table, Tag, message } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
+import { PlusOutlined, EditOutlined, DeleteOutlined, ApiOutlined } from '@ant-design/icons'
 import type { Provider } from '../api/providers'
+import { providerApi } from '../api/providers'
 import { useProviders, useCreateProvider, useUpdateProvider, useDeleteProvider } from '../hooks/useProviders'
 
 export default function ProviderSettings() {
@@ -10,6 +11,7 @@ export default function ProviderSettings() {
   const updateMutation = useUpdateProvider()
   const deleteMutation = useDeleteProvider()
 
+  const [testing, setTesting] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Provider | null>(null)
   const [form] = Form.useForm()
@@ -61,6 +63,22 @@ export default function ProviderSettings() {
     })
   }
 
+  const handleTest = async (record: Provider) => {
+    setTesting(record.id)
+    try {
+      const result = await providerApi.test(record.id)
+      if (result.status === 'success') {
+        message.success('连接成功')
+      } else {
+        message.error(`连接失败：${result.error}`)
+      }
+    } catch {
+      message.error('连接测试失败')
+    } finally {
+      setTesting(null)
+    }
+  }
+
   const columns = [
     { title: '厂商名称', dataIndex: 'provider_name', key: 'provider_name' },
     {
@@ -85,6 +103,7 @@ export default function ProviderSettings() {
       key: 'actions',
       render: (_: unknown, r: Provider) => (
         <Space>
+          <Button type="link" icon={<ApiOutlined />} onClick={() => handleTest(r)} loading={testing === r.id} disabled={!r.api_key_set}>测试</Button>
           <Button type="link" icon={<EditOutlined />} onClick={() => openEdit(r)}>编辑</Button>
           <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(r)}>删除</Button>
         </Space>

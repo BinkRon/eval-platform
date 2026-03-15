@@ -105,3 +105,17 @@ async def test_connection(db: AsyncSession, project_id: UUID, version_id: UUID) 
         version.connection_status = "failed"
         await db.commit()
         return AgentTestResult(status="failed", error=sanitize_error(str(e)))
+
+
+async def test_connection_unsaved(data: AgentVersionCreate) -> AgentTestResult:
+    if not data.endpoint:
+        raise ValidationError("Agent endpoint not configured")
+
+    try:
+        from types import SimpleNamespace
+        agent_proxy = SimpleNamespace(**data.model_dump())
+        client = AgentClient(agent_proxy)
+        reply, _ = await client.send_message("你好")
+        return AgentTestResult(status="success", reply=reply)
+    except Exception as e:
+        return AgentTestResult(status="failed", error=sanitize_error(str(e)))
